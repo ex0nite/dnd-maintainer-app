@@ -15,11 +15,13 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [x] CI GitHub Actions du dépôt app (branche `ci-setup`, non fusionnée)
 - [x] Installer BMAD dans le dépôt app
 - [x] Créer `TO-DO.md`, `CONVENTION-CODE.md`, `AGENTS.md`, `DECISIONS.md`, `AMBIGUITES.md`
-- [ ] Vérifier le résultat de la CI app après ajout des variables `VITE_SUPABASE_*` (commit `94075ee`)
-- [ ] Fusionner `ci-setup` et `chore/bmad-setup` dans `main` du fork
+- [x] Vérifier la CI app : entièrement verte sur `dev` (typecheck, lint, format, tests, BDD, build), commit `76e3102`
+- [x] Fusionner `ci-setup` et `chore/bmad-setup` dans `dev` (D-26) ; `main` reste réservé au stable
 - [x] Corriger les 6 erreurs de lint `no-console` (D-27, dans `dev`)
-- [ ] Corriger le format (4 fichiers signalés par la CI) et les 42 scénarios BDD qui échouent encore en CI ; vérifier `npm run format:check` sur Linux (le local Windows signale 305 fichiers à cause des CRLF) ; ajouter un
-      `.gitattributes` (`* text=auto eol=lf`) si besoin
+- [x] Corriger le format et les scénarios BDD en CI (stub de `VITE_SUPABASE_PUBLISHABLE_KEY` dans le chargeur BDD, exclusion
+      Prettier des fichiers BMAD générés)
+- [ ] Ajouter un `.gitattributes` (`* text=auto eol=lf`) pour que `format:check`, `coverage-matrix` et le BDD se comportent
+      sous Windows comme sous Linux (aujourd'hui ils échouent en local sur Windows, mais passent en CI)
 - [ ] Corriger la doc : `CLAUDE.md` dit « RLS sans policy » alors que les 7 policies sont `USING (true)` (et 4 policies
       publiques sur `storage.objects`), et « ESLint 9 » alors que `package.json` est en ESLint 10 ; le nom de
       variable est `VITE_SUPABASE_PUBLISHABLE_KEY` dans le code mais `VITE_SUPABASE_ANON_KEY` dans `CLAUDE.md`, `src/locales/en/common.json`,
