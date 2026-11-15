@@ -58,6 +58,12 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 
 ### D-06 · 2026-11-15 · Toujours veiller à la sécurité du code
 
+### D-13 · 2026-11-15 · Choix techniques délégués
+
+Le propriétaire délègue **tous les choix techniques** à l'agent de développement (schéma, nommage, bibliothèques,
+architecture). Chaque choix important est consigné (`DECISIONS.md` ou `docs/`) et contrôlé en revue de code. Les
+questions de produit restent au propriétaire.
+
 ## Outillage
 
 ### D-07 · 2026-11-15 · Utiliser BMAD pour piloter le développement
