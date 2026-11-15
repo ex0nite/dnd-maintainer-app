@@ -178,6 +178,13 @@ MCP. Le dépôt MCP n'a pas BMAD ; son `CLAUDE.md` renvoie vers ces règles.
 Les appels `console.warn` qui violaient `no-console` passent par `getLogger` (`src/lib/logger.ts`) ; la règle n'est pas
 assouplie. Fait dans `dev` (commit `3d842a1`).
 
+### D-28 · 2026-11-15 · Langues de l'interface
+
+- L'interface est disponible en **français et en anglais**, avec un **sélecteur de langue** mémorisé par joueur dans son
+  navigateur.
+- Les **données de règles** (`gamedata`) restent **en anglais** dans un premier temps ; leur traduction se fera par lots
+  plus tard (les termes français suivent la version française officielle, à faire relire).
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

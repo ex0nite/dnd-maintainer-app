@@ -13,7 +13,3 @@ Elles décrivent un autre modèle (mot de passe, rôle admin, 403 plutôt que 40
 personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct du MJ ?
 
 ## Déploiement (QNAP + DynDNS Livebox)
-
-### A-18 · OUVERT · Langues de l'interface
-
-Il n'existe que `src/locales/en`. Faut-il ajouter le français (les joueurs sont francophones) ? L'anglais reste-t-il ?

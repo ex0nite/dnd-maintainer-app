@@ -61,7 +61,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
       (RLS par colonne ou vue dédiée)
 - [ ] Récapitulatif des séances (D-14) : indicateur de publication par séance, consultation par les joueurs
 - [ ] Commentaires sur les récapitulatifs (D-14) : table, RLS (lecture : membres ; modification et suppression : auteur ou MJ), interface
-- [ ] Textes de la page joueur dans `src/locales` ⛔ A-18
+- [ ] Français de l'interface (D-28) : `src/locales/fr/common.json` (730 clés) calqué sur `en`, sélecteur de langue
+      mémorisé, contrôle automatique des clés manquantes ; textes de la page joueur dans les deux langues
 - [ ] Réécrire les specs BDD `@draft` selon D-02 ⛔ A-09
 
 ## 4. Déploiement sur le QNAP
@@ -83,4 +84,5 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 - [x] BMAD dans le dépôt MCP : non (D-24), simple renvoi depuis son `CLAUDE.md`
 - [ ] Création de personnage par les joueurs (D-17) : RLS `INSERT` (créateur = propriétaire, campagne dont il est membre), `DELETE` réservé au MJ
+- [ ] Traduire les données de règles (`gamedata`, 1 728 clés) en français, par lots (D-28)
 - [ ] Mettre à jour `docs/security-review-2026-06-01.md` (stockage des portraits désormais utilisé, policies de 2026-06)
