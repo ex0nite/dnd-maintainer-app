@@ -7,13 +7,9 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Produit
 
-Le joueur peut-il créer sa fiche lui-même (builder `/campaign/:id/character/new`) ou le MJ crée-t-il les fiches et les
-assigne-t-il ? Le joueur peut-il supprimer son personnage ?
-Proposition : le MJ crée et assigne ; le joueur édite. Création par le joueur plus tard.
-
 ### A-06 · OUVERT · Modifications que le joueur peut faire après finalisation
 
-Avec D-03 (pas de gestion de la triche), le joueur peut tout éditer sur sa fiche. À confirmer : y compris le niveau
+Avec D-03 (pas de gestion de la triche) et D-17 (le joueur monte lui-même son personnage de niveau), il reste à
 et le statut `draft`/`ready` ? Le MJ veut-il valider les montées de niveau ?
 
 ## Authentification

@@ -71,5 +71,5 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 ## Plus tard
 
 - [ ] Installer BMAD dans le dépôt MCP ⛔ A-14
-- [ ] Création de personnage par les joueurs ⛔ A-05
+- [ ] Création de personnage par les joueurs (D-17) : RLS `INSERT` (créateur = propriétaire, campagne dont il est membre), `DELETE` réservé au MJ
 - [ ] Mettre à jour `docs/security-review-2026-06-01.md` (stockage des portraits désormais utilisé, policies de 2026-06)

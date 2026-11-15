@@ -66,6 +66,13 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 - Un compte peut appartenir à **plusieurs campagnes** ; un joueur ne voit que celles dont il est membre.
 - Le **MJ peut réassigner** un personnage à un autre joueur.
 
+### D-17 · 2026-11-15 · Création, suppression et montée de niveau
+
+- Le **joueur crée ses personnages** avec le constructeur, dans une campagne dont il est membre ; le **MJ peut aussi en
+  créer** et les assigner. Un personnage est rattaché automatiquement à son créateur.
+- Seul le **MJ supprime** un personnage ; le MJ peut le désactiver pour le mettre de côté.
+- Le **joueur monte lui-même** son personnage de niveau (sans validation du MJ).
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité
