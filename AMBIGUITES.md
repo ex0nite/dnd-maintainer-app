@@ -10,7 +10,7 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 ### A-06 · OUVERT · Modifications que le joueur peut faire après finalisation
 
 Avec D-03 (pas de gestion de la triche) et D-17 (le joueur monte lui-même son personnage de niveau), il reste à
-et le statut `draft`/`ready` ? Le MJ veut-il valider les montées de niveau ?
+confirmer : un joueur peut-il repasser une fiche finalisée (`ready`) en brouillon (`draft`) pour la reconstruire ?
 
 ## Authentification
 
