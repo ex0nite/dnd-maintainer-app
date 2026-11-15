@@ -149,6 +149,11 @@ Aucune sauvegarde n'est mise en place pour l'instant. **Risque assumé par le pr
 QNAP protège les données (panne d'un disque), pas une suppression, une corruption ou la perte du QNAP. À réexaminer :
 la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 
+### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
+
+BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le
+MCP. Le dépôt MCP n'a pas BMAD ; son `CLAUDE.md` renvoie vers ces règles.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

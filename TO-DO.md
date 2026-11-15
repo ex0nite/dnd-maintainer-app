@@ -77,6 +77,6 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Sauvegardes de la base et des portraits, avec test de restauration (D-23 : écartées pour l'instant ; piste :
       export quotidien chiffré vers un autre volume puis copie vers un second QNAP)
 
-- [ ] Installer BMAD dans le dépôt MCP ⛔ A-14
+- [x] BMAD dans le dépôt MCP : non (D-24), simple renvoi depuis son `CLAUDE.md`
 - [ ] Création de personnage par les joueurs (D-17) : RLS `INSERT` (créateur = propriétaire, campagne dont il est membre), `DELETE` réservé au MJ
 - [ ] Mettre à jour `docs/security-review-2026-06-01.md` (stockage des portraits désormais utilisé, policies de 2026-06)

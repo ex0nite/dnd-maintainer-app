@@ -14,11 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-14 · OUVERT · BMAD sur le dépôt MCP ?
-
-BMAD est installé dans l'app (D-07). Faut-il l'installer aussi dans `dnd-maintainer-mcp`, ou piloter les deux depuis
-l'app ? Les fichiers `TO-DO.md`, `DECISIONS.md`, etc. sont dans le dépôt app et couvrent aussi le MCP.
-
 ### A-15 · OUVERT · Emplacement des worktrees
 
 Proposition : dossier frère du checkout (`../wt-<sujet>`), branche `<type>/<sujet>` (`feat/`, `fix/`, `chore/`, `docs/`).
