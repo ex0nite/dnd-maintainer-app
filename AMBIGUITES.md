@@ -5,8 +5,6 @@ en a une, une **proposition** (non validée). Une fois tranché : déplacer en `
 
 Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-DO.md`).
 
-## Produit
-
 ## Authentification
 
 ### A-07 · BLOQUANT · Mode de connexion des joueurs
