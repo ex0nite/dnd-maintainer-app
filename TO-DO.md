@@ -8,7 +8,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 ## 0. Mise en place (en cours)
 
 - [x] Créer la branche `dev` sur le fork à partir de `main` (D-25), app et MCP
-- [ ] Fusionner `ci-setup` et `chore/bmad-setup` dans `dev` ⛔ A-16
+- [ ] Fusionner `ci-setup` et `chore/bmad-setup` dans `dev` (D-26 : fusion locale, `main` reste réservé au stable)
 - [x] Déplacer les worktrees existants dans le dossier commun `.worktrees` (D-25)
 
 - [x] CI GitHub Actions du dépôt MCP

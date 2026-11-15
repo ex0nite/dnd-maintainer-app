@@ -14,10 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-16 · OUVERT · Gestion de la branche `ci-setup` et du fork
-
-`origin` est un fork de `drovani/dnd-maintainer`. D-25 définit `main` (stable) et `dev` (travail). Restent à fixer :les fusions dans `dev` et `main` se font-elles par pull request sur le fork ou par fusion locale ? Quand synchroniseravec `upstream` ? La branche `dev` doit être créée sur le fork (voir `TO-DO.md`).
-
 ### A-17 · OUVERT · Erreurs de lint existantes
 
 6 erreurs `no-console` bloquent le lint (`LevelUpDialog.tsx`, `pdf-field-map.ts`, `use-all-choice-grants.ts`).

@@ -163,6 +163,16 @@ MCP. Le dépôt MCP n'a pas BMAD ; son `CLAUDE.md` renvoie vers ces règles.
   fusionnée.
 - **Nettoyage systématique** : une fois la branche fusionnée, on supprime le worktree et la branche locale.
 
+### D-26 · 2026-11-15 · Fusions, critère de stabilité et amont
+
+- **Branche ponctuelle vers `dev`** : fusion locale, puis push (tant que le propriétaire est seul à travailler).
+- **`dev` vers `main`** : par **pull request sur le fork**, jamais directement. Une version est « stable » quand toute la CI
+  est verte, que les scénarios BDD des fonctionnalités touchées passent et que la checklist de sécurité est à jour.
+- Les pull requests visent **explicitement le fork** (`--repo` et `--base`), jamais l'amont (`drovani/dnd-maintainer`)
+  sans accord explicite.
+- **Amont** : les évolutions de l'amont ne sont récupérées que **sur demande** du propriétaire, jamais automatiquement ;
+  l'agent le demande avant chaque synchronisation.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

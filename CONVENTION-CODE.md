@@ -75,7 +75,10 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
 - Commits petits et ciblés, message en anglais à l'impératif (`Add player notes table`), un sujet par commit.
   Le contenu d'un commit correspond à son message.
 - Pas de `--no-verify`, pas de force-push sur `main` ni sur `dev`, pas de commit de `.env*`, `node_modules/`, `dist/`.
-- Pas de pull request vers `drovani/dnd-maintainer` (dépôt amont) sans accord explicite.
+- Pas de pull request vers `drovani/dnd-maintainer` (dépôt amont) sans accord explicite. Les PR visent le fork :
+  `gh pr create --repo ex0nite/dnd-maintainer-app --base <branche>` (sans `--repo`, `gh` cible l'amont).
+- `dev` vers `main` : par pull request sur le fork, une fois la CI verte (D-26). Branche ponctuelle vers `dev` : fusion
+  locale puis push. Synchronisation avec l'amont : seulement sur demande.
 
 ## Dépôt MCP
 
