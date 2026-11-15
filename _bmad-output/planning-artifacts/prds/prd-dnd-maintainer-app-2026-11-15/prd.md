@@ -60,7 +60,7 @@ Parcours courts (`[ASSUMPTION]` : narrés par l'agent à partir des décisions, 
 ## 3. Glossaire
 
 - **MJ** — Maître du jeu. Compte **unique et global** (D-29, D-30) : seul gestionnaire de l'app, il crée les campagnes et
-  les comptes, et est `dm` de toutes les campagnes. `[ASSUMPTION]`
+  les comptes, et est `dm` de toutes les campagnes (confirmé, D-31).
 - **Joueur** — Utilisateur non MJ d'une campagne. Rôle `player`.
 - **Compte** — Identité de connexion, créée par le MJ. Peut être **archivé**.
 - **Campagne** — Espace regroupant personnages, séances et notes. Un compte peut appartenir à plusieurs campagnes.
@@ -104,7 +104,7 @@ Le MJ peut créer un compte joueur avec un mot de passe temporaire, et le rattac
 
 #### FR-2 : Connexion
 
-Un joueur peut se connecter avec son identifiant et son mot de passe.
+Un joueur peut se connecter avec son **pseudo** et son mot de passe (D-31).
 
 **Conséquences (testables) :**
 
@@ -163,7 +163,7 @@ Un compte peut être membre de plusieurs campagnes, avec un rôle `player` ou `d
 **Conséquences (testables) :**
 
 - Un joueur ne voit que les campagnes dont il est membre ; une campagne dont il n'est pas membre est invisible.
-- Le MJ est unique et global : il est `dm` de toutes les campagnes ; un joueur n'est jamais MJ. `[ASSUMPTION]`
+- Le MJ est unique et global : il est `dm` de toutes les campagnes ; un joueur n'est jamais MJ (confirmé, D-31).
 
 #### FR-26 : Créer une campagne (MJ)
 
@@ -471,18 +471,16 @@ Hobby/outil interne : indicateurs simples, vérifiables.
 
 ## 8. Questions ouvertes
 
-À régler avant ou pendant l'architecture. Les trois premières sont bloquantes pour elle.
+À régler avant ou pendant l'architecture. Les points 2 et 3 sont à trancher par elle.
 
-1. **Identifiant de connexion** : l'authentification exige un format d'adresse même sans envoi d'e-mails. Le joueur se
-   connecte-t-il avec un pseudo traduit en adresse interne, ou avec une vraie adresse e-mail ?
+1. ~~Identifiant de connexion~~ **Réglé (D-31)** : un pseudo simple, traduit en interne en adresse fictive ; aucun e-mail réel.
 2. **Composant serveur pour les comptes** (FR-1, FR-4, FR-5) : créer, réinitialiser et archiver un compte demande les
    droits d'administration de l'authentification, qui ne peuvent pas être dans le navigateur. Quel petit composant
    serveur (service derrière le proxy ou fonction base de données) ? Cela peut amender D-20, qui écarte les fonctions
    serveur de la pile allégée.
 3. **Modèle de données des champs privés** (FR-15, FR-20) : tables ou vues séparées. À trancher par l'architecture
    (D-13).
-4. **Premier compte MJ et MJ unique** : le compte MJ est créé hors de l'app lors de la mise en place. Confirmer que le
-   MJ est bien unique et global (`[ASSUMPTION]` du glossaire).
+4. ~~MJ unique et global~~ **Confirmé (D-31)**. Reste : le premier compte MJ est créé hors de l'app lors de la mise en place.
 5. Dépublier un récapitulatif déjà commenté : les commentaires sont-ils conservés ? (supposé oui)
 6. Un joueur archivé : ses contenus (commentaires, notes communes) restent-ils visibles ? (supposé oui)
 7. Seuils de verrouillage et longueur minimale du mot de passe (supposés : 5 échecs en 15 min, 10 caractères).
@@ -491,11 +489,10 @@ Hobby/outil interne : indicateurs simples, vérifiables.
 ## 9. Index des hypothèses
 
 - §2.3 : parcours UJ-1 à UJ-4 narrés par l'agent.
-- Glossaire : MJ unique et global ; notes communes dans une table distincte de `notes` ; réactivation d'un compte.
+- Glossaire : notes communes dans une table distincte de `notes` ; réactivation d'un compte.
 - FR-2 : seuils de blocage (5 échecs en 15 minutes, 15 minutes).
 - FR-3 : longueur minimale 10 caractères ; changement de mot de passe à tout moment.
 - FR-5 : réactivation ; retrait d'une seule campagne ; contenus d'un joueur archivé visibles.
-- FR-6 : MJ unique et global.
 - FR-11 : conservation de l'inventaire et de l'historique de niveaux.
 - FR-13 : le joueur gère le portrait de ses personnages.
 - FR-14 : un personnage archivé reste consultable.

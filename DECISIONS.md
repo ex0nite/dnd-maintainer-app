@@ -197,6 +197,11 @@ comptes par le MJ, `collaboration/` suit D-02 et D-10 à D-18. Elles passent en 
 - Un joueur qui quitte la table : son **compte et ses personnages sont archivés** (conservés, plus actifs).
 - Un **MJ unique** suffit à la gestion des comptes.
 
+### D-31 · 2026-11-15 · Identifiant de connexion et MJ unique
+
+- Les joueurs se connectent avec un **pseudo simple**, traduit en interne en adresse fictive ; aucune adresse e-mail réelle.
+- Le **MJ est unique et global** : seul gestionnaire des comptes et créateur des campagnes, `dm` de toutes les campagnes.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.
