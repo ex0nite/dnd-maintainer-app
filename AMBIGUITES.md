@@ -106,14 +106,3 @@ Les corriger (logger du projet) ou assouplir la règle ?
 ### A-18 · OUVERT · Langues de l'interface
 
 Il n'existe que `src/locales/en`. Faut-il ajouter le français (les joueurs sont francophones) ? L'anglais reste-t-il ?
-
-### A-19 · BLOQUANT · Espace de « notes communes »
-
-Décidé (D-11) : un espace de notes communes existe en plus des notes personnelles. Reste à préciser :
-
-- Qui peut **écrire** : tous les joueurs et le MJ, ou le MJ seul avec lecture pour les joueurs ?
-- Un joueur peut-il modifier ou supprimer la note d'un autre joueur ? Seulement les siennes ?
-- Une seule page partagée par campagne, ou plusieurs notes (titre, catégorie, épinglage comme la table `notes` du MJ) ?
-- Sont-elles distinctes de la table `notes` actuelle du MJ ? (Proposition : oui, nouvelle table, pour ne pas
-  mélanger avec les notes secrètes du MJ.)
-- Édition simultanée : dernier enregistrement gagnant, ou avertissement en cas de conflit ?

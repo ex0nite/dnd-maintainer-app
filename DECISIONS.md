@@ -35,7 +35,14 @@ Les « notes de campagne » d'un joueur sont **personnelles** : un carnet par jo
 
 ### D-11 · 2026-11-15 · Espace de notes communes
 
-Un espace de **notes communes** est ajouté en plus des notes personnelles. Ses droits précis sont à régler (A-19).
+Un espace de **notes communes** est ajouté en plus des notes personnelles (droits : voir D-12).
+
+### D-12 · 2026-11-15 · Droits sur les notes communes
+
+- **Plusieurs notes**, chacune avec un **titre**, une **catégorie** et un **épinglage**.
+- **Joueur** : peut créer une note ; ne peut **ni modifier ni supprimer** la note d'un autre.
+- **MJ** : peut créer, modifier et supprimer **toutes** les notes.
+- **Pas d'édition simultanée** à gérer.
 
 ## Processus
 

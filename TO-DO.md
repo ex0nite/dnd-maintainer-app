@@ -23,7 +23,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 1. Cadrage avec BMAD
 
-- [ ] Trancher les ambiguïtés bloquantes : A-02, A-07, A-10, A-19
+- [ ] Trancher les ambiguïtés bloquantes : A-02, A-07, A-10
 - [ ] Brief produit puis PRD de la « page joueur » (`bmad-product-brief`, `bmad-prd`)
 - [ ] Architecture (auth, RLS, hébergement QNAP) (`bmad-architecture`)
 - [ ] Découpage en epics et stories (`bmad-create-epics-and-stories`)
@@ -49,7 +49,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Route et page joueur (fiche + notes de campagne), masquage de l'interface réservée au MJ
 - [ ] Fiche du joueur : consultation et édition de **son** personnage ⛔ A-06
 - [ ] Notes de campagne personnelles du joueur (D-10) : table, RLS (auteur + MJ en lecture), CRUD, interface
-- [ ] Notes communes (D-11) : table, RLS, CRUD, interface ⛔ A-19
+- [ ] Notes communes (D-11, D-12) : table (titre, catégorie, épinglage, auteur), RLS (lecture : membres ; modification et
+      suppression : auteur ou MJ), CRUD, interface
 - [ ] Consultation des fiches des autres personnages, lecture seule ⛔ A-03
 - [ ] Récapitulatif des séances : consultation par les joueurs ⛔ A-02
 - [ ] Commentaires sur les récapitulatifs : table, RLS, interface ⛔ A-02
