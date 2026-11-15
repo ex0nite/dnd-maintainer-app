@@ -154,6 +154,15 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le
 MCP. Le dépôt MCP n'a pas BMAD ; son `CLAUDE.md` renvoie vers ces règles.
 
+### D-25 · 2026-11-15 · Worktrees et modèle de branches
+
+- **Emplacement** : un dossier commun `.worktrees`, hors des dépôts, avec un sous-dossier `wt-<sujet>` par tâche.
+- **`main`** : branche **stable**. On ne fusionne dessus que si la version de travail est **vérifiée et testée** comme
+  stable.
+- **`dev`** : branche de **travail principale**. Chaque branche ponctuelle (`<type>/<sujet>`) part de `dev` et y est
+  fusionnée.
+- **Nettoyage systématique** : une fois la branche fusionnée, on supprime le worktree et la branche locale.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

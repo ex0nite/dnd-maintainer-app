@@ -7,6 +7,9 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 0. Mise en place (en cours)
 
+- [ ] Créer la branche `dev` sur le fork à partir de `main` (D-25) ; y fusionner `ci-setup` et `chore/bmad-setup`
+- [ ] Déplacer les worktrees existants dans le dossier commun `.worktrees` (D-25)
+
 - [x] CI GitHub Actions du dépôt MCP
 - [x] CI GitHub Actions du dépôt app (branche `ci-setup`, non fusionnée)
 - [x] Installer BMAD dans le dépôt app

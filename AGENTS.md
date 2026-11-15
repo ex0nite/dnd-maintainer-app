@@ -13,9 +13,9 @@ Cadre pour les agents (Claude Code, agents BMAD, sous-agents de revue) qui trava
 
 ## Règles absolues
 
-- **Un worktree par tâche** (`git worktree add ../wt-<sujet> -b <type>/<sujet> origin/main`, dossier frère du
-  checkout principal ; emplacement et nommage provisoires, voir A-15). Jamais de modification dans le checkout
-  principal.
+- **Un worktree par tâche**, dans le dossier commun `.worktrees` (hors des dépôts), un sous-dossier `wt-<sujet>` par
+  tâche : `git worktree add <chemin> -b <type>/<sujet> origin/dev`. Jamais de modification dans le checkout principal.
+  Une fois la branche fusionnée : supprimer le worktree et la branche locale (D-25).
 - **Sécurité d'abord** : l'app sera exposée sur Internet depuis un QNAP. La RLS est la seule barrière côté serveur.
   Pas de nouvelle table sans RLS, pas de policy `USING (true)`, pas de secret commité, pas de `service_role` dans le
   navigateur. Détail dans `CONVENTION-CODE.md`.
@@ -41,7 +41,8 @@ Cadre pour les agents (Claude Code, agents BMAD, sous-agents de revue) qui trava
 4. **Corriger** les constats retenus ; justifier par écrit ceux qu'on écarte.
 5. **Mettre à jour la documentation** : `TO-DO.md` (cocher), `DECISIONS.md` / `AMBIGUITES.md` si concernés,
    `CLAUDE.md` et `docs/` si l'architecture ou les commandes changent.
-6. **Commit** (messages : voir `CONVENTION-CODE.md`). Une tâche terminée = un commit propre dans son worktree.
+6. **Commit** (messages : voir `CONVENTION-CODE.md`), puis fusion dans `origin/dev` ; `main` ne reçoit que du code
+   vérifié et testé comme stable. Une tâche terminée = un commit propre dans son worktree, puis nettoyage.
 
 Une tâche n'est pas « faite » tant que l'étape 3 n'a pas eu lieu et que les contrôles de l'étape 2 ne passent pas.
 Si un contrôle échoue, le dire clairement avec la sortie ; ne pas le contourner.

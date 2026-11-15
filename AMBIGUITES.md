@@ -14,14 +14,9 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-15 · OUVERT · Emplacement des worktrees
-
-Proposition : dossier frère du checkout (`../wt-<sujet>`), branche `<type>/<sujet>` (`feat/`, `fix/`, `chore/`, `docs/`).
-
 ### A-16 · OUVERT · Gestion de la branche `ci-setup` et du fork
 
-`origin` est un fork de `drovani/dnd-maintainer`. Les branches de travail sont-elles fusionnées dans `main` du fork
-(sans PR vers l'amont) ? Quand synchroniser avec `upstream` ?
+`origin` est un fork de `drovani/dnd-maintainer`. D-25 définit `main` (stable) et `dev` (travail). Restent à fixer :les fusions dans `dev` et `main` se font-elles par pull request sur le fork ou par fusion locale ? Quand synchroniseravec `upstream` ? La branche `dev` doit être créée sur le fork (voir `TO-DO.md`).
 
 ### A-17 · OUVERT · Erreurs de lint existantes
 

@@ -67,10 +67,14 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
 
 ## Git
 
-- Un worktree et une branche par tâche : `feat/…`, `fix/…`, `chore/…`, `docs/…` (nommage provisoire, voir A-15).
+- Un worktree et une branche par tâche, dans le dossier commun `.worktrees` : sous-dossier `wt-<sujet>`, branche
+  `<type>/<sujet>` avec `feat/`, `fix/`, `chore/` ou `docs/` (D-25).
+- `main` = stable : on y fusionne seulement une version vérifiée et testée. `dev` = branche de travail principale : les
+  branches ponctuelles partent de `origin/dev` et y sont fusionnées.
+- Après fusion : supprimer le worktree (`git worktree remove`) et la branche locale.
 - Commits petits et ciblés, message en anglais à l'impératif (`Add player notes table`), un sujet par commit.
   Le contenu d'un commit correspond à son message.
-- Pas de `--no-verify`, pas de force-push sur `main`, pas de commit de `.env*`, `node_modules/`, `dist/`.
+- Pas de `--no-verify`, pas de force-push sur `main` ni sur `dev`, pas de commit de `.env*`, `node_modules/`, `dist/`.
 - Pas de pull request vers `drovani/dnd-maintainer` (dépôt amont) sans accord explicite.
 
 ## Dépôt MCP
