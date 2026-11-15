@@ -13,7 +13,7 @@ Format : `D-NN` · date · décision.
 Une page joueur est composée de :
 
 - la **fiche de personnage** ;
-- les **notes de campagne**.
+- les **notes de campagne** : les notes personnelles du joueur (D-10) et l'espace de notes communes (D-11).
 
 ### D-02 · 2026-11-15 · Ce que voit et fait un joueur connecté
 
@@ -27,6 +27,15 @@ Une page joueur est composée de :
 ### D-03 · 2026-11-15 · La triche n'est pas gérée
 
 Les joueurs ont un profil non technique : on ne gère pas la triche.
+
+### D-10 · 2026-11-15 · Notes de campagne personnelles
+
+Les « notes de campagne » d'un joueur sont **personnelles** : un carnet par joueur et par campagne, que le joueur lit et
+édite. Le **MJ peut les lire**. Les autres joueurs ne les voient pas.
+
+### D-11 · 2026-11-15 · Espace de notes communes
+
+Un espace de **notes communes** est ajouté en plus des notes personnelles. Ses droits précis sont à régler (A-19).
 
 ## Processus
 
