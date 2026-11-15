@@ -121,9 +121,19 @@ Les skills BMAD sont installés dans ce dépôt (`dnd-maintainer-app`).
 L'app et le MCP sont destinés à tourner sur le QNAP du réseau personnel, exposé sur Internet via le DynDNS de la
 Livebox.
 
+### D-20 · 2026-11-15 · Supabase auto-hébergé allégé sur le QNAP, avec essai
+
+- Supabase tourne **sur le QNAP**, en version **allégée** (base, authentification, API REST, stockage des portraits,
+  passerelle ; ni studio, ni temps réel, ni edge functions, ni analytics), dans Container Station.
+- **Essai d'abord** : on monte la pile, on mesure la mémoire sous charge. Si elle ne tient pas, repli sur Supabase
+  cloud (nouvelle décision à consigner).
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.
 - Une CI GitHub Actions existe sur chaque dépôt (`.github/workflows/ci.yml`), lancée à chaque push.
 - À la date du 2026-11-15, l'app n'est pas prête à être exposée : toutes les policies RLS sont `USING (true)`
   (voir `docs/security-review-2026-06-01.md`).
+- QNAP cible (relevé du 2026-11-15) : x86_64, processeur Celeron 4 cœurs à 1,6 GHz, environ 4 Go de RAM dont environ
+  2 Go disponibles, Container Station et Docker présents, environ 950 Go libres. `nginx-proxy-manager` et d'autres
+  services (Plex, SyncThing, ClamAV) y tournent déjà.

@@ -14,12 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-10 · BLOQUANT · Supabase sur le QNAP ou hébergé
-
-Supabase auto-hébergé = une dizaine de conteneurs (Postgres, Auth, REST, Storage, Kong…) à faire tourner et à mettre à
-jour sur le QNAP. Alternative : Supabase cloud avec seulement le front sur le QNAP. À vérifier : modèle exact et
-architecture CPU du QNAP, RAM disponible, Container Station disponible. Je n'ai pas ces informations.
-
 ### A-11 · OUVERT · Exposition réseau
 
 - HTTPS et certificat : reverse proxy avec Let's Encrypt (nom DynDNS de la Livebox) ?

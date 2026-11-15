@@ -23,7 +23,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 1. Cadrage avec BMAD
 
-- [ ] Trancher les ambiguïtés bloquantes : A-10
+- [x] Trancher les ambiguïtés bloquantes (toutes réglées)
 - [ ] Brief produit puis PRD de la « page joueur » (`bmad-product-brief`, `bmad-prd`)
 - [ ] Architecture (auth, RLS, hébergement QNAP) (`bmad-architecture`)
 - [ ] Découpage en epics et stories (`bmad-create-epics-and-stories`)
@@ -62,7 +62,10 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 4. Déploiement sur le QNAP
 
-- [ ] Choisir l'architecture : Supabase auto-hébergé ou cloud ⛔ A-10
+- [ ] Essai : monter Supabase allégé sur le QNAP (D-20), mesurer la RAM sous charge, libérer de la mémoire si besoin
+      (arrêt de services inutiles) ; décider du repli cloud si cela ne tient pas
+- [ ] Réutiliser `nginx-proxy-manager` (déjà installé) pour HTTPS ; rediriger **uniquement** 80/443 depuis la Livebox,
+      jamais NFS, SMB, portmap ni SSH
 - [ ] Reverse proxy, HTTPS, DynDNS, redirections de ports ⛔ A-11
 - [ ] Ne pas exposer Studio, Postgres ni Kong ; `service_role` jamais dans le front ; firmware du QNAP à jour
 - [ ] En-têtes de sécurité et CSP, réécriture SPA
