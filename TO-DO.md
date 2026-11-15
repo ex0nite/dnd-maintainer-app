@@ -63,7 +63,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Commentaires sur les récapitulatifs (D-14) : table, RLS (lecture : membres ; modification et suppression : auteur ou MJ), interface
 - [ ] Français de l'interface (D-28) : `src/locales/fr/common.json` (730 clés) calqué sur `en`, sélecteur de langue
       mémorisé, contrôle automatique des clés manquantes ; textes de la page joueur dans les deux langues
-- [ ] Réécrire les specs BDD `@draft` selon D-02 ⛔ A-09
+- [ ] Réécrire les specs BDD `@draft` (D-29) : `auth/` et `admin/` fusionnés dans la gestion des comptes par le MJ,
+      `collaboration/` selon D-02 et D-10 à D-18 ; scénarios en `@future`, au fil de chaque fonctionnalité
 
 ## 4. Déploiement sur le QNAP
 

@@ -185,6 +185,12 @@ assouplie. Fait dans `dev` (commit `3d842a1`).
 - Les **données de règles** (`gamedata`) restent **en anglais** dans un premier temps ; leur traduction se fera par lots
   plus tard (les termes français suivent la version française officielle, à faire relire).
 
+### D-29 · 2026-11-15 · Pas de rôle administrateur distinct du MJ
+
+Il n'y a **qu'un seul rôle de gestion** : le MJ. Il crée les comptes, les désactive et réinitialise les mots de passe
+(D-19). Les specs BDD `@draft` sont réécrites en conséquence : `auth/` et `admin/` fusionnent dans la gestion des
+comptes par le MJ, `collaboration/` suit D-02 et D-10 à D-18. Elles passent en `@future` au fil du développement.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

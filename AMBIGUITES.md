@@ -5,9 +5,6 @@ en a une, une **proposition** (non validée). Une fois tranché : déplacer en `
 
 Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-DO.md`).
 
-## Authentification
+## Points ouverts
 
-### A-09 · OUVERT · Les specs BDD `@draft` (`features/auth`, `admin`, `collaboration`)
-
-Elles décrivent un autre modèle (mot de passe, rôle admin, 403 plutôt que 404, joueurs limités à leurs seuls
-personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct du MJ ?
+Aucun à ce jour. Toute nouvelle ambiguïté découverte au cours du développement est ajoutée ici.
