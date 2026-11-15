@@ -70,10 +70,12 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Ne pas exposer Studio, Postgres ni Kong ; `service_role` jamais dans le front ; firmware du QNAP à jour
 - [ ] En-têtes de sécurité et CSP, réécriture SPA
 - [ ] Limites de débit et verrouillage progressif sur la connexion (pas d'e-mails, D-19)
-- [ ] Sauvegardes base + bucket et test de restauration ⛔ A-13
 - [ ] Revue de sécurité finale avant ouverture sur Internet (checklist de `docs/` à créer)
 
 ## Plus tard
+
+- [ ] Sauvegardes de la base et des portraits, avec test de restauration (D-23 : écartées pour l'instant ; piste :
+      export quotidien chiffré vers un autre volume puis copie vers un second QNAP)
 
 - [ ] Installer BMAD dans le dépôt MCP ⛔ A-14
 - [ ] Création de personnage par les joueurs (D-17) : RLS `INSERT` (créateur = propriétaire, campagne dont il est membre), `DELETE` réservé au MJ

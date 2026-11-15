@@ -143,6 +143,12 @@ Livebox.
 - Il utilise un **compte MJ dédié** (D-19), jamais la clé d'administration de la base ; identifiants en variables
   d'environnement, jamais dans un dépôt.
 
+### D-23 · 2026-11-15 · Pas de sauvegarde pour le moment
+
+Aucune sauvegarde n'est mise en place pour l'instant. **Risque assumé par le propriétaire** : seule la redondance RAID 5 du
+QNAP protège les données (panne d'un disque), pas une suppression, une corruption ou la perte du QNAP. À réexaminer :
+la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

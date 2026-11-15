@@ -14,12 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-13 · OUVERT · Sauvegardes
-
-Fréquence, destination hors QNAP, restauration testée. Base **et** bucket de portraits.
-
-## Outillage et organisation
-
 ### A-14 · OUVERT · BMAD sur le dépôt MCP ?
 
 BMAD est installé dans l'app (D-07). Faut-il l'installer aussi dans `dnd-maintainer-mcp`, ou piloter les deux depuis
