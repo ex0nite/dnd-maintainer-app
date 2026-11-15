@@ -14,13 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-11 · OUVERT · Exposition réseau
-
-- HTTPS et certificat : reverse proxy avec Let's Encrypt (nom DynDNS de la Livebox) ?
-- Quels ports sont redirigés vers le QNAP ? La Livebox est-elle derrière un CGNAT ?
-- Un accès joueur doit-il passer par un VPN plutôt que par Internet ? (exclu par D-09 tant que non confirmé.)
-- Protection contre les abus : limitation de débit sur le proxy, fail2ban ou équivalent.
-
 ### A-12 · OUVERT · Le MCP sur le QNAP
 
 Le serveur MCP actuel est en **stdio**, lancé en local par le client du MJ. « Tourner sur le QNAP » implique-t-il :

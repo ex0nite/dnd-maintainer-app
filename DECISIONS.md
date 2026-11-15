@@ -128,6 +128,14 @@ Livebox.
 - **Essai d'abord** : on monte la pile, on mesure la mémoire sous charge. Si elle ne tient pas, repli sur Supabase
   cloud (nouvelle décision à consigner).
 
+### D-21 · 2026-11-15 · Exposition sur Internet
+
+- L'app est servie par un **sous-domaine dédié** (nom DynDNS du propriétaire, non reproduit ici : dépôt public),
+  derrière `nginx-proxy-manager` déjà installé sur le QNAP, avec certificat Let's Encrypt.
+- Seuls les ports **80 et 443** sont redirigés depuis la box vers le QNAP. Jamais l'administration du proxy, QTS, SSH,
+  NFS, SMB ni portmap.
+- Pas de VPN : l'accès se fait par Internet (D-09).
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.
@@ -137,3 +145,5 @@ Livebox.
 - QNAP cible (relevé du 2026-11-15) : x86_64, processeur Celeron 4 cœurs à 1,6 GHz, environ 4 Go de RAM dont environ
   2 Go disponibles, Container Station et Docker présents, environ 950 Go libres. `nginx-proxy-manager` et d'autres
   services (Plex, SyncThing, ClamAV) y tournent déjà.
+- Réseau (relevé du 2026-11-15) : les ports 80 et 443 sont déjà redirigés vers le QNAP ; l'adresse IP publique vue du
+  QNAP correspond à l'adresse DNS (pas de CGNAT) ; les sous-domaines du nom DynDNS résolvent tous (wildcard).

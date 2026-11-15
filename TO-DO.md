@@ -64,7 +64,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 - [ ] Essai : monter Supabase allégé sur le QNAP (D-20), mesurer la RAM sous charge, libérer de la mémoire si besoin
       (arrêt de services inutiles) ; décider du repli cloud si cela ne tient pas
-- [ ] Réutiliser `nginx-proxy-manager` (déjà installé) pour HTTPS ; rediriger **uniquement** 80/443 depuis la Livebox,
+- [ ] Hôte dédié dans `nginx-proxy-manager` (D-21) : certificat Let's Encrypt, HTTP vers HTTPS, HSTS, CSP et en-têtes de
+      sécurité, limitation de débit sur la connexion. Rediriger **uniquement** 80/443 depuis la Livebox (déjà fait),
       jamais NFS, SMB, portmap ni SSH
 - [ ] Reverse proxy, HTTPS, DynDNS, redirections de ports ⛔ A-11
 - [ ] Ne pas exposer Studio, Postgres ni Kong ; `service_role` jamais dans le front ; firmware du QNAP à jour
