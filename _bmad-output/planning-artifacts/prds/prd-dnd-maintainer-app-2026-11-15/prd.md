@@ -13,7 +13,7 @@ _Titre de travail._
 
 Ce PRD décrit l'ouverture de `dnd-maintainer-app` aux joueurs. Il s'adresse au propriétaire (MJ), aux agents de
 développement BMAD et aux flux en aval (architecture, epics et stories). Il s'appuie sur le brief
-(`_bmad-output/planning-artifacts/briefs/`) et sur `DECISIONS.md` (D-01 à D-30), dont il ne remet rien en cause.
+(`_bmad-output/planning-artifacts/briefs/`) et sur `DECISIONS.md` (D-01 à D-32), dont il ne remet rien en cause.
 Le vocabulaire est ancré dans le **Glossaire** (§3) ; les exigences fonctionnelles (FR) sont numérotées globalement ;
 les hypothèses sont étiquetées `[ASSUMPTION]` en ligne et indexées en §9. Le « comment » technique vit dans
 l'architecture, pas ici.
@@ -422,6 +422,36 @@ campagne, gestion des comptes).
 - Les pages réservées au MJ renvoient un refus clair à un joueur.
 - Le masquage est une commodité : la protection reste celle de FR-7.
 
+### 4.11 Contenu riche du MJ (après le MVP)
+
+**Description :** Le MJ écrit les récapitulatifs et les règles de la table avec un sous-ensemble de la syntaxe
+Homebrewery ; l'app en fait un rendu de type livre (D-32). Les joueurs lisent ; ils gardent le texte brut pour leurs
+notes et commentaires. Livré **après** le MVP : les récapitulatifs y sortent d'abord en texte brut.
+
+#### FR-28 : Récapitulatifs en texte enrichi
+
+Le MJ peut écrire un récapitulatif en syntaxe Homebrewery (sous-ensemble) ; les membres le lisent avec un rendu de type
+livre, sur téléphone comme à l'impression.
+
+**Conséquences (testables) :**
+
+- Aucun script, style en ligne, formulaire, image externe ni attribut d'événement n'est rendu, quel que soit le contenu
+  écrit, y compris par le MCP ou par requête directe.
+- Un brew collé est simplifié à l'affichage : positions libres, couleurs, CSS du brew et diagrammes disparaissent ; le
+  texte, les titres, les tableaux et les encadrés restent.
+- Les images sont envoyées dans l'app (bucket de campagne privé) ; les membres de la campagne seule les voient.
+- Le rendu reste lisible à 360 px sans défilement horizontal, sur les trois thèmes en clair et sombre.
+
+#### FR-29 : Bibliothèque « Règles de la table »
+
+Le MJ tient, par campagne, une bibliothèque de mécaniques homebrew (sorts, objets, sous-classes, règles) en texte
+enrichi, publiée ou non ; les membres lisent ce qui est publié.
+
+**Conséquences (testables) :**
+
+- Un élément non publié est invisible d'un joueur, même par requête directe.
+- Seul le MJ écrit, modifie ou supprime ; un joueur qui le tente reçoit un refus.
+
 ## 5. Non-objectifs
 
 - Gestion de la **triche** : un joueur peut modifier librement les valeurs de son propre personnage (D-03).
@@ -442,6 +472,7 @@ l'existant et MCP (FR-27), interface réservée au MJ (FR-25).
 
 ### 6.2 Hors périmètre du MVP
 
+- Contenu riche du MJ (FR-28, FR-29) : livré juste après le MVP (D-32).
 - Traduction des données de règles.
 - Sauvegardes (`[NOTE FOR PM]` : à réexaminer avant d'accueillir des données irremplaçables).
 - Notifications (aucun envoi d'e-mails).
@@ -484,7 +515,7 @@ Hobby/outil interne : indicateurs simples, vérifiables.
 5. Dépublier un récapitulatif déjà commenté : les commentaires sont-ils conservés ? (supposé oui)
 6. Un joueur archivé : ses contenus (commentaires, notes communes) restent-ils visibles ? (supposé oui)
 7. Seuils de verrouillage et longueur minimale du mot de passe (supposés : 5 échecs en 15 min, 10 caractères).
-8. Format des notes et commentaires : texte brut ou Markdown nettoyé, et taille maximale (voir NFR-10).
+8. ~~Format des notes et commentaires~~ **Réglé (D-32)** : texte brut pour les joueurs ; texte enrichi (syntaxe Homebrewery, sous-ensemble) pour le MJ seul, taille bornée (NFR-10).
 
 9. **Verrouillage par pseudo** (FR-2) : non natif dans l'authentification. Disponible seulement si la version installée
    offre un hook de vérification de mot de passe ; sinon seule la limitation par adresse s'applique et FR-2 est amendé.

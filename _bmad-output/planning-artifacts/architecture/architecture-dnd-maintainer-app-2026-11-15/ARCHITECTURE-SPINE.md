@@ -38,6 +38,7 @@ binds:
     NFR-5b,
     NFR-7,
     NFR-10,
+    FR-24,
   ]
 sources: ['prd-dnd-maintainer-app-2026-11-15/prd.md', 'DECISIONS.md D-01 à D-31']
 companions: []
@@ -260,6 +261,84 @@ backstory, notes)`, `session_dm(session_id, notes, loot, experience_awarded)`, `
   **même code** que `account-admin` (AD-2). Aucune route de l'application ne crée un MJ ; l'index unique d'AD-3 empêche
   un second `dm`.
 
+### AD-16 — Le contenu riche est une source Markdown unique, rendue et assainie à la lecture
+
+- **Binds:** FR-20, FR-21, NFR-1, NFR-10, AD-1, AD-5
+- **Prevents:** un HTML stocké jugé sûr parce qu'un client l'a « assaini » ; deux représentations divergentes ; un
+  secret du MJ caché dans un commentaire lisible par les joueurs ; un texte démesuré qui fige un téléphone.
+- **Rule:** la base ne stocke **jamais** de HTML de contenu. Une colonne de contenu riche est accompagnée d'une colonne
+  `*_format` (`plain` | `brew`, défaut `plain`) et d'un `CHECK` de longueur (30 000 caractères). `plain` s'affiche en
+  texte échappé ; `brew` passe par `renderBrew()` puis l'assainisseur d'AD-17, dans le navigateur du lecteur. La
+  validation à l'écriture (éditeur, MCP) est un confort, jamais une frontière. Tout ce qui est dans la source est réputé
+  lisible par les lecteurs de la ligne ; les secrets restent dans les tables privées d'AD-5. Seul le MJ écrit du
+  `brew` ; les contenus des joueurs restent en texte brut (NFR-10, D-32). [ADOPTED : D-32]
+
+### AD-17 — Assainissement par liste blanche, un seul point d'injection
+
+- **Binds:** NFR-1, NFR-10, AD-9
+- **Prevents:** un XSS via Markdown pur, `{{...}}` ou HTML brut ; une fuite par `url()` ou image externe ; un faux écran
+  de connexion en `position: fixed` ; un formulaire de hameçonnage ; un `id` qui écrase une variable globale.
+- **Rule:** `src/lib/brew/sanitize.ts` est la seule configuration DOMPurify (version épinglée), et `<BrewView>` le seul
+  composant autorisé à utiliser `dangerouslySetInnerHTML` (règle ESLint `react/no-danger` avec cette seule exception).
+  Aucun `style`, `<style>`, `data-*`, SVG, MathML, `form`, `iframe`, `object`. Classes filtrées sur `BREW_CLASSES`.
+  `id` préfixés `brew-`. `href` limité à `https:`, `http:` et `#`, liens externes en `rel="noopener noreferrer
+nofollow"`. `src` limité à `asset:<uuid>`, résolu après assainissement (AD-20). La configuration par défaut de
+  DOMPurify est **insuffisante** (elle garde `style`, `form` et les images externes). Un corpus de payloads tourne en
+  CI ; toute évolution de la liste blanche passe par revue de sécurité.
+
+### AD-18 — Moteur : dialecte HB-lite sur une instance `marked` isolée, derrière une seule interface
+
+- **Binds:** FR-20, FR-21, NFR-2, NFR-7
+- **Prevents:** une configuration globale de `marked` contaminée ; une dépendance lourde et non testée dans le bundle des
+  joueurs ; un moteur impossible à remplacer.
+- **Rule:** `src/lib/brew/render.ts` exporte `renderBrew(source): string` (HTML non sûr, à passer par AD-17) et
+  `validateBrew(source): Problem[]`. Implémentation : `new Marked()` local (jamais l'instance globale),
+  `marked-extended-tables`, `marked-definition-lists`, extension maison `{{classe[,classe]` / `}}` (blocs et spans) qui
+  ne retient que des noms de classes ; `\page` et `\column` deviennent des séparateurs. Chargement différé
+  (`import()`) sur les pages qui affichent du `brew`. Le texte est borné (AD-16) car un texte piégé coûte un temps
+  quadratique. Un corpus de brews de référence (fournis par le MJ, hors dépôt s'ils contiennent du contenu tiers) mesure
+  la compatibilité ; **repli** : `marked-hbfm` en version exacte, Web Worker avec délai de 2 s et repli texte, même
+  liste blanche, même CSS, même modèle de données, nouvelle mesure du bundle.
+
+### AD-19 — Style « livre » : feuille maison portée par `.brew`, polices libres auto-hébergées
+
+- **Binds:** FR-24, NFR-8, NFR-6
+- **Prevents:** un mode sombre ou un thème cassé par des couleurs en dur ; une police à la licence douteuse dans un dépôt
+  public ; un défilement horizontal à 360 px.
+- **Rule:** `src/styles/brew.css`, dans une cascade layer, portée par `.brew`, n'utilise que les variables des thèmes
+  existants, testée sur 3 thèmes × clair/sombre (contraste AA). Mode **lecture** (une colonne) par défaut ; mode **page**
+  (colonnes, habillage parchemin) à partir de 768 px et en `@media print`. Tableaux larges défilants dans leur
+  conteneur. Polices sous licence OFL via `@fontsource`, déclarées dans `THIRD-PARTY-NOTICES.md` ; aucune police, image
+  ni feuille de Homebrewery copiée.
+
+### AD-20 — Images de contenu : bucket privé de campagne, référence par identifiant
+
+- **Binds:** FR-20, FR-21, NFR-1, AD-8
+- **Prevents:** le pistage des joueurs par une image externe ; un SVG actif ; la lecture d'images d'une autre campagne.
+- **Rule:** bucket privé `campaign-assets` ; objets `<campaign_id>/<uuid>.<ext>` ; PNG, JPEG, WebP, 2 Mo au plus ; lecture
+  par les membres de la campagne (premier segment, garde contre un segment non UUID) et le MJ ; écriture et suppression
+  MJ seul ; policy restrictive d'AD-4 et tests pgTAP d'AD-14. Le Markdown référence `asset:<uuid>` ; `<BrewView>`
+  obtient des URL signées courtes par un hook (AD-12). Aucune URL d'image externe n'est rendue. [ADOPTED : D-32]
+
+### AD-21 — Valeurs de la CSP
+
+- **Binds:** NFR-5, NFR-10, AD-9
+- **Prevents:** une CSP déclarée mais affaiblie par `unsafe-inline` ; une CSP qui casse l'app au déploiement.
+- **Rule:** `default-src 'self'; script-src 'self'; style-src 'self' <empreinte de la feuille injectée par sonner>;
+img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none';
+form-action 'self'; frame-ancestors 'none'`. Le script de thème de `index.html` passe dans un fichier statique (ou une
+  empreinte). Mise en service en `Report-Only` sur l'environnement d'essai, puis en mode bloquant ; l'empreinte est
+  revérifiée à chaque mise à jour de `sonner`.
+
+### AD-22 — Bibliothèque « Règles de la table »
+
+- **Binds:** AD-1, AD-4, AD-14, AD-16
+- **Prevents:** un homebrew non publié lu par un joueur ; une écriture joueur dans les règles.
+- **Rule:** `campaign_rules(id, campaign_id, kind, title, body, body_format, published, sort_order, created_at,
+updated_at)`, `kind` ∈ {`spell`, `item`, `subclass`, `rule`, `other`}. Lecture : MJ, et membres si `published`.
+  Écriture : MJ seul. RLS activée dans la migration qui crée la table, droits explicites à `authenticated`, matrice
+  pgTAP complète.
+
 ## Consistency Conventions
 
 | Concern                 | Convention                                                                                                                |
@@ -271,22 +350,25 @@ backstory, notes)`, `session_dm(session_id, notes, loot, experience_awarded)`, `
 
 ## Stack
 
-| Name                         | Version                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- |
-| React / react-dom            | 19.2                                                                                               |
-| Vite                         | 8                                                                                                  |
-| TypeScript                   | 6                                                                                                  |
-| react-router-dom             | 7.17                                                                                               |
-| @supabase/supabase-js        | 2.107                                                                                              |
-| @tanstack/react-query        | 5.101                                                                                              |
-| Zod                          | 4.4                                                                                                |
-| Tailwind CSS                 | 4.3                                                                                                |
-| i18next / react-i18next      | 26.3 / 17.0                                                                                        |
-| Vitest / Cucumber            | 4.1 / 13                                                                                           |
-| Postgres                     | 17                                                                                                 |
-| Node (composant de comptes)  | 24 (selon `.nvmrc`)                                                                                |
-| Supabase auto-hébergé        | images à épingler à l'installation, d'après le `docker-compose.yml` officiel de la version retenue |
-| Supabase CLI (tests SQL, CI) | 2.x (la configuration actuelle n'est pas valide en 3.x)                                            |
+| Name                                                      | Version                                                                                            |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| React / react-dom                                         | 19.2                                                                                               |
+| Vite                                                      | 8                                                                                                  |
+| TypeScript                                                | 6                                                                                                  |
+| react-router-dom                                          | 7.17                                                                                               |
+| @supabase/supabase-js                                     | 2.107                                                                                              |
+| @tanstack/react-query                                     | 5.101                                                                                              |
+| Zod                                                       | 4.4                                                                                                |
+| marked / marked-extended-tables / marked-definition-lists | à épingler (instance isolée, AD-18)                                                                |
+| DOMPurify                                                 | à épingler (AD-17)                                                                                 |
+| @fontsource (polices OFL)                                 | à choisir (AD-19)                                                                                  |
+| Tailwind CSS                                              | 4.3                                                                                                |
+| i18next / react-i18next                                   | 26.3 / 17.0                                                                                        |
+| Vitest / Cucumber                                         | 4.1 / 13                                                                                           |
+| Postgres                                                  | 17                                                                                                 |
+| Node (composant de comptes)                               | 24 (selon `.nvmrc`)                                                                                |
+| Supabase auto-hébergé                                     | images à épingler à l'installation, d'après le `docker-compose.yml` officiel de la version retenue |
+| Supabase CLI (tests SQL, CI)                              | 2.x (la configuration actuelle n'est pas valide en 3.x)                                            |
 
 ## Structural Seed
 
@@ -345,17 +427,19 @@ dnd-maintainer-app/
 
 ## Capability → Architecture Map
 
-| Capability / Area                             | Lives in                                                | Governed by             |
-| --------------------------------------------- | ------------------------------------------------------- | ----------------------- |
-| Comptes, connexion, archivage (FR-1 à FR-5)   | `services/account-admin/`, `profiles`, authentification | AD-2, AD-3, AD-4, AD-11 |
-| Appartenance, campagnes (FR-6, FR-26)         | `campaign_members`, `campaigns`                         | AD-3, AD-4              |
-| Contrôle d'accès base (FR-7)                  | policies et fonctions SQL                               | AD-1, AD-4, AD-14       |
-| Fiche joueur et autres fiches (FR-8 à FR-15)  | `characters`, `character_private`, stockage             | AD-5, AD-6, AD-8        |
-| Notes et commentaires (FR-16 à FR-19, FR-22)  | `notes_personal`, `notes_shared`, `session_comments`    | AD-7                    |
-| Récapitulatifs (FR-20, FR-21)                 | `sessions`, `session_dm`                                | AD-5, AD-7              |
-| Interface (FR-23 à FR-25)                     | `src/`                                                  | AD-12                   |
-| Migration et MCP (FR-27)                      | migrations, `dnd-maintainer-mcp`                        | AD-13, AD-15            |
-| Exposition, ressources (NFR-4, NFR-5, NFR-5b) | proxy, Docker                                           | AD-9, AD-10             |
+| Capability / Area                                   | Lives in                                                                    | Governed by             |
+| --------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------- |
+| Comptes, connexion, archivage (FR-1 à FR-5)         | `services/account-admin/`, `profiles`, authentification                     | AD-2, AD-3, AD-4, AD-11 |
+| Appartenance, campagnes (FR-6, FR-26)               | `campaign_members`, `campaigns`                                             | AD-3, AD-4              |
+| Contrôle d'accès base (FR-7)                        | policies et fonctions SQL                                                   | AD-1, AD-4, AD-14       |
+| Fiche joueur et autres fiches (FR-8 à FR-15)        | `characters`, `character_private`, stockage                                 | AD-5, AD-6, AD-8        |
+| Notes et commentaires (FR-16 à FR-19, FR-22)        | `notes_personal`, `notes_shared`, `session_comments`                        | AD-7                    |
+| Récapitulatifs (FR-20, FR-21)                       | `sessions`, `session_dm`                                                    | AD-5, AD-7              |
+| Interface (FR-23 à FR-25)                           | `src/`                                                                      | AD-12                   |
+| Migration et MCP (FR-27)                            | migrations, `dnd-maintainer-mcp`                                            | AD-13, AD-15            |
+| Exposition, ressources (NFR-4, NFR-5, NFR-5b)       | proxy, Docker                                                               | AD-9, AD-10             |
+| Contenu riche du MJ, rendu « livre » (FR-28, FR-29) | `src/lib/brew/`, `src/styles/brew.css`, `campaign_rules`, `campaign-assets` | AD-16 à AD-20, AD-22    |
+| CSP (NFR-5, NFR-10)                                 | en-têtes du proxy, `index.html`                                             | AD-21                   |
 
 ## Deferred
 
@@ -363,5 +447,6 @@ dnd-maintainer-app/
 - **Transformation d'images (imgproxy)** : non démarrée ; les portraits ne sont pas redimensionnés côté serveur.
 - **Sauvegardes** : écartées (D-23) ; à réexaminer avant d'accueillir des données irremplaçables.
 - **Observabilité** : journaux des conteneurs seulement ; pas de métriques en v1.
+- **CSS libre d'un brew** : refusé (D-32) ; si un jour voulu, iframe `srcdoc` sandboxé avec sa propre CSP, décision séparée.
 - **Validation serveur du moteur de règles** : hors périmètre (D-03).
 - **Traduction des données de règles** : lots ultérieurs (D-28).
