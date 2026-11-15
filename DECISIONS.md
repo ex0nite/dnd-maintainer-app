@@ -173,6 +173,11 @@ MCP. Le dépôt MCP n'a pas BMAD ; son `CLAUDE.md` renvoie vers ces règles.
 - **Amont** : les évolutions de l'amont ne sont récupérées que **sur demande** du propriétaire, jamais automatiquement ;
   l'agent le demande avant chaque synchronisation.
 
+### D-27 · 2026-11-15 · Erreurs de lint : passer par le logger du projet
+
+Les appels `console.warn` qui violaient `no-console` passent par `getLogger` (`src/lib/logger.ts`) ; la règle n'est pas
+assouplie. Fait dans `dev` (commit `3d842a1`).
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

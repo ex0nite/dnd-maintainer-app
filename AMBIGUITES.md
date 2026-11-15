@@ -14,11 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-17 · OUVERT · Erreurs de lint existantes
-
-6 erreurs `no-console` bloquent le lint (`LevelUpDialog.tsx`, `pdf-field-map.ts`, `use-all-choice-grants.ts`).
-Les corriger (logger du projet) ou assouplir la règle ?
-
 ### A-18 · OUVERT · Langues de l'interface
 
 Il n'existe que `src/locales/en`. Faut-il ajouter le français (les joueurs sont francophones) ? L'anglais reste-t-il ?

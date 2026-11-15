@@ -17,8 +17,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [x] Créer `TO-DO.md`, `CONVENTION-CODE.md`, `AGENTS.md`, `DECISIONS.md`, `AMBIGUITES.md`
 - [ ] Vérifier le résultat de la CI app après ajout des variables `VITE_SUPABASE_*` (commit `94075ee`)
 - [ ] Fusionner `ci-setup` et `chore/bmad-setup` dans `main` du fork
-- [ ] Corriger les 6 erreurs de lint `no-console` ⛔ A-17
-- [ ] Vérifier `npm run format:check` sur Linux (le local Windows signale 305 fichiers à cause des CRLF) ; ajouter un
+- [x] Corriger les 6 erreurs de lint `no-console` (D-27, dans `dev`)
+- [ ] Corriger le format (4 fichiers signalés par la CI) et les 42 scénarios BDD qui échouent encore en CI ; vérifier `npm run format:check` sur Linux (le local Windows signale 305 fichiers à cause des CRLF) ; ajouter un
       `.gitattributes` (`* text=auto eol=lf`) si besoin
 - [ ] Corriger la doc : `CLAUDE.md` dit « RLS sans policy » alors que les 7 policies sont `USING (true)` (et 4 policies
       publiques sur `storage.objects`), et « ESLint 9 » alors que `package.json` est en ESLint 10 ; le nom de
