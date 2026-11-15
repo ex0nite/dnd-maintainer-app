@@ -486,6 +486,9 @@ Hobby/outil interne : indicateurs simples, vérifiables.
 7. Seuils de verrouillage et longueur minimale du mot de passe (supposés : 5 échecs en 15 min, 10 caractères).
 8. Format des notes et commentaires : texte brut ou Markdown nettoyé, et taille maximale (voir NFR-10).
 
+9. **Verrouillage par pseudo** (FR-2) : non natif dans l'authentification. Disponible seulement si la version installée
+   offre un hook de vérification de mot de passe ; sinon seule la limitation par adresse s'applique et FR-2 est amendé.
+
 ## 9. Index des hypothèses
 
 - §2.3 : parcours UJ-1 à UJ-4 narrés par l'agent.
