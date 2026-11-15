@@ -32,9 +32,10 @@ Cadre pour les agents (Claude Code, agents BMAD, sous-agents de revue) qui trava
 ## Cycle d'une fonctionnalité (D-04)
 
 1. **Développer** dans le worktree, avec ses tests (unitaires, BDD, pgTAP si RLS).
-2. **Contrôles locaux** : `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:bdd`, `npm run format:check`, `npm run build` (et `npm run supabase:types` après une
-   migration). Tant que A-17 est ouvert, le lint échoue sur 6 erreurs existantes : signaler lesquelles sont
-   pré-existantes, ne pas les masquer.
+2. **Contrôles locaux** : `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:bdd`, `npm run format:check`,
+   `npm run build` (et `npm run supabase:types` après une
+   migration). Si un contrôle échoue pour une raison qui existait avant la tâche (format et BDD en CI à ce jour, voir
+   `TO-DO.md`), le signaler explicitement, ne pas le masquer.
 3. **Revue de code** par un **sous-agent dédié, modèle Opus, effort medium**, qui ne reçoit que le diff et les fichiers
    concernés, pas la conclusion de l'auteur. Il vérifie : exactitude, sécurité (accès, injection, secrets, RLS),
    conventions, tests, régression. Il rend des constats classés par gravité, chacun avec un scénario d'échec concret.
