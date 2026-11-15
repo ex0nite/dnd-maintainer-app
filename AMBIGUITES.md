@@ -11,5 +11,3 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 Elles décrivent un autre modèle (mot de passe, rôle admin, 403 plutôt que 404, joueurs limités à leurs seuls
 personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct du MJ ?
-
-## Déploiement (QNAP + DynDNS Livebox)
