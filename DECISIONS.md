@@ -191,6 +191,12 @@ Il n'y a **qu'un seul rôle de gestion** : le MJ. Il crée les comptes, les dés
 (D-19). Les specs BDD `@draft` sont réécrites en conséquence : `auth/` et `admin/` fusionnent dans la gestion des
 comptes par le MJ, `collaboration/` suit D-02 et D-10 à D-18. Elles passent en `@future` au fil du développement.
 
+### D-30 · 2026-11-15 · Taille de la table et départ d'un joueur
+
+- La table compte **5 joueurs** (dimensionnement de référence).
+- Un joueur qui quitte la table : son **compte et ses personnages sont archivés** (conservés, plus actifs).
+- Un **MJ unique** suffit à la gestion des comptes.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

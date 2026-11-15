@@ -1,5 +1,5 @@
 ---
-title: "Product Brief : Page joueur de dnd-maintainer-app"
+title: 'Product Brief : Page joueur de dnd-maintainer-app'
 status: draft
 created: 2026-11-15
 updated: 2026-11-15
@@ -56,7 +56,7 @@ Honnêtement, il n'y a pas de rempart technique : des outils de fiches D&D en li
 
 - **Le MJ** (utilisateur principal, seul gestionnaire) : crée les comptes, assigne les personnages, publie les
   récapitulatifs, garde l'accès complet. Il pilote aussi l'app depuis un serveur MCP local.
-- **Les joueurs** : profil **non technique**. Ils veulent retrouver leur fiche et leurs notes sans aide, depuis
+- **Les joueurs** (5 à ce jour) : profil **non technique**. Ils veulent retrouver leur fiche et leurs notes sans aide, depuis
   [ASSUMPTION] un téléphone ou un ordinateur, en français.
 
 ## Critères de réussite
@@ -67,6 +67,7 @@ Honnêtement, il n'y a pas de rempart technique : des outils de fiches D&D en li
 - Aucun joueur ne peut lire ou modifier les données d'un autre joueur ni les notes du MJ, **même par une requête
   directe à l'API** (vérifié par des tests automatiques de la base).
 - Le MJ crée un compte joueur et lui assigne un personnage en quelques minutes.
+- Le MJ archive le compte et les personnages d'un joueur qui quitte la table, sans rien perdre.
 - L'app tient sur le QNAP (mémoire mesurée) et la CI reste verte.
 
 ## Périmètre
@@ -97,8 +98,14 @@ Si la table l'adopte, l'app devient son espace de campagne partagé : fiches, no
 de règles traduites en français. D'autres tables pourraient l'utiliser, le modèle (un compte, plusieurs campagnes)
 le permet déjà.
 
+## Réponses du propriétaire (2026-11-15)
+
+- **Taille de la table : 5 joueurs.** Le dimensionnement du QNAP se fait pour ce volume (au plus quelques connexions
+  simultanées), ce qui rend l'essai de charge plus favorable.
+- **Un joueur qui quitte la table** : son compte et ses personnages sont **archivés** (conservés, plus actifs).
+- **Un MJ unique** suffit pour la gestion des comptes.
+
 ## Questions ouvertes
 
-- [ASSUMPTION] Nombre de joueurs et d'appareils utilisés : le dimensionnement du QNAP en dépend.
-- Que se passe-t-il quand un joueur quitte la table ? (désactivation du compte, devenir de ses personnages)
-- Un MJ unique suffit-il à la gestion des comptes à long terme ?
+- [ASSUMPTION] Appareils utilisés par les joueurs (téléphone ou ordinateur) : à confirmer.
+- Un joueur archivé peut-il être réactivé par le MJ ? (supposé oui, puisque rien n'est supprimé)

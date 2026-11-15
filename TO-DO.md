@@ -41,6 +41,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
       fonctions d'aide `SECURITY DEFINER`
 - [ ] Rattacher les données existantes à un compte MJ (backfill) avant de fermer les policies
 - [ ] Authentification dans le front : `AuthProvider`, page de connexion, garde de routes, déconnexion (D-19 : connexion e-mail + mot de passe, changement du mot de passe temporaire à la première connexion)
+- [ ] Archivage du compte et des personnages d'un joueur qui quitte la table (D-30), avec réactivation possible par le MJ
 - [ ] Création des comptes joueurs par le MJ (D-19) : action réservée au MJ côté serveur (jamais `service_role` dans le
       navigateur), mot de passe temporaire, rattachement à la campagne, assignation de personnages, réinitialisation
 - [ ] RLS stricte : supprimer les 7 policies `USING (true)`, retirer les droits de `anon`, policies par table selon D-02
