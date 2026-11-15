@@ -7,18 +7,6 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Authentification
 
-### A-07 · BLOQUANT · Mode de connexion des joueurs
-
-Le rapport de sécurité du 2026-06-01 et les specs BDD `features/auth/*` supposent un mot de passe. Une analyse
-recommande un lien magique par e-mail, ce qui exige un envoi d'e-mails fiable (SMTP) depuis le QNAP ou un service tiers.
-Options : lien magique · mot de passe · OAuth Discord/Google · lien d'invitation + mot de passe.
-Les joueurs étant non techniques, un lien magique ou OAuth évite les mots de passe oubliés.
-
-### A-08 · OUVERT · Comment un joueur rejoint une campagne
-
-Lien d'invitation à usage unique généré par le MJ (proposé), ou comptes créés à la main par le MJ ?
-L'inscription libre est-elle exclue ?
-
 ### A-09 · OUVERT · Les specs BDD `@draft` (`features/auth`, `admin`, `collaboration`)
 
 Elles décrivent un autre modèle (mot de passe, rôle admin, 403 plutôt que 404, joueurs limités à leurs seuls

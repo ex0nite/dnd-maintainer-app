@@ -78,6 +78,12 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 Un joueur peut **repasser sa fiche finalisée (`ready`) en brouillon (`draft`)** pour la reconstruire, sans passer par
 le MJ (bouton « Reconstruire ce personnage », avec avertissement).
 
+### D-19 · 2026-11-15 · Connexion : comptes créés par le MJ, mot de passe temporaire
+
+- Les comptes joueurs sont **créés par le MJ**, avec un **mot de passe temporaire**. Pas d'inscription libre, pas de lien
+  magique, pas de connexion par un tiers (Discord, Google), pas d'envoi d'e-mails.
+- Le MJ rattache le compte à sa campagne et lui assigne ses personnages.
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité

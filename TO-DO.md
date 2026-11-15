@@ -23,7 +23,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 1. Cadrage avec BMAD
 
-- [ ] Trancher les ambiguïtés bloquantes : A-07, A-10
+- [ ] Trancher les ambiguïtés bloquantes : A-10
 - [ ] Brief produit puis PRD de la « page joueur » (`bmad-product-brief`, `bmad-prd`)
 - [ ] Architecture (auth, RLS, hébergement QNAP) (`bmad-architecture`)
 - [ ] Découpage en epics et stories (`bmad-create-epics-and-stories`)
@@ -32,14 +32,15 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 ## 2. Identité et accès (fondation, avant toute exposition)
 
 - [ ] Migration : `profiles`, `campaign_members` (rôle `dm`/`player`), `characters.owner_user_id` (D-16 : plusieurs personnages par joueur et par campagne),
-      `campaign_invites`, fonctions d'aide `SECURITY DEFINER` ⛔ A-08
+      fonctions d'aide `SECURITY DEFINER`
 - [ ] Rattacher les données existantes à un compte MJ (backfill) avant de fermer les policies
-- [ ] Authentification dans le front : `AuthProvider`, page de connexion, garde de routes, déconnexion ⛔ A-07
-- [ ] Flux d'invitation (génération du lien par le MJ, acceptation, assignation d'un personnage) ⛔ A-08
+- [ ] Authentification dans le front : `AuthProvider`, page de connexion, garde de routes, déconnexion (D-19 : connexion e-mail + mot de passe, changement du mot de passe temporaire à la première connexion)
+- [ ] Création des comptes joueurs par le MJ (D-19) : action réservée au MJ côté serveur (jamais `service_role` dans le
+      navigateur), mot de passe temporaire, rattachement à la campagne, assignation de personnages, réinitialisation
 - [ ] RLS stricte : supprimer les 7 policies `USING (true)`, retirer les droits de `anon`, policies par table selon D-02
 - [ ] Sécuriser le stockage des portraits (policies `storage.objects`), valider le schéma des URL de portrait
 - [ ] Retirer `GRANT EXECUTE` à `anon` sur `last_activity_at` (migration 20260607000000)
-- [ ] Durcir la config Auth (confirmation e-mail, longueur de mot de passe) ⛔ A-07
+- [ ] Durcir la config Auth : inscription libre désactivée, longueur de mot de passe, limites de débit sur la connexion
 - [ ] Déplacer `campaigns.dm_notes` dans une table réservée au MJ
 - [ ] Tests pgTAP des policies (`supabase/tests/`), job CI `supabase test db`
 - [ ] Adapter le MCP : connexion avec un compte MJ dédié, `create_campaign` ; adapter smoke test et CI ⛔ A-12
@@ -65,7 +66,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Reverse proxy, HTTPS, DynDNS, redirections de ports ⛔ A-11
 - [ ] Ne pas exposer Studio, Postgres ni Kong ; `service_role` jamais dans le front ; firmware du QNAP à jour
 - [ ] En-têtes de sécurité et CSP, réécriture SPA
-- [ ] Envoi d'e-mails (si lien magique) et limites de débit Auth ⛔ A-07
+- [ ] Limites de débit et verrouillage progressif sur la connexion (pas d'e-mails, D-19)
 - [ ] Sauvegardes base + bucket et test de restauration ⛔ A-13
 - [ ] Revue de sécurité finale avant ouverture sur Internet (checklist de `docs/` à créer)
 
