@@ -73,6 +73,11 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 - Seul le **MJ supprime** un personnage ; le MJ peut le désactiver pour le mettre de côté.
 - Le **joueur monte lui-même** son personnage de niveau (sans validation du MJ).
 
+### D-18 · 2026-11-15 · Reconstruire une fiche finalisée
+
+Un joueur peut **repasser sa fiche finalisée (`ready`) en brouillon (`draft`)** pour la reconstruire, sans passer par
+le MJ (bouton « Reconstruire ce personnage », avec avertissement).
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité

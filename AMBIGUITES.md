@@ -7,11 +7,6 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Produit
 
-### A-06 · OUVERT · Modifications que le joueur peut faire après finalisation
-
-Avec D-03 (pas de gestion de la triche) et D-17 (le joueur monte lui-même son personnage de niveau), il reste à
-confirmer : un joueur peut-il repasser une fiche finalisée (`ready`) en brouillon (`draft`) pour la reconstruire ?
-
 ## Authentification
 
 ### A-07 · BLOQUANT · Mode de connexion des joueurs

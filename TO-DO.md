@@ -47,7 +47,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 ## 3. Page joueur
 
 - [ ] Route et page joueur (fiche + notes de campagne), masquage de l'interface réservée au MJ
-- [ ] Fiche du joueur : consultation et édition de **son** personnage ⛔ A-06
+- [ ] Fiche du joueur : consultation et édition de **son** personnage, bouton « Reconstruire ce personnage » (D-18) :
+      repasser `ready` en `draft` en conservant inventaire et historique de niveaux
 - [ ] Notes de campagne personnelles du joueur (D-10) : table, RLS (auteur + MJ en lecture), CRUD, interface
 - [ ] Notes communes (D-11, D-12) : table (titre, catégorie, épinglage, auteur), RLS (lecture : membres ; modification et
       suppression : auteur ou MJ), CRUD, interface
