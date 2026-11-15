@@ -7,6 +7,11 @@ on:
 permissions:
   contents: read
 
+# Tests mock Supabase; src/lib/supabase.ts only needs the variables to be defined
+env:
+  VITE_SUPABASE_URL: http://127.0.0.1:54321
+  VITE_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -26,8 +31,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
+        if: success() || failure()
         run: npm run lint
       - name: Format
+        if: success() || failure()
         run: npm run format:check
 
   test:
