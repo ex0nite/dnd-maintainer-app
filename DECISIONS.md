@@ -136,6 +136,13 @@ Livebox.
   NFS, SMB ni portmap.
 - Pas de VPN : l'accès se fait par Internet (D-09).
 
+### D-22 · 2026-11-15 · Le MCP reste sur le poste du MJ
+
+- Le serveur MCP **reste local** (stdio), sur le poste du MJ, et se connecte à la base du QNAP. Il n'est **pas** exposé sur
+  le réseau ni sur Internet. Il précise D-09 pour le MCP.
+- Il utilise un **compte MJ dédié** (D-19), jamais la clé d'administration de la base ; identifiants en variables
+  d'environnement, jamais dans un dépôt.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.

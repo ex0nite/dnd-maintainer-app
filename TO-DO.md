@@ -43,7 +43,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [ ] Durcir la config Auth : inscription libre désactivée, longueur de mot de passe, limites de débit sur la connexion
 - [ ] Déplacer `campaigns.dm_notes` dans une table réservée au MJ
 - [ ] Tests pgTAP des policies (`supabase/tests/`), job CI `supabase test db`
-- [ ] Adapter le MCP : connexion avec un compte MJ dédié, `create_campaign` ; adapter smoke test et CI ⛔ A-12
+- [ ] Adapter le MCP : connexion avec un compte MJ dédié, `create_campaign` ; adapter smoke test et CI (D-22)
 
 ## 3. Page joueur
 

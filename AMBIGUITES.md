@@ -14,13 +14,6 @@ personnages). Les réécrire selon D-02 ? Garder un rôle « admin » distinct d
 
 ## Déploiement (QNAP + DynDNS Livebox)
 
-### A-12 · OUVERT · Le MCP sur le QNAP
-
-Le serveur MCP actuel est en **stdio**, lancé en local par le client du MJ. « Tourner sur le QNAP » implique-t-il :
-un transport HTTP exposé (alors il faut une authentification solide, il écrit dans toute la base) ou seulement qu'il
-se connecte à la base du QNAP depuis le poste du MJ ?
-Proposition : il reste local, connecté à la base du QNAP avec un compte MJ dédié, jamais exposé sur Internet.
-
 ### A-13 · OUVERT · Sauvegardes
 
 Fréquence, destination hors QNAP, restauration testée. Base **et** bucket de portraits.
