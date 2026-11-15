@@ -7,14 +7,6 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Produit
 
-### A-02 · BLOQUANT · Commentaires sur les récapitulatifs de séance
-
-- Quel texte constitue le « récapitulatif » : `sessions.summary` (le MJ décide de le publier ?) ou une autre colonne ?
-  `sessions.notes` et `sessions.loot` restent-ils réservés au MJ ?
-- Un récapitulatif est-il visible dès sa saisie, ou seulement quand le MJ le « publie » ?
-- Un joueur peut-il modifier ou supprimer **son** commentaire ? Le MJ peut-il modérer ?
-- Les commentaires sont-ils visibles de tous les joueurs de la campagne ?
-
 ### A-03 · OUVERT · Étendue de la « consultation » des fiches des autres personnages
 
 Fiche complète (inventaire, historique, notes du personnage) ou vue réduite (nom, classe, niveau, portrait, PV…) ?

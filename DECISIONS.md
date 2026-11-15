@@ -44,6 +44,15 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 - **MJ** : peut créer, modifier et supprimer **toutes** les notes.
 - **Pas d'édition simultanée** à gérer.
 
+### D-14 · 2026-11-15 · Récapitulatifs de séance et commentaires
+
+- Le récapitulatif d'une séance est `sessions.summary`. Les autres données de séance (notes, butin, expérience) restent
+  réservées au MJ.
+- Un récapitulatif est visible des joueurs **seulement quand le MJ le publie** (indicateur de publication par séance).
+- Les **commentaires** sur un récapitulatif sont visibles de **tous les membres de la campagne**.
+- Un joueur peut **modifier et supprimer ses propres commentaires**. Le MJ peut **modifier et supprimer tous** les
+  commentaires.
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité
