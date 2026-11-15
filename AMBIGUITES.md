@@ -7,12 +7,6 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Produit
 
-### A-03 · OUVERT · Étendue de la « consultation » des fiches des autres personnages
-
-Fiche complète (inventaire, historique, notes du personnage) ou vue réduite (nom, classe, niveau, portrait, PV…) ?
-Les PNJ sont-ils exclus ? Le champ `characters.notes` est-il une note du MJ sur le personnage ?
-Proposition : fiche complète des **PJ** en lecture seule, PNJ cachés, `characters.notes` caché.
-
 ### A-04 · OUVERT · Cardinalité joueur / personnage / campagne
 
 Un joueur a-t-il un seul personnage par campagne, ou plusieurs ? Peut-il être dans plusieurs campagnes ?

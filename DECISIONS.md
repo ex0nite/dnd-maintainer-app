@@ -53,6 +53,13 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
 - Un joueur peut **modifier et supprimer ses propres commentaires**. Le MJ peut **modifier et supprimer tous** les
   commentaires.
 
+### D-15 · 2026-11-15 · Consultation des fiches des autres personnages
+
+- Un joueur consulte, en lecture seule, la fiche des **autres personnages joueurs** de sa campagne.
+- Les champs `backstory` (historique) et `notes` d'une fiche sont visibles **uniquement du propriétaire et du MJ**.
+  Tout le reste de la fiche est visible.
+- Les fiches de **PNJ** ne sont **pas visibles** des joueurs.
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité
