@@ -60,6 +60,12 @@ Un espace de **notes communes** est ajouté en plus des notes personnelles (droi
   Tout le reste de la fiche est visible.
 - Les fiches de **PNJ** ne sont **pas visibles** des joueurs.
 
+### D-16 · 2026-11-15 · Joueurs, personnages et campagnes
+
+- Un joueur peut avoir **plusieurs personnages** dans une même campagne (le MJ peut désactiver les anciens).
+- Un compte peut appartenir à **plusieurs campagnes** ; un joueur ne voit que celles dont il est membre.
+- Le **MJ peut réassigner** un personnage à un autre joueur.
+
 ## Processus
 
 ### D-04 · 2026-11-15 · Cycle de développement d'une fonctionnalité

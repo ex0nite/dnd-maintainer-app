@@ -31,8 +31,8 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 
 ## 2. Identité et accès (fondation, avant toute exposition)
 
-- [ ] Migration : `profiles`, `campaign_members` (rôle `dm`/`player`), `characters.owner_user_id`,
-      `campaign_invites`, fonctions d'aide `SECURITY DEFINER` ⛔ A-04, A-08
+- [ ] Migration : `profiles`, `campaign_members` (rôle `dm`/`player`), `characters.owner_user_id` (D-16 : plusieurs personnages par joueur et par campagne),
+      `campaign_invites`, fonctions d'aide `SECURITY DEFINER` ⛔ A-08
 - [ ] Rattacher les données existantes à un compte MJ (backfill) avant de fermer les policies
 - [ ] Authentification dans le front : `AuthProvider`, page de connexion, garde de routes, déconnexion ⛔ A-07
 - [ ] Flux d'invitation (génération du lien par le MJ, acceptation, assignation d'un personnage) ⛔ A-08

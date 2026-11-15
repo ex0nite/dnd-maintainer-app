@@ -7,13 +7,6 @@ Statut : `OUVERT` · `BLOQUANT` (empêche de démarrer la tâche liée dans `TO-
 
 ## Produit
 
-### A-04 · OUVERT · Cardinalité joueur / personnage / campagne
-
-Un joueur a-t-il un seul personnage par campagne, ou plusieurs ? Peut-il être dans plusieurs campagnes ?
-Un personnage peut-il changer de joueur ?
-
-### A-05 · OUVERT · Qui crée les personnages ?
-
 Le joueur peut-il créer sa fiche lui-même (builder `/campaign/:id/character/new`) ou le MJ crée-t-il les fiches et les
 assigne-t-il ? Le joueur peut-il supprimer son personnage ?
 Proposition : le MJ crée et assigne ; le joueur édite. Création par le joueur plus tard.
