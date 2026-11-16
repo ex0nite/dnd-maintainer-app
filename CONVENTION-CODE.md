@@ -15,7 +15,7 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
 
 - Prettier (config dans `.prettierrc.json` : guillemets simples, point-virgule, 120 colonnes) et ESLint se
   lancent automatiquement à l'écriture (hook `.claude/settings.json`). Ne pas formater à la main.
-- Fins de ligne : LF, imposé par `.gitattributes` (`* text=auto eol=lf`). Après un clone sous Windows, `git rm --cached -r . && git reset --hard` normalise la copie de travail.
+- Fins de ligne : LF, imposé par `.gitattributes` (`* text=auto eol=lf`). Dans une copie de travail existante, après avoir commité ou mis de côté son travail : `git rm --cached -r -q . && git reset --hard` (un nouveau clone est déjà en LF).
 - Documentation et fichiers de pilotage (`*.md` racine) en **français** ; code, identifiants, commits et messages
   d'erreur techniques en **anglais**.
 
@@ -68,6 +68,7 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
   les aides du schéma `tests` (`tests.set_identity('dm')`, `tests.uid(...)`, `tests.rows_affected(...)`) ; chaque fichier de
   test est une transaction terminée par `rollback`. Une écriture bloquée par la RLS touche **0 ligne sans erreur** : on
   compte les lignes (`tests.rows_affected`) ; un `INSERT` ou `WITH CHECK` refusé lève `42501`.
+- Règles des tests SQL : uniquement sur une base **locale ou de CI** (`test:sql` impose `--local` ; jamais `--linked` ni `--db-url`). Les aides sont retirées en fin de série (`99999-teardown-test-helpers.sql`) ; avant un `supabase db diff`, `supabase db reset` garantit une base propre. Les sept identités ne diffèrent que par leur UUID : leur statut réel (archivé, mot de passe temporaire, MJ) vient des lignes `profiles` et `campaign_members` insérées par chaque test, et `set_identity` exige une transaction (`begin;` ... `rollback;`). Chaque test d'accès porte un témoin positif (l'opération autorisée réussit) pour qu'un `42501` dû à un `GRANT` manquant ne passe pas pour un refus de la RLS.
 - Avant la revue : `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:bdd`, `npm run test:sql` (si SQL touché), `npm run format:check`, `npm run build` passent ; `npm run supabase:types` après une migration.
 
 ## Git

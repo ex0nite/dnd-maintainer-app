@@ -1,9 +1,11 @@
--- Proves the test harness itself (story 1.1, AD-14): identities, the "blocked
--- write touches 0 rows" rule and the "refused INSERT raises 42501" rule.
+-- Proves the test harness itself (story 1.1, AD-14): the seven identities, the
+-- "blocked write touches 0 rows" rule, and the two "raises 42501" rules (refused
+-- INSERT and refused UPDATE ... WITH CHECK), each with a positive control so a
+-- 42501 caused by a missing GRANT cannot pass for a RLS refusal.
 -- Uses a throwaway table inside the transaction; nothing is left behind.
 begin;
 
-select plan(9);
+select plan(18);
 
 create table public.harness_probe (
   id    int primary key,
@@ -24,6 +26,8 @@ create policy probe_delete on public.harness_probe
 insert into public.harness_probe values (1, tests.uid('owner'));
 
 -- identities ---------------------------------------------------------------
+-- They differ only by their UUID: their real status (archived, temporary
+-- password, DM...) comes from the `profiles` rows each test inserts for them.
 select tests.set_identity('owner');
 select is(auth.uid(), tests.uid('owner'), 'owner identity sets auth.uid()');
 select is(current_user::text, 'authenticated', 'owner runs as role authenticated');
@@ -46,6 +50,27 @@ select throws_ok(
   'an unknown identity is rejected'
 );
 
+select is(
+  (select count(distinct tests.uid(i)) from unnest(array[
+    'owner', 'other_player', 'archived', 'temp_password', 'non_member', 'dm'
+  ]) as i),
+  6::bigint,
+  'the six authenticated identities have distinct non-null UUIDs'
+);
+
+select tests.set_identity('owner');
+select is(auth.uid(), tests.uid('owner'), 'set_identity owner');
+select tests.set_identity('other_player');
+select is(auth.uid(), tests.uid('other_player'), 'set_identity other_player');
+select tests.set_identity('archived');
+select is(auth.uid(), tests.uid('archived'), 'set_identity archived');
+select tests.set_identity('temp_password');
+select is(auth.uid(), tests.uid('temp_password'), 'set_identity temp_password');
+select tests.set_identity('non_member');
+select is(auth.uid(), tests.uid('non_member'), 'set_identity non_member');
+select tests.set_identity('dm');
+select is(auth.uid(), tests.uid('dm'), 'set_identity dm');
+
 -- blocked writes touch 0 rows, without error ------------------------------------
 select tests.set_identity('other_player');
 select is(
@@ -67,12 +92,25 @@ select throws_ok(
   'INSERT refused by WITH CHECK raises 42501'
 );
 
--- the owner can write ------------------------------------------------------------------
+-- the owner can write (positive controls) ----------------------------------------
 select tests.set_identity('owner');
+select is(
+  tests.rows_affected(format('insert into public.harness_probe values (3, %L)', tests.uid('owner'))),
+  1::bigint,
+  'the owner INSERT touches 1 row'
+);
 select is(
   tests.rows_affected($q$update public.harness_probe set owner = owner where id = 1$q$),
   1::bigint,
   'the owner UPDATE touches 1 row'
+);
+
+-- refused UPDATE ... WITH CHECK raises 42501 ---------------------------------------
+select throws_ok(
+  format('update public.harness_probe set owner = %L where id = 1', tests.uid('other_player')),
+  '42501',
+  null,
+  'UPDATE whose new row fails WITH CHECK raises 42501'
 );
 
 select * from finish();

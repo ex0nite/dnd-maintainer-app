@@ -17,7 +17,7 @@
     "coverage:matrix": "COVERAGE_WRITE=1 vitest run src/lib/sources/coverage-matrix.test.ts",
     "uat:checklist": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx scripts/gen-uat-checklist.ts",
     "supabase:types": "npx supabase gen types typescript --local > src/types/supabase.ts",
-    "test:sql": "npx supabase test db",
+    "test:sql": "npx supabase test db --local",
     "supabase:reset": "npx supabase stop --no-backup && npx supabase start && npm run supabase:types",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

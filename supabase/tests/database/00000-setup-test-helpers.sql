@@ -2,8 +2,17 @@
 --
 -- This file has no BEGIN/ROLLBACK on purpose: it is a setup file, run first
 -- (alphabetical order) by `supabase test db`, and what it creates persists for
--- the test files that follow. It only ever touches the local/CI test database,
--- never a migration, so nothing here reaches production.
+-- the test files that follow. `99999-teardown-test-helpers.sql` drops it all at
+-- the end of the run, so the database is left clean.
+--
+-- RUN IT ONLY AGAINST A LOCAL OR CI TEST DATABASE (`supabase test db --local`).
+-- The helpers run dynamic SQL and can switch role: never use `--linked` or
+-- `--db-url` against a real project, and never expose the `tests` schema through
+-- the API. They live outside `supabase/migrations/`, so they are never deployed.
+--
+-- `set_identity` uses `set local`: call it inside a transaction (`begin;` ...
+-- `rollback;`). Outside one the identity vanishes after the statement and the
+-- test would silently run as the privileged owner.
 --
 -- The seven identities every table must be tested against (AD-14):
 --   anon, owner, other_player, archived, temp_password, non_member, dm

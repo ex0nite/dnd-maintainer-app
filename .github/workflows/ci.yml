@@ -92,4 +92,4 @@ jobs:
       - name: Start local Supabase (database only)
         run: npx supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Run pgTAP tests
-        run: npx supabase test db
+        run: npx supabase test db --local
