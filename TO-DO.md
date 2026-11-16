@@ -78,8 +78,8 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Reprises transverses
 
-- [ ] Export SQL (`src/lib/export-sql.ts`) : depuis la story 1.4 `campaigns.dm_notes` n'y figure plus ; ajouter `campaign_dm`
-      (conflit `DO UPDATE`, car le trigger crée déjà la ligne vide), puis `character_private` et `session_dm` en story 1.5
+- [ ] Export SQL (`src/lib/export-sql.ts`) : `campaign_dm` y figure depuis la story 1.4 (conflit `DO UPDATE`, car le trigger
+      crée déjà la ligne vide) ; ajouter `character_private` et `session_dm` en story 1.5
 - [ ] Tant que les stories 1.6 et 1.7 ne sont pas faites, `characters`, `sessions`, `encounters`, `notes` et le stockage
       restent ouverts à `anon` : ne pas exposer l'app avant la 1.7
 

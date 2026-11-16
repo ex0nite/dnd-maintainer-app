@@ -15,9 +15,6 @@
 -- never callable by anon.
 -- ---------------------------------------------------------------------------
 
--- is_member() reads campaign_members, created just below: do not validate SQL bodies until then.
-set local check_function_bodies = off;
-
 create or replace function public.is_dm()
 returns boolean
 language sql
@@ -30,6 +27,7 @@ as $$
     where p.user_id = (select auth.uid())
       and p.role = 'dm'
       and p.archived_at is null
+      and p.must_change_password = false
   )
 $$;
 
@@ -48,20 +46,6 @@ as $$
   )
 $$;
 
-create or replace function public.is_member(campaign_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1 from public.campaign_members m
-    where m.campaign_id = is_member.campaign_id
-      and m.user_id = (select auth.uid())
-  )
-$$;
-
 -- ---------------------------------------------------------------------------
 -- campaign_members: who plays in which campaign. Written by the DM only.
 -- ---------------------------------------------------------------------------
@@ -76,6 +60,20 @@ create table public.campaign_members (
 create index campaign_members_user_id_idx on public.campaign_members (user_id);
 
 alter table public.campaign_members enable row level security;
+
+create or replace function public.is_member(campaign_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.campaign_members m
+    where m.campaign_id = is_member.campaign_id
+      and m.user_id = (select auth.uid())
+  )
+$$;
 
 -- ---------------------------------------------------------------------------
 -- campaign_dm: DM-only campaign notes, moved out of `campaigns`.
@@ -107,6 +105,10 @@ begin
 end
 $$;
 
+create trigger campaign_dm_updated_at
+  before update on public.campaign_dm
+  for each row execute function public.update_updated_at_column();
+
 create trigger campaigns_create_dm_row
   after insert on public.campaigns
   for each row execute function public.create_campaign_dm_row();
@@ -116,7 +118,7 @@ create trigger campaigns_create_dm_row
 -- ---------------------------------------------------------------------------
 
 revoke all on public.campaign_members, public.campaign_dm from public, anon, authenticated;
-revoke all on public.campaigns from public, anon;
+revoke all on public.campaigns from public, anon, authenticated;
 grant select, insert, update, delete on public.campaign_members, public.campaign_dm to authenticated;
 grant select, insert, update, delete on public.campaigns to authenticated;
 
@@ -124,6 +126,9 @@ revoke execute on function public.is_dm(), public.is_active_user(), public.is_me
   from public, anon;
 grant execute on function public.is_dm(), public.is_active_user(), public.is_member(uuid)
   to authenticated;
+-- Story 1.2's computed field was granted to anon; anon has nothing on campaigns any more.
+revoke execute on function public.last_activity_at(public.campaigns) from public, anon;
+
 -- The trigger function is only ever fired by the trigger.
 revoke execute on function public.create_campaign_dm_row() from public, anon, authenticated;
 

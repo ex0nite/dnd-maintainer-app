@@ -82,6 +82,69 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_dm: {
+        Row: {
+          campaign_id: string
+          dm_notes: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          dm_notes?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          dm_notes?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      campaign_members: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          must_change_password: boolean
+          pseudo: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          must_change_password?: boolean
+          pseudo: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          must_change_password?: boolean
+          pseudo?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       character_build_levels: {
         Row: {
           ability_method: string | null

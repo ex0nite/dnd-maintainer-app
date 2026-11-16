@@ -2,6 +2,7 @@ export type ColumnType = 'text' | 'jsonb' | 'text[]' | 'boolean' | 'integer' | '
 
 export type ExportData = Readonly<{
   campaigns: readonly Record<string, unknown>[];
+  campaign_dm: readonly Record<string, unknown>[];
   characters: readonly Record<string, unknown>[];
   sessions: readonly Record<string, unknown>[];
   encounters: readonly Record<string, unknown>[];
@@ -28,6 +29,11 @@ const TABLE_COLUMNS = {
     { name: 'image_url', type: 'text' },
     { name: 'allowed_source_books', type: 'text[]' },
     { name: 'created_at', type: 'timestamptz' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
+  campaign_dm: [
+    { name: 'campaign_id', type: 'uuid' },
+    { name: 'dm_notes', type: 'text' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
   characters: [
@@ -148,6 +154,7 @@ type TableName = keyof typeof TABLE_COLUMNS;
 // Order matters: parent tables before children for foreign key constraints
 const TABLE_ORDER: readonly TableName[] = [
   'campaigns',
+  'campaign_dm',
   'characters',
   'sessions',
   'encounters',
@@ -158,7 +165,14 @@ const TABLE_ORDER: readonly TableName[] = [
 
 // Tables with non-standard unique constraints for ON CONFLICT
 const CONFLICT_TARGETS: Partial<Record<TableName, string>> = {
+  campaign_dm: '(campaign_id)',
   character_build_levels: '(character_id, sequence)',
+};
+
+// Rows a trigger creates on its own (the empty `campaign_dm` row of a new campaign) must not hide the
+// exported content: on conflict these columns are overwritten instead of skipped.
+const UPDATE_ON_CONFLICT: Partial<Record<TableName, readonly string[]>> = {
+  campaign_dm: ['dm_notes'],
 };
 
 export function escapeSqlString(value: string): string {
@@ -211,18 +225,23 @@ export function buildInsertStatement(
   table: string,
   row: Record<string, unknown>,
   columns: readonly ColumnDef[],
-  conflictTarget: string = '(id)'
+  conflictTarget: string = '(id)',
+  updateColumns: readonly string[] = []
 ): string {
   const colNames = columns.map((c) => c.name).join(', ');
+  const conflictAction =
+    updateColumns.length > 0
+      ? `DO UPDATE SET ${updateColumns.map((c) => `${c} = EXCLUDED.${c}`).join(', ')}`
+      : 'DO NOTHING';
   const values = columns.map((c) => escapeSqlValue(row[c.name], c.type)).join(', ');
-  return `INSERT INTO ${table} (${colNames}) VALUES (${values}) ON CONFLICT ${conflictTarget} DO NOTHING;`;
+  return `INSERT INTO ${table} (${colNames}) VALUES (${values}) ON CONFLICT ${conflictTarget} ${conflictAction};`;
 }
 
 export function generateSeedSql(data: ExportData): string {
   const lines: string[] = [
     '-- D&D Campaign Manager - Seed Data Export',
     `-- Generated at: ${new Date().toISOString()}`,
-    '-- WARNING: This file uses ON CONFLICT (id) DO NOTHING. It is designed for',
+    '-- WARNING: This file uses ON CONFLICT ... DO NOTHING (DM notes: DO UPDATE). It is designed for',
     '-- restoring into a clean database. Partial restores into an existing database',
     '-- may fail if parent records (campaigns) are missing.',
     '',
@@ -242,7 +261,9 @@ export function generateSeedSql(data: ExportData): string {
     const conflictTarget = CONFLICT_TARGETS[table] ?? '(id)';
     lines.push(`-- ${table}`);
     for (const row of rows) {
-      lines.push(buildInsertStatement(table, row as Record<string, unknown>, columns, conflictTarget));
+      lines.push(
+        buildInsertStatement(table, row as Record<string, unknown>, columns, conflictTarget, UPDATE_ON_CONFLICT[table])
+      );
     }
     lines.push('');
   }

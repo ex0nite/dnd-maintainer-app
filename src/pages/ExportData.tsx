@@ -62,10 +62,12 @@ export default function ExportData() {
       const ids = Array.from(selectedIds);
 
       // Full export — all columns needed; select('*') is intentional
-      const { campaignsRes, charactersRes, sessionsRes, encountersRes, notesRes } = await fetchExportTables(ids);
+      const { campaignsRes, campaignDmRes, charactersRes, sessionsRes, encountersRes, notesRes } =
+        await fetchExportTables(ids);
 
       const namedResults = [
         { table: 'campaigns', ...campaignsRes },
+        { table: 'campaign_dm', ...campaignDmRes },
         { table: 'characters', ...charactersRes },
         { table: 'sessions', ...sessionsRes },
         { table: 'encounters', ...encountersRes },
@@ -110,6 +112,7 @@ export default function ExportData() {
 
       const data: ExportDataType = {
         campaigns: campaignsRes.data,
+        campaign_dm: campaignDmRes.data ?? [],
         characters: charactersRes.data ?? [],
         sessions: sessionsRes.data ?? [],
         encounters: encountersRes.data ?? [],
