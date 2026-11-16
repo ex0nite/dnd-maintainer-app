@@ -86,6 +86,20 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
 - `dev` vers `main` : par pull request sur le fork, une fois la CI verte (D-26). Branche ponctuelle vers `dev` : fusion
   locale puis push. Synchronisation avec l'amont : seulement sur demande.
 
+## Accès aux données (SQL)
+
+- Chaque table de `public` et `storage.objects` porte `access_active` : policy `AS RESTRICTIVE FOR ALL TO authenticated
+USING (is_dm() OR is_active_user())` (AD-4). Les droits des rôles sont retirés explicitement (`REVOKE ... FROM public,
+anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
+- Les fonctions d'aide (`is_dm`, `is_active_user`, `is_member`, `owns_character`) sont `SECURITY DEFINER STABLE`,
+  `SET search_path = ''`, `REVOKE EXECUTE ... FROM public, anon`. Une fonction SQL qui lit une table créée plus bas dans
+  la même migration demande `set local check_function_bodies = off`.
+- Une donnée réservée au MJ ne reste jamais dans une table lisible par les membres : table à part (`campaign_dm`, puis
+  `session_dm`, `character_private`), créée par un trigger `AFTER INSERT`.
+- Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
+  MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
+  par `WITH CHECK` ou par absence de droit lève `42501`.
+
 ## Dépôt MCP
 
 - Le MCP importe le moteur de règles de l'app (`@/lib/...`) mais ne la modifie pas. Toute évolution de la façon dont

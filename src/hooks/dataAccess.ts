@@ -38,8 +38,10 @@ export async function fetchSessionCounts(): Promise<Record<string, number>> {
 }
 
 export async function updateCampaignTheme(campaignId: string, theme: ThemeId | null): Promise<void> {
-  const { error } = await supabase.from('campaigns').update({ theme }).eq('id', campaignId);
+  // A write refused by row-level security affects 0 rows without an error: count them.
+  const { data, error } = await supabase.from('campaigns').update({ theme }).eq('id', campaignId).select('id');
   if (error) throw error;
+  if (data.length !== 1) throw new Error('Campaign theme was not updated (0 rows affected)');
 }
 
 // --- Sessions ---
@@ -154,14 +156,15 @@ export async function deleteNoteById(noteId: string): Promise<void> {
 
 // Full export: all columns needed, select('*') is intentional.
 export async function fetchExportTables(ids: string[]) {
-  const [campaignsRes, charactersRes, sessionsRes, encountersRes, notesRes] = await Promise.all([
+  const [campaignsRes, campaignDmRes, charactersRes, sessionsRes, encountersRes, notesRes] = await Promise.all([
     supabase.from('campaigns').select('*').in('id', ids),
+    supabase.from('campaign_dm').select('*').in('campaign_id', ids),
     supabase.from('characters').select('*').in('campaign_id', ids),
     supabase.from('sessions').select('*').in('campaign_id', ids),
     supabase.from('encounters').select('*').in('campaign_id', ids),
     supabase.from('notes').select('*').in('campaign_id', ids),
   ]);
-  return { campaignsRes, charactersRes, sessionsRes, encountersRes, notesRes };
+  return { campaignsRes, campaignDmRes, charactersRes, sessionsRes, encountersRes, notesRes };
 }
 
 export async function fetchExportCharacterTables(characterIds: string[]) {

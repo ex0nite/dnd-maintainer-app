@@ -42,7 +42,6 @@ const baseCampaign: Campaign = {
   description: null,
   setting: null,
   image_url: null,
-  dm_notes: null,
   theme: null,
   archived_at: null,
   allowed_source_books: ['phb-2024'],
@@ -163,8 +162,18 @@ describe('useCampaignMutations', () => {
     expect(queryClient.getQueryData<Campaign>(['campaign', 'old-name'])!.name).toBe('New Name');
   });
 
+  it('archive fails when row-level security lets it touch 0 rows', async () => {
+    mockQueryResult.data = [];
+
+    const { result } = renderHook(() => useCampaignMutations(), { wrapper: createWrapper() });
+
+    result.current.archive.mutate('camp-1');
+
+    await waitFor(() => expect(result.current.archive.isError).toBe(true));
+  });
+
   it('archive sets archived_at to an ISO string', async () => {
-    mockQueryResult.data = null;
+    mockQueryResult.data = [{ id: 'camp-1' }];
 
     const { result } = renderHook(() => useCampaignMutations(), { wrapper: createWrapper() });
 

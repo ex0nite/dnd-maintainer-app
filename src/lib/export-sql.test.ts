@@ -132,6 +132,23 @@ describe('buildInsertStatement', () => {
     );
   });
 
+  it('overwrites the listed columns on conflict (rows created by a trigger)', () => {
+    const columns: readonly { readonly name: string; readonly type: ColumnType }[] = [
+      { name: 'campaign_id', type: 'uuid' },
+      { name: 'dm_notes', type: 'text' },
+    ];
+    const sql = buildInsertStatement(
+      'campaign_dm',
+      { campaign_id: 'c1', dm_notes: 'secret' },
+      columns,
+      '(campaign_id)',
+      ['dm_notes']
+    );
+    expect(sql).toBe(
+      "INSERT INTO campaign_dm (campaign_id, dm_notes) VALUES ('c1', 'secret') ON CONFLICT (campaign_id) DO UPDATE SET dm_notes = EXCLUDED.dm_notes;"
+    );
+  });
+
   it('uses NULL for missing column values', () => {
     const columns: readonly { readonly name: string; readonly type: ColumnType }[] = [
       { name: 'id', type: 'uuid' },
@@ -161,6 +178,7 @@ describe('buildInsertStatement', () => {
 describe('generateSeedSql', () => {
   const emptyData: ExportData = {
     campaigns: [],
+    campaign_dm: [],
     characters: [],
     sessions: [],
     encounters: [],
@@ -196,7 +214,6 @@ describe('generateSeedSql', () => {
           setting: null,
           status: 'active',
           image_url: null,
-          dm_notes: null,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
         },
@@ -218,7 +235,6 @@ describe('generateSeedSql', () => {
           setting: null,
           status: 'active',
           image_url: null,
-          dm_notes: null,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
         },
