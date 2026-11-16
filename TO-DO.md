@@ -20,66 +20,67 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [x] Corriger les 6 erreurs de lint `no-console` (D-27, dans `dev`)
 - [x] Corriger le format et les scénarios BDD en CI (stub de `VITE_SUPABASE_PUBLISHABLE_KEY` dans le chargeur BDD, exclusion
       Prettier des fichiers BMAD générés)
-- [ ] Ajouter un `.gitattributes` (`* text=auto eol=lf`) pour que `format:check`, `coverage-matrix` et le BDD se comportent
+- [ ] (story 1.1) Ajouter un `.gitattributes` (`* text=auto eol=lf`) pour que `format:check`, `coverage-matrix` et le BDD se comportent
       sous Windows comme sous Linux (aujourd'hui ils échouent en local sur Windows, mais passent en CI)
 - [ ] Corriger la doc : `CLAUDE.md` dit « RLS sans policy » alors que les 7 policies sont `USING (true)` (et 4 policies
       publiques sur `storage.objects`), et « ESLint 9 » alors que `package.json` est en ESLint 10 ; le nom de
       variable est `VITE_SUPABASE_PUBLISHABLE_KEY` dans le code mais `VITE_SUPABASE_ANON_KEY` dans `CLAUDE.md`, `src/locales/en/common.json`,
       `README.md`, `SETUP.md`
 
-## 1. Cadrage avec BMAD
+## 1. Cadrage avec BMAD (terminé)
 
 - [x] Trancher les ambiguïtés bloquantes (toutes réglées)
-- [ ] Brief produit puis PRD de la « page joueur » (`bmad-product-brief`, `bmad-prd`)
-- [ ] Architecture (auth, RLS, hébergement QNAP) (`bmad-architecture`)
-- [ ] Découpage en epics et stories (`bmad-create-epics-and-stories`)
+- [x] Brief produit, PRD, architecture (AD-1 à AD-22), brainstorm de design (2 tours) : `_bmad-output/`
+- [x] Découpage en epics et stories : `_bmad-output/planning-artifacts/epics.md` (8 epics, 48 stories, statut final)
 - [ ] Contexte projet pour les agents (`bmad-project-context`)
 
-## 2. Identité et accès (fondation, avant toute exposition)
+## 2. Développement : suivre `epics.md`
 
-- [ ] Migration : `profiles`, `campaign_members` (rôle `dm`/`player`), `characters.owner_user_id` (D-16 : plusieurs personnages par joueur et par campagne),
-      fonctions d'aide `SECURITY DEFINER`
-- [ ] Rattacher les données existantes à un compte MJ (backfill) avant de fermer les policies
-- [ ] Authentification dans le front : `AuthProvider`, page de connexion, garde de routes, déconnexion (D-19 : connexion e-mail + mot de passe, changement du mot de passe temporaire à la première connexion)
-- [ ] Archivage du compte et des personnages d'un joueur qui quitte la table (D-30), avec réactivation possible par le MJ
-- [ ] Création des comptes joueurs par le MJ (D-19) : action réservée au MJ côté serveur (jamais `service_role` dans le
-      navigateur), mot de passe temporaire, rattachement à la campagne, assignation de personnages, réinitialisation
-- [ ] RLS stricte : supprimer les 7 policies `USING (true)`, retirer les droits de `anon`, policies par table selon D-02
-- [ ] Sécuriser le stockage des portraits (policies `storage.objects`), valider le schéma des URL de portrait
-- [ ] Retirer `GRANT EXECUTE` à `anon` sur `last_activity_at` (migration 20260607000000)
-- [ ] Durcir la config Auth : inscription libre désactivée, longueur de mot de passe, limites de débit sur la connexion
-- [ ] Déplacer `campaigns.dm_notes` dans une table réservée au MJ
-- [ ] Tests pgTAP des policies (`supabase/tests/`), job CI `supabase test db`
-- [ ] Adapter le MCP : connexion avec un compte MJ dédié, `create_campaign` ; adapter smoke test et CI (D-22)
+Une story = un worktree = le cycle D-04. L'ordre ci-dessous respecte les dépendances ; chaque story est détaillée avec ses
+critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée dans `dev` (avec la référence du commit).
 
-## 3. Page joueur
+### Epic 1 : une app verrouillée où le MJ retrouve tout
 
-- [ ] Route et page joueur (fiche + notes de campagne), masquage de l'interface réservée au MJ
-- [ ] Fiche du joueur : consultation et édition de **son** personnage, bouton « Reconstruire ce personnage » (D-18) :
-      repasser `ready` en `draft` en conservant inventaire et historique de niveaux
-- [ ] Notes de campagne personnelles du joueur (D-10) : table, RLS (auteur + MJ en lecture), CRUD, interface
-- [ ] Notes communes (D-11, D-12) : table (titre, catégorie, épinglage, auteur), RLS (lecture : membres ; modification et
-      suppression : auteur ou MJ), CRUD, interface
-- [ ] Consultation des fiches des autres personnages (D-15), lecture seule ; `backstory` et `notes` masqués
-      (RLS par colonne ou vue dédiée)
-- [ ] Récapitulatif des séances (D-14) : indicateur de publication par séance, consultation par les joueurs
-- [ ] Commentaires sur les récapitulatifs (D-14) : table, RLS (lecture : membres ; modification et suppression : auteur ou MJ), interface
-- [ ] Français de l'interface (D-28) : `src/locales/fr/common.json` (730 clés) calqué sur `en`, sélecteur de langue
-      mémorisé, contrôle automatique des clés manquantes ; textes de la page joueur dans les deux langues
-- [ ] Réécrire les specs BDD `@draft` (D-29) : `auth/` et `admin/` fusionnés dans la gestion des comptes par le MJ,
-      `collaboration/` selon D-02 et D-10 à D-18 ; scénarios en `@future`, au fil de chaque fonctionnalité
+- [ ] 1.1 Banc d'essai pgTAP en CI et fins de ligne LF (`.gitattributes`)
+- [ ] 1.2 Le propriétaire crée le compte MJ hors de l'app (`profiles`, script d'amorçage)
+- [ ] 1.3 Le MJ se connecte avec son pseudo (app et MCP), contrôle 360 px / contraste en CI
+- [ ] 1.4 Campagnes et appartenance sous contrôle strict
+- [ ] 1.5 Les données privées quittent les tables lisibles (`character_private`, `session_dm`, `campaign_dm`)
+- [ ] 1.6 Les tables de personnages sont verrouillées
+- [ ] 1.7 Le reste du schéma et le stockage sont verrouillés
+- [ ] 1.8 Bascule transactionnelle des données existantes
 
-## 4. Déploiement sur le QNAP
+### Epic 7, première partie (à lancer tôt, en parallèle de l'epic 1)
 
-- [ ] Essai : monter Supabase allégé sur le QNAP (D-20), mesurer la RAM sous charge, libérer de la mémoire si besoin
-      (arrêt de services inutiles) ; décider du repli cloud si cela ne tient pas
-- [ ] Hôte dédié dans `nginx-proxy-manager` (D-21) : certificat Let's Encrypt, HTTP vers HTTPS, HSTS, CSP et en-têtes de
-      sécurité, limitation de débit sur la connexion. Rediriger **uniquement** 80/443 depuis la Livebox (déjà fait),
-      jamais NFS, SMB, portmap ni SSH
-- [ ] Ne pas exposer Studio, Postgres ni Kong ; `service_role` jamais dans le front ; firmware du QNAP à jour
-- [ ] En-têtes de sécurité et CSP, réécriture SPA
-- [ ] Limites de débit et verrouillage progressif sur la connexion (pas d'e-mails, D-19)
-- [ ] Revue de sécurité finale avant ouverture sur Internet (checklist de `docs/` à créer)
+- [ ] 7.1 Essai de charge de la pile allégée sur le QNAP (sans `account-admin`, puis avec après la 2.2) : décision
+      auto-hébergement ou repli cloud (D-20)
+
+### Epics 2 à 6
+
+- [ ] Epic 2 : le MJ gère sa table (2.1 spike authentification, 2.2 création de compte, 2.3 mot de passe obligatoire,
+      2.4 réinitialisation, 2.5 membres / archivage, 2.6 limitation des tentatives)
+- [ ] Epic 3 : fiche de personnage (3.1 à 3.9)
+- [ ] Epic 4 : notes de campagne (4.1 à 4.4)
+- [ ] Epic 5 : récapitulatifs de séance (5.1 à 5.4)
+- [ ] Epic 6 : page joueur bilingue et adaptée au téléphone (6.1 à 6.4), dont `src/locales/fr/common.json`
+
+### Epic 7, suite : mise en ligne
+
+- [ ] 7.2 Installation reproductible et secrets régénérés
+- [ ] 7.3 Exposition HTTPS et vérification réseau
+- [ ] 7.4 CSP stricte
+- [ ] 7.5 Bascule vers la production (rappel : pas de sauvegarde, D-23)
+- [ ] 7.6 Recette avec les cinq joueurs
+
+### Après le MVP
+
+- [ ] Epic 8 : contenu riche du MJ (8.1 spike et corpus de brews, à partir de 5 à 10 brews fournis par le MJ, hors dépôt)
+
+### Reprises transverses
+
+- [ ] Réécrire les specs BDD `@draft` (D-29), en `@future`, au fil de chaque epic
+- [ ] Retirer `GRANT EXECUTE` à `anon` sur `last_activity_at` (migration 20260607000000) : couvert par la story 1.7
+- [ ] Mettre à jour `docs/security-review-2026-06-01.md` avant la mise en ligne
 
 ## Plus tard
 
@@ -87,6 +88,4 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
       export quotidien chiffré vers un autre volume puis copie vers un second QNAP)
 
 - [x] BMAD dans le dépôt MCP : non (D-24), simple renvoi depuis son `CLAUDE.md`
-- [ ] Création de personnage par les joueurs (D-17) : RLS `INSERT` (créateur = propriétaire, campagne dont il est membre), `DELETE` réservé au MJ
 - [ ] Traduire les données de règles (`gamedata`, 1 728 clés) en français, par lots (D-28)
-- [ ] Mettre à jour `docs/security-review-2026-06-01.md` (stockage des portraits désormais utilisé, policies de 2026-06)
