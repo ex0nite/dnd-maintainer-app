@@ -179,6 +179,8 @@ describe('generateSeedSql', () => {
   const emptyData: ExportData = {
     campaigns: [],
     campaign_dm: [],
+    character_private: [],
+    session_dm: [],
     characters: [],
     sessions: [],
     encounters: [],
@@ -222,6 +224,25 @@ describe('generateSeedSql', () => {
     const sql = generateSeedSql(data);
     expect(sql).toContain('INSERT INTO campaigns');
     expect(sql).toContain("'Lost Mines'");
+  });
+
+  it('exports character ownership so it survives a re-import', () => {
+    const data: ExportData = {
+      ...emptyData,
+      characters: [
+        {
+          id: 'ch1',
+          campaign_id: 'c1',
+          owner_user_id: '00000000-0000-4000-8000-000000000001',
+          archived_with_owner: true,
+          name: 'Hero',
+        },
+      ],
+    };
+    const sql = generateSeedSql(data);
+    expect(sql).toContain('owner_user_id');
+    expect(sql).toContain("'00000000-0000-4000-8000-000000000001'");
+    expect(sql).toContain('archived_with_owner');
   });
 
   it('respects table ordering — campaigns before characters in output', () => {

@@ -2,6 +2,7 @@
 // Only src/hooks/ talks to Supabase (AD-1); pages call these instead of the client.
 import { supabase } from '@/lib/supabase';
 import { NOTE_DETAIL_COLS } from '@/lib/query-columns';
+import { splitSessionPrivate, writeSessionDm } from '@/hooks/privateData';
 import type { Note, Session } from '@/types/database';
 import type { Json, TablesUpdate } from '@/types/supabase';
 import type { ThemeId } from '@/lib/theme';
@@ -47,10 +48,14 @@ export async function updateCampaignTheme(campaignId: string, theme: ThemeId | n
 // --- Sessions ---
 
 export async function fetchTotalXp(campaignId: string): Promise<number> {
-  const { data, error } = await supabase.from('sessions').select('experience_awarded').eq('campaign_id', campaignId);
+  // XP lives in session_dm (AD-5); an inner join keeps only this campaign's sessions.
+  const { data, error } = await supabase
+    .from('session_dm')
+    .select('experience_awarded, sessions!inner(campaign_id)')
+    .eq('sessions.campaign_id', campaignId);
 
   if (error) throw error;
-  return data.reduce((sum, session) => sum + (session.experience_awarded || 0), 0);
+  return data.reduce((sum, row) => sum + (row.experience_awarded || 0), 0);
 }
 
 export async function insertSession(
@@ -74,30 +79,27 @@ export async function insertSession(
 }
 
 export async function updateSessionFields(sessionId: string, updates: Partial<Session>): Promise<void> {
-  const { error } = await supabase
-    .from('sessions')
-    .update(updates as unknown as TablesUpdate<'sessions'>)
-    .eq('id', sessionId);
+  const { pub, priv } = splitSessionPrivate(updates as unknown as Record<string, unknown>);
+  if (Object.keys(pub).length > 0) {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update(pub as unknown as TablesUpdate<'sessions'>)
+      .eq('id', sessionId)
+      .select('id');
 
-  if (error) throw error;
+    if (error) throw error;
+    if (data.length !== 1) throw new Error('Session was not updated (0 rows affected)');
+  }
+  // XP, DM notes and loot live in session_dm (AD-5).
+  await writeSessionDm(sessionId, priv);
 }
 
 export async function updateSessionDmNotes(sessionId: string, content: string): Promise<void> {
-  const { error } = await supabase
-    .from('sessions')
-    .update({ notes: content.trim() || null })
-    .eq('id', sessionId);
-
-  if (error) throw error;
+  await writeSessionDm(sessionId, { notes: content.trim() || null });
 }
 
 export async function updateSessionLoot(sessionId: string, loot: unknown[]): Promise<void> {
-  const { error } = await supabase
-    .from('sessions')
-    .update({ loot: loot as unknown as Json })
-    .eq('id', sessionId);
-
-  if (error) throw error;
+  await writeSessionDm(sessionId, { loot: loot as unknown as Json });
 }
 
 // --- Notes ---
@@ -168,7 +170,7 @@ export async function fetchExportTables(ids: string[]) {
 }
 
 export async function fetchExportCharacterTables(characterIds: string[]) {
-  const [buildLevelsRes, itemsRes] = await Promise.all([
+  const [buildLevelsRes, itemsRes, characterPrivateRes] = await Promise.all([
     supabase
       .from('character_build_levels')
       .select('*')
@@ -177,6 +179,12 @@ export async function fetchExportCharacterTables(characterIds: string[]) {
       .order('character_id')
       .order('sequence'),
     supabase.from('character_items').select('*').in('character_id', characterIds),
+    supabase.from('character_private').select('*').in('character_id', characterIds),
   ]);
-  return { buildLevelsRes, itemsRes };
+  return { buildLevelsRes, itemsRes, characterPrivateRes };
+}
+
+export async function fetchExportSessionTables(sessionIds: string[]) {
+  const sessionDmRes = await supabase.from('session_dm').select('*').in('session_id', sessionIds);
+  return { sessionDmRes };
 }

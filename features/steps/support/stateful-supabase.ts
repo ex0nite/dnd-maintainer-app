@@ -40,6 +40,27 @@ function slugify(name: string): string {
   return base || 'campaign';
 }
 
+// DM-only / owner-only columns live in their own tables (AD-5, story 1.5). The real database creates
+// the private row with an AFTER INSERT trigger and PostgREST embeds it with `character_private(...)`;
+// this fake mirrors both so the real hooks run unchanged.
+const PRIVATE_TABLES: Record<string, { table: string; fk: string; columns: readonly string[]; defaults: Row }> = {
+  characters: { table: 'character_private', fk: 'character_id', columns: ['backstory', 'notes'], defaults: {} },
+  sessions: {
+    table: 'session_dm',
+    fk: 'session_id',
+    columns: ['notes', 'loot', 'experience_awarded'],
+    defaults: { experience_awarded: 0 },
+  },
+};
+const EMBED_PARENT: Record<string, { fk: string }> = {
+  character_private: { fk: 'character_id' },
+  session_dm: { fk: 'session_id' },
+};
+// Filters such as .eq('sessions.campaign_id', x) on session_dm (inner join through its session).
+const PARENT_OF: Record<string, { parentTable: string; fk: string }> = {
+  'session_dm.sessions': { parentTable: 'sessions', fk: 'session_id' },
+};
+
 export interface StatefulDb {
   /** Replace all rows in a table (timestamps/ids/slugs are taken as-is from the seed rows). */
   seed(table: string, rows: Row[]): void;
@@ -58,6 +79,7 @@ interface QueryState {
   orderBy: { col: string; ascending: boolean } | null;
   wantSingle: boolean;
   wantMaybeSingle: boolean;
+  embeds: string[];
 }
 
 function parseOr(expr: string): Predicate {
@@ -104,9 +126,15 @@ export function createStatefulSupabase(): { supabase: unknown; db: StatefulDb } 
         orderBy: null,
         wantSingle: false,
         wantMaybeSingle: false,
+        embeds: [],
       };
     }
-    select(): this {
+    select(cols?: string): this {
+      if (typeof cols === 'string') {
+        for (const m of cols.matchAll(/(\w+)\(/g)) {
+          if (m[1] in EMBED_PARENT) this.s.embeds.push(m[1]);
+        }
+      }
       return this;
     }
     insert(payload: Row | Row[]): this {
@@ -130,6 +158,18 @@ export function createStatefulSupabase(): { supabase: unknown; db: StatefulDb } 
       return this;
     }
     eq(col: string, val: unknown): this {
+      const dot = col.indexOf('.');
+      if (dot > 0) {
+        const link = PARENT_OF[`${this.s.table}.${col.slice(0, dot)}`];
+        const parentCol = col.slice(dot + 1);
+        if (link) {
+          this.s.predicates.push((r) => {
+            const parent = store.get(link.parentTable).find((p) => p.id === r[link.fk]);
+            return parent?.[parentCol] === val;
+          });
+          return this;
+        }
+      }
       this.s.predicates.push((r) => r[col] === val);
       return this;
     }
@@ -204,6 +244,10 @@ export function createStatefulSupabase(): { supabase: unknown; db: StatefulDb } 
             } as Row;
           });
           rows.push(...inserted);
+          const priv = PRIVATE_TABLES[this.s.table];
+          if (priv) {
+            for (const row of inserted) store.get(priv.table).push({ [priv.fk]: row.id, ...priv.defaults });
+          }
           return this.shape(inserted);
         }
 
@@ -269,7 +313,17 @@ export function createStatefulSupabase(): { supabase: unknown; db: StatefulDb } 
       }
     }
 
-    private shape(rows: Row[]): { data: unknown; error: unknown } {
+    private shape(inputRows: Row[]): { data: unknown; error: unknown } {
+      const rows = this.s.embeds.length
+        ? inputRows.map((row) => {
+            const out: Row = { ...row };
+            for (const name of this.s.embeds) {
+              const related = store.get(name).find((r) => r[EMBED_PARENT[name].fk] === row.id);
+              out[name] = related ? { ...related } : null;
+            }
+            return out;
+          })
+        : inputRows;
       if (this.s.wantSingle) {
         if (rows.length !== 1) {
           return { data: null, error: { message: `expected exactly one row, got ${rows.length}`, code: 'PGRST116' } };
@@ -298,6 +352,25 @@ export function createStatefulSupabase(): { supabase: unknown; db: StatefulDb } 
 
   const db: StatefulDb = {
     seed(table, rows) {
+      const priv = PRIVATE_TABLES[table];
+      if (priv) {
+        // Seeds written against the old flat shape: split the private columns into their table.
+        const privateRows: Row[] = [];
+        store.tables[table] = rows.map((r) => {
+          const copy: Row = { ...r };
+          const p: Row = { [priv.fk]: r.id, ...priv.defaults };
+          for (const c of priv.columns) {
+            if (c in copy) {
+              p[c] = copy[c];
+              delete copy[c];
+            }
+          }
+          privateRows.push(p);
+          return copy;
+        });
+        store.tables[priv.table] = privateRows;
+        return;
+      }
       store.tables[table] = rows.map((r) => ({ ...r }));
     },
     rows(table) {

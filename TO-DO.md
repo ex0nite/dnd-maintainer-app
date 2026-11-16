@@ -45,7 +45,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [x] 1.2 Le propriétaire crée le compte MJ hors de l'app (`profiles`, script d'amorçage)
 - [x] 1.3 Le MJ se connecte avec son pseudo (app et MCP), contrôle 360 px / contraste en CI
 - [x] 1.4 Campagnes et appartenance sous contrôle strict
-- [ ] 1.5 Les données privées quittent les tables lisibles (`character_private`, `session_dm`, `campaign_dm`)
+- [x] 1.5 Les données privées quittent les tables lisibles (`character_private`, `session_dm`, `campaign_dm`)
 - [ ] 1.6 Les tables de personnages sont verrouillées
 - [ ] 1.7 Le reste du schéma et le stockage sont verrouillés
 - [ ] 1.8 Bascule transactionnelle des données existantes
@@ -77,6 +77,14 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [ ] Epic 8 : contenu riche du MJ (8.1 spike et corpus de brews, à partir de 5 à 10 brews fournis par le MJ, hors dépôt)
 
 ### Reprises transverses
+
+- [ ] Story 1.6 : le trigger `characters_guard_ownership` (story 1.5) est un garde-fou provisoire contre le changement de
+      `owner_user_id` ; il sera repris dans le trigger de garde complet d'AD-6, et la policy ouverte de `characters` doit
+      disparaître AVANT toute exposition (la 1.5 ne se déploie jamais seule sur une pile joignable)
+- [ ] Story 1.8 : la CLI Supabase applique chaque instruction séparément ; la bascule « en une transaction » demande
+      de rejouer toutes les migrations dans une seule transaction (`psql -1`), pas seulement `supabase db push`
+- [ ] Écriture non atomique entre table principale et table privée (compensation par suppression en cas d'échec) :
+      envisager une RPC `SECURITY INVOKER` quand l'epic 3 ouvrira les écritures aux joueurs
 
 - [ ] Export SQL (`src/lib/export-sql.ts`) : `campaign_dm` y figure depuis la story 1.4 (conflit `DO UPDATE`, car le trigger
       crée déjà la ligne vide) ; ajouter `character_private` et `session_dm` en story 1.5

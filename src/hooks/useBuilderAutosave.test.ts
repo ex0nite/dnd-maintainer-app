@@ -11,7 +11,15 @@ import {
 } from '@/test/hook-test-helpers';
 
 vi.mock('@/lib/supabase', () => import('@/test/mocks/supabase'));
+// The private-table writes count affected rows: this suite's single canned response can not play both
+// tables, so they are stubbed here and covered by privateData.test.ts.
+vi.mock('@/hooks/privateData', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/privateData')>()),
+  writeCharacterPrivate: vi.fn(),
+  writeSessionDm: vi.fn(),
+}));
 
+import { writeCharacterPrivate } from '@/hooks/privateData';
 import { useBuilderAutosave } from '@/hooks/useBuilderAutosave';
 import type { SaveStatus, AutosavePayload } from '@/hooks/useBuilderAutosave';
 
@@ -228,6 +236,83 @@ describe('useBuilderAutosave', () => {
       });
 
       expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ status: 'draft' }));
+    });
+  });
+
+  describe('private part (character_private)', () => {
+    beforeEach(() => {
+      vi.mocked(writeCharacterPrivate).mockReset();
+    });
+
+    const withBackstory = (backstory: string | null): AutosavePayload => ({
+      ...basePayload,
+      character: { ...basePayload.character, backstory },
+    });
+
+    it('writes backstory and notes to character_private, not to the characters insert', async () => {
+      mockQueryResult.data = { id: 'char-new' };
+      const { result } = renderHook(() => useBuilderAutosave(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.saveDraft(withBackstory('A secret past'));
+      });
+
+      const inserted = vi.mocked(supabase.insert).mock.calls[0][0] as Record<string, unknown>;
+      expect(inserted).not.toHaveProperty('backstory');
+      expect(inserted).not.toHaveProperty('notes');
+      expect(writeCharacterPrivate).toHaveBeenCalledWith('char-new', { backstory: 'A secret past', notes: null });
+    });
+
+    it('does not touch character_private when nothing private changed', async () => {
+      mockQueryResult.data = { id: 'char-new' };
+      const { result } = renderHook(() => useBuilderAutosave(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.saveDraft(basePayload); // new draft, empty private part: same as the trigger row
+      });
+      expect(writeCharacterPrivate).not.toHaveBeenCalled();
+
+      mockQueryResult.data = [{ id: 'char-new' }];
+      await act(async () => {
+        await result.current.saveDraft(withBackstory('Now written'));
+      });
+      expect(writeCharacterPrivate).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await result.current.saveDraft(withBackstory('Now written')); // unchanged
+      });
+      expect(writeCharacterPrivate).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await result.current.saveDraft(withBackstory('Edited again'));
+      });
+      expect(writeCharacterPrivate).toHaveBeenCalledTimes(2);
+    });
+
+    it('removes the draft it just created when the private write fails, and reports the error', async () => {
+      expect.assertions(5);
+      mockQueryResult.data = { id: 'char-new' };
+      vi.mocked(writeCharacterPrivate).mockRejectedValueOnce(new Error('0 rows affected'));
+      const { result } = renderHook(() => useBuilderAutosave(), { wrapper: createWrapper() });
+
+      await withSuppressedRejections(async () => {
+        await act(async () => {
+          await result.current.saveDraft(withBackstory('x')).catch((err: Error) => {
+            expect(err.message).toBe('0 rows affected');
+          });
+        });
+      });
+
+      expect(result.current.saveStatus).toBe<SaveStatus>('error');
+      expect(supabase.delete).toHaveBeenCalled();
+      expect(supabase.eq).toHaveBeenCalledWith('id', 'char-new');
+
+      // The orphan is forgotten: the next save inserts again instead of updating a deleted row.
+      vi.mocked(supabase.insert).mockClear();
+      await act(async () => {
+        await result.current.saveDraft(basePayload);
+      });
+      expect(supabase.insert).toHaveBeenCalled();
     });
   });
 
