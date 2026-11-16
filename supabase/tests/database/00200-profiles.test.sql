@@ -2,7 +2,7 @@
 -- Identity coverage of the other tables comes with their own stories.
 begin;
 
-select plan(16);
+select plan(20);
 
 -- Fixtures (privileged test owner): one DM and one player, authentication rows first.
 insert into auth.users (id, email)
@@ -58,14 +58,26 @@ select ok(
   and not has_table_privilege('authenticated', 'public.profiles', 'DELETE'),
   'authenticated has no write privilege on profiles'
 );
-select ok(
-  not has_table_privilege('anon', 'public.profiles', 'SELECT'),
-  'anon has no privilege on profiles'
+select is(
+  (select count(*)::int from information_schema.role_table_grants
+    where table_schema = 'public' and table_name = 'profiles'
+      and grantee in ('anon', 'authenticated', 'PUBLIC')
+      and not (grantee = 'authenticated' and privilege_type = 'SELECT')),
+  0,
+  'anon, PUBLIC and authenticated hold no privilege on profiles except authenticated SELECT'
+);
+select throws_ok(
+  $$update public.profiles set role = 'dm' where pseudo = 'bob'$$,
+  '23505', null, 'promoting a player to a second dm is refused by the unique index'
 );
 
 -- Behaviour as a connected player.
 select tests.set_identity('owner');
-select is((select count(*)::int from public.profiles), 1, 'a player reads only their own profile');
+select is(
+  (select array_agg(pseudo order by pseudo) from public.profiles),
+  array['alice'],
+  'a player reads only their own profile (not the DM, not another player)'
+);
 select throws_ok(
   $$insert into public.profiles (user_id, pseudo, role) values (gen_random_uuid(), 'sneaky', 'player')$$,
   '42501', null, 'a player cannot insert a profile'
@@ -78,6 +90,22 @@ select throws_ok(
   $$delete from public.profiles where user_id = tests.uid('owner')$$,
   '42501', null, 'a player cannot delete a profile'
 );
+
+-- AD-3: an archived user and a user on a temporary password still read their own profile
+-- (the front needs it). They only see that one row.
+select tests.reset_identity();
+insert into auth.users (id, email)
+values (tests.uid('archived'), 'carol@table.invalid'), (tests.uid('temp_password'), 'dave@table.invalid');
+insert into public.profiles (user_id, pseudo, role, archived_at)
+values (tests.uid('archived'), 'carol', 'player', now());
+insert into public.profiles (user_id, pseudo, role)
+values (tests.uid('temp_password'), 'dave', 'player');
+select tests.set_identity('archived');
+select is((select array_agg(pseudo) from public.profiles), array['carol'], 'an archived user reads only their own profile');
+select tests.set_identity('temp_password');
+select is((select array_agg(pseudo) from public.profiles), array['dave'], 'a temporary-password user reads only their own profile');
+select tests.set_identity('non_member');
+select is((select count(*)::int from public.profiles), 0, 'a user without profile reads nothing');
 
 -- Behaviour as anonymous.
 select tests.set_identity('anon');

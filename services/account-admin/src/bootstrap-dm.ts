@@ -1,13 +1,14 @@
 // Bootstrap the single DM account (AD-15). Run by the owner, from the server, once.
 //
-//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ACCOUNT_DOMAIN=... \
+//   read -rs SUPABASE_SERVICE_ROLE_KEY && export SUPABASE_SERVICE_ROLE_KEY   # never on the command line
+//   SUPABASE_URL=... ACCOUNT_DOMAIN=... \
 //     npx tsx services/account-admin/src/bootstrap-dm.ts <pseudo>
 //
 // The password is typed in the terminal (hidden), never passed as an argument
 // or stored. No secret lives in the repository.
 
 import { createClient } from '@supabase/supabase-js';
-import { AccountError, createAccount } from './accounts.ts';
+import { AccountError, createDmAccount } from './accounts.ts';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -72,13 +73,7 @@ async function main(): Promise<void> {
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   try {
-    const { userId, email } = await createAccount(admin, {
-      pseudo,
-      password,
-      role: 'dm',
-      domain,
-      mustChangePassword: false,
-    });
+    const { userId, email } = await createDmAccount(admin, { pseudo, password, domain });
     process.stdout.write(`DM account created: ${userId} (${email})\n`);
   } catch (e) {
     if (e instanceof AccountError) {

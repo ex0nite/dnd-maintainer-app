@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const PSEUDO_PATTERN = /^[a-z0-9_-]{3,20}$/;
 export const MIN_PASSWORD_LENGTH = 12;
+const PENDING_BAN = '876000h';
 
 export type AccountRole = 'dm' | 'player';
 
@@ -16,6 +17,7 @@ export type AccountErrorCode =
   | 'invalid_pseudo'
   | 'invalid_password'
   | 'invalid_domain'
+  | 'invalid_role'
   | 'auth_failed'
   | 'profile_failed';
 
@@ -63,16 +65,22 @@ export interface CreatedAccount {
  * If the profile cannot be written (e.g. a second `dm`), the authentication
  * account is deleted again so no orphan remains.
  */
-export async function createAccount(admin: SupabaseClient, input: CreateAccountInput): Promise<CreatedAccount> {
+async function createAccount(admin: SupabaseClient, input: CreateAccountInput): Promise<CreatedAccount> {
+  if (input.role !== 'dm' && input.role !== 'player') {
+    throw new AccountError('invalid_role', 'Role must be dm or player');
+  }
   const email = deriveEmail(input.pseudo, input.domain);
   if (input.password.length < MIN_PASSWORD_LENGTH) {
     throw new AccountError('invalid_password', `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
   }
 
+  // Created banned: until the profile exists the account must not be usable, even if
+  // the cleanup below fails. The ban is lifted only once the profile is written.
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password: input.password,
     email_confirm: true,
+    ban_duration: PENDING_BAN,
   });
   if (error || !data.user) {
     throw new AccountError('auth_failed', error?.message ?? 'Authentication account not created');
@@ -92,5 +100,29 @@ export async function createAccount(admin: SupabaseClient, input: CreateAccountI
     throw new AccountError('profile_failed', `${profileError.message}${suffix}`);
   }
 
+  const { error: unbanError } = await admin.auth.admin.updateUserById(userId, {
+    ban_duration: 'none',
+  });
+  if (unbanError) {
+    await admin.auth.admin.deleteUser(userId);
+    throw new AccountError('auth_failed', `Account activation failed: ${unbanError.message}`);
+  }
+
   return { userId, email };
+}
+
+/** The DM account: only the bootstrap script calls this (AD-15). No route may. */
+export function createDmAccount(
+  admin: SupabaseClient,
+  input: Omit<CreateAccountInput, 'role' | 'mustChangePassword'>
+): Promise<CreatedAccount> {
+  return createAccount(admin, { ...input, role: 'dm', mustChangePassword: false });
+}
+
+/** A player account always starts on a temporary password (AD-3). */
+export function createPlayerAccount(
+  admin: SupabaseClient,
+  input: Omit<CreateAccountInput, 'role' | 'mustChangePassword'>
+): Promise<CreatedAccount> {
+  return createAccount(admin, { ...input, role: 'player', mustChangePassword: true });
 }
