@@ -203,10 +203,23 @@ class DndWorldImpl extends World implements DndWorld {
     const defs: Record<string, unknown> = {
       [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
     };
+    // Hooks write the private tables through src/hooks/privateData.ts: same stateful client.
+    if (
+      modulePath.startsWith('@/hooks/') &&
+      modulePath !== '@/hooks/privateData' &&
+      !('@/hooks/privateData' in extraDefs)
+    ) {
+      defs[resolveAlias('@/hooks/privateData')] = await esmock(resolveAlias('@/hooks/privateData'), {
+        [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
+      });
+    }
     // Pages reach Supabase through src/hooks/dataAccess.ts (AD-1): give pages the same stateful client.
     if (modulePath.startsWith('@/pages/') && !('@/hooks/dataAccess' in extraDefs)) {
       defs[resolveAlias('@/hooks/dataAccess')] = await esmock(resolveAlias('@/hooks/dataAccess'), {
         [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
+        [resolveAlias('@/hooks/privateData')]: await esmock(resolveAlias('@/hooks/privateData'), {
+          [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
+        }),
       });
     }
     for (const [key, value] of Object.entries(extraDefs)) {

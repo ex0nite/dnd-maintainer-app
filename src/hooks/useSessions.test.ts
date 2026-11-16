@@ -13,6 +13,13 @@ import {
 } from '@/test/hook-test-helpers';
 
 vi.mock('@/lib/supabase', () => import('@/test/mocks/supabase'));
+// The private-table writes count affected rows: this suite's single canned response can not play both
+// tables, so they are stubbed here and covered by privateData.test.ts.
+vi.mock('@/hooks/privateData', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/privateData')>()),
+  writeCharacterPrivate: vi.fn(),
+  writeSessionDm: vi.fn(),
+}));
 
 import { useSessions, useSession, useCreateSession, useUpdateSession, useDeleteSession } from '@/hooks/useSessions';
 import type { Session } from '@/types/database';
@@ -28,7 +35,7 @@ const baseSession: Session = {
   name: 'The First Adventure',
   date: '2024-01-15',
   summary: null,
-  experience_awarded: 300,
+  experience_awarded: 0,
   loot: null,
   notes: null,
 };

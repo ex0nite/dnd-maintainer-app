@@ -179,6 +179,8 @@ describe('generateSeedSql', () => {
   const emptyData: ExportData = {
     campaigns: [],
     campaign_dm: [],
+    character_private: [],
+    session_dm: [],
     characters: [],
     sessions: [],
     encounters: [],

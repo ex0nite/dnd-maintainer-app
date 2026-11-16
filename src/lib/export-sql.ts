@@ -4,7 +4,9 @@ export type ExportData = Readonly<{
   campaigns: readonly Record<string, unknown>[];
   campaign_dm: readonly Record<string, unknown>[];
   characters: readonly Record<string, unknown>[];
+  character_private: readonly Record<string, unknown>[];
   sessions: readonly Record<string, unknown>[];
+  session_dm: readonly Record<string, unknown>[];
   encounters: readonly Record<string, unknown>[];
   notes: readonly Record<string, unknown>[];
   character_build_levels: readonly Record<string, unknown>[];
@@ -36,6 +38,12 @@ const TABLE_COLUMNS = {
     { name: 'dm_notes', type: 'text' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
+  character_private: [
+    { name: 'character_id', type: 'uuid' },
+    { name: 'backstory', type: 'text' },
+    { name: 'notes', type: 'text' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
   characters: [
     { name: 'id', type: 'uuid' },
     { name: 'slug', type: 'text' },
@@ -54,13 +62,11 @@ const TABLE_COLUMNS = {
     { name: 'armor_class', type: 'integer' },
     { name: 'speed', type: 'integer' },
     { name: 'proficiency_bonus', type: 'integer' },
-    { name: 'notes', type: 'text' },
     { name: 'personality_traits', type: 'text' },
     { name: 'ideals', type: 'text' },
     { name: 'bonds', type: 'text' },
     { name: 'flaws', type: 'text' },
     { name: 'appearance', type: 'text' },
-    { name: 'backstory', type: 'text' },
     { name: 'portrait_url', type: 'text' },
     { name: 'is_active', type: 'boolean' },
     { name: 'status', type: 'text' },
@@ -90,10 +96,14 @@ const TABLE_COLUMNS = {
     { name: 'name', type: 'text' },
     { name: 'date', type: 'date' },
     { name: 'summary', type: 'text' },
+    { name: 'created_at', type: 'timestamptz' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
+  session_dm: [
+    { name: 'session_id', type: 'uuid' },
     { name: 'notes', type: 'text' },
     { name: 'experience_awarded', type: 'integer' },
     { name: 'loot', type: 'jsonb' },
-    { name: 'created_at', type: 'timestamptz' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
   encounters: [
@@ -156,7 +166,9 @@ const TABLE_ORDER: readonly TableName[] = [
   'campaigns',
   'campaign_dm',
   'characters',
+  'character_private',
   'sessions',
+  'session_dm',
   'encounters',
   'notes',
   'character_build_levels',
@@ -166,6 +178,8 @@ const TABLE_ORDER: readonly TableName[] = [
 // Tables with non-standard unique constraints for ON CONFLICT
 const CONFLICT_TARGETS: Partial<Record<TableName, string>> = {
   campaign_dm: '(campaign_id)',
+  character_private: '(character_id)',
+  session_dm: '(session_id)',
   character_build_levels: '(character_id, sequence)',
 };
 
@@ -173,6 +187,8 @@ const CONFLICT_TARGETS: Partial<Record<TableName, string>> = {
 // exported content: on conflict these columns are overwritten instead of skipped.
 const UPDATE_ON_CONFLICT: Partial<Record<TableName, readonly string[]>> = {
   campaign_dm: ['dm_notes'],
+  character_private: ['backstory', 'notes'],
+  session_dm: ['notes', 'experience_awarded', 'loot'],
 };
 
 export function escapeSqlString(value: string): string {

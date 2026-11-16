@@ -2,7 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { Session, SessionSummary } from '@/types/database';
 import type { TablesInsert, TablesUpdate } from '@/types/supabase';
-import { SESSION_SUMMARY_COLS, SESSION_DETAIL_COLS } from '@/lib/query-columns';
+import {
+  SESSION_SUMMARY_COLS,
+  SESSION_DETAIL_COLS,
+  SESSION_SUMMARY_PRIVATE_EMBED,
+  SESSION_DETAIL_PRIVATE_EMBED,
+} from '@/lib/query-columns';
+import { flattenSession, splitSessionPrivate, writeSessionDm } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
 
 export function useSessions(campaignId: string) {
@@ -11,11 +17,11 @@ export function useSessions(campaignId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sessions')
-        .select(SESSION_SUMMARY_COLS)
+        .select(`${SESSION_SUMMARY_COLS}, ${SESSION_SUMMARY_PRIVATE_EMBED}`)
         .eq('campaign_id', campaignId)
         .order('date', { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as SessionSummary[];
+      return (data || []).map((row) => flattenSession<SessionSummary>(row));
     },
     enabled: !!campaignId,
   });
@@ -28,11 +34,11 @@ export function useSession(slug: string | undefined) {
       const safe = validateSlug(slug!);
       const { data, error } = await supabase
         .from('sessions')
-        .select(SESSION_DETAIL_COLS)
+        .select(`${SESSION_DETAIL_COLS}, ${SESSION_DETAIL_PRIVATE_EMBED}`)
         .or(`slug.eq.${safe},previous_slugs.cs.{"${safe}"}`)
         .single();
       if (error) throw error;
-      return data as unknown as Session;
+      return flattenSession<Session>(data);
     },
     enabled: !!slug,
   });
@@ -43,13 +49,16 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: async (session: Omit<Session, 'id' | 'created_at' | 'updated_at'>) => {
+      const { pub, priv } = splitSessionPrivate(session as unknown as Record<string, unknown>);
       const { data, error } = await supabase
         .from('sessions')
-        .insert(session as unknown as TablesInsert<'sessions'>)
+        .insert(pub as unknown as TablesInsert<'sessions'>)
         .select()
         .single();
       if (error) throw error;
-      return data as unknown as Session;
+      // The DM row exists already (trigger): fill it.
+      await writeSessionDm(data.id, priv);
+      return flattenSession<Session>({ ...data, session_dm: priv });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessions', data.campaign_id] });
@@ -62,14 +71,26 @@ export function useUpdateSession() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Session> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('sessions')
-        .update(updates as unknown as TablesUpdate<'sessions'>)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as unknown as Session;
+      const { pub, priv } = splitSessionPrivate(updates as unknown as Record<string, unknown>);
+      let data: Record<string, unknown>;
+      if (Object.keys(pub).length > 0) {
+        const res = await supabase
+          .from('sessions')
+          .update(pub as unknown as TablesUpdate<'sessions'>)
+          .eq('id', id)
+          .select(`*, ${SESSION_DETAIL_PRIVATE_EMBED}`)
+          .single();
+        if (res.error) throw res.error;
+        data = res.data as unknown as Record<string, unknown>;
+        await writeSessionDm(id, priv);
+        if (Object.keys(priv).length > 0) data.session_dm = { ...(data.session_dm as object), ...priv };
+      } else {
+        await writeSessionDm(id, priv);
+        const res = await supabase.from('sessions').select(`*, ${SESSION_DETAIL_PRIVATE_EMBED}`).eq('id', id).single();
+        if (res.error) throw res.error;
+        data = res.data as unknown as Record<string, unknown>;
+      }
+      return flattenSession<Session>(data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessions', data.campaign_id] });

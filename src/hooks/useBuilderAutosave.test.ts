@@ -11,6 +11,13 @@ import {
 } from '@/test/hook-test-helpers';
 
 vi.mock('@/lib/supabase', () => import('@/test/mocks/supabase'));
+// The private-table writes count affected rows: this suite's single canned response can not play both
+// tables, so they are stubbed here and covered by privateData.test.ts.
+vi.mock('@/hooks/privateData', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/privateData')>()),
+  writeCharacterPrivate: vi.fn(),
+  writeSessionDm: vi.fn(),
+}));
 
 import { useBuilderAutosave } from '@/hooks/useBuilderAutosave';
 import type { SaveStatus, AutosavePayload } from '@/hooks/useBuilderAutosave';

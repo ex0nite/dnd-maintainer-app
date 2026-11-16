@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { Character, CharacterSummary } from '@/types/database';
 import type { TablesInsert, TablesUpdate } from '@/types/supabase';
-import { CHARACTER_SUMMARY_COLS, CHARACTER_DETAIL_COLS } from '@/lib/query-columns';
+import { CHARACTER_SUMMARY_COLS, CHARACTER_DETAIL_COLS, CHARACTER_PRIVATE_EMBED } from '@/lib/query-columns';
+import { flattenCharacter, splitCharacterPrivate, writeCharacterPrivate } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
 
 // --- Queries ---
@@ -54,11 +55,11 @@ export function useCharacter(slug: string | undefined) {
       const safe = validateSlug(slug!);
       const { data, error } = await supabase
         .from('characters')
-        .select(CHARACTER_DETAIL_COLS)
+        .select(`${CHARACTER_DETAIL_COLS}, ${CHARACTER_PRIVATE_EMBED}`)
         .or(`slug.eq.${safe},previous_slugs.cs.{"${safe}"}`)
         .single();
       if (error) throw error;
-      return data as unknown as Character;
+      return flattenCharacter<Character>(data);
     },
     enabled: !!slug,
   });
@@ -88,13 +89,16 @@ export function useCharacterMutations() {
 
   const create = useMutation({
     mutationFn: async (character: Omit<Character, 'id' | 'created_at' | 'updated_at' | 'is_active'>) => {
+      const { pub, priv } = splitCharacterPrivate(character as unknown as Record<string, unknown>);
       const { data, error } = await supabase
         .from('characters')
-        .insert(character as unknown as TablesInsert<'characters'>)
+        .insert(pub as unknown as TablesInsert<'characters'>)
         .select()
         .single();
       if (error) throw error;
-      return data as unknown as Character;
+      // The private row exists already (trigger): fill it.
+      await writeCharacterPrivate(data.id, priv);
+      return flattenCharacter<Character>({ ...data, character_private: priv });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
@@ -103,14 +107,27 @@ export function useCharacterMutations() {
 
   const update = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Character> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('characters')
-        .update(updates as unknown as TablesUpdate<'characters'>)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as unknown as Character;
+      const { pub, priv } = splitCharacterPrivate(updates as unknown as Record<string, unknown>);
+      let data: Record<string, unknown>;
+      if (Object.keys(pub).length > 0) {
+        const res = await supabase
+          .from('characters')
+          .update(pub as unknown as TablesUpdate<'characters'>)
+          .eq('id', id)
+          .select(`*, ${CHARACTER_PRIVATE_EMBED}`)
+          .single();
+        if (res.error) throw res.error;
+        data = res.data as unknown as Record<string, unknown>;
+        await writeCharacterPrivate(id, priv);
+        if (Object.keys(priv).length > 0) data.character_private = { ...(data.character_private as object), ...priv };
+      } else {
+        // Only private fields changed: write them, then read the character back.
+        await writeCharacterPrivate(id, priv);
+        const res = await supabase.from('characters').select(`*, ${CHARACTER_PRIVATE_EMBED}`).eq('id', id).single();
+        if (res.error) throw res.error;
+        data = res.data as unknown as Record<string, unknown>;
+      }
+      return flattenCharacter<Character>(data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
@@ -137,7 +154,7 @@ export function useCharacterMutations() {
     mutationFn: async ({ sourceCharacterId, newName }: { sourceCharacterId: string; newName: string }) => {
       const { data: source, error: sourceError } = await supabase
         .from('characters')
-        .select('*')
+        .select(`*, ${CHARACTER_PRIVATE_EMBED}`)
         .eq('id', sourceCharacterId)
         .single();
       if (sourceError) throw sourceError;
@@ -157,7 +174,11 @@ export function useCharacterMutations() {
       if (itemsError) throw itemsError;
 
       // Copy every column, then drop DB-managed ones and override identity fields.
-      const characterPayload: Record<string, unknown> = { ...source };
+      const { character_private: sourceEmbed, ...sourceColumns } = source as Record<string, unknown>;
+      const sourcePrivate = flattenCharacter<{ backstory: string | null; notes: string | null }>({
+        character_private: sourceEmbed,
+      });
+      const characterPayload: Record<string, unknown> = { ...sourceColumns };
       delete characterPayload.id;
       delete characterPayload.created_at;
       delete characterPayload.updated_at;
@@ -171,9 +192,16 @@ export function useCharacterMutations() {
         .select()
         .single();
       if (insertError) throw insertError;
-      const newCharacter = newChar as unknown as Character;
+      const newCharacter = flattenCharacter<Character>({
+        ...newChar,
+        character_private: { backstory: sourcePrivate.backstory, notes: sourcePrivate.notes },
+      });
 
       try {
+        await writeCharacterPrivate(newCharacter.id, {
+          backstory: sourcePrivate.backstory,
+          notes: sourcePrivate.notes,
+        });
         if (levels && levels.length > 0) {
           const levelRows = (levels as Record<string, unknown>[]).map((row) => {
             const copy: Record<string, unknown> = { ...row };

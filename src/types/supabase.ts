@@ -145,6 +145,51 @@ export type Database = {
         }
         Relationships: []
       }
+      character_private: {
+        Row: {
+          backstory: string | null
+          character_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          backstory?: string | null
+          character_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backstory?: string | null
+          character_id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_dm: {
+        Row: {
+          experience_awarded: number
+          loot: Json | null
+          notes: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          experience_awarded?: number
+          loot?: Json | null
+          notes?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          experience_awarded?: number
+          loot?: Json | null
+          notes?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       character_build_levels: {
         Row: {
           ability_method: string | null
@@ -255,7 +300,6 @@ export type Database = {
           appearance: string | null
           armor_class: number | null
           background: string | null
-          backstory: string | null
           bonds: string | null
           campaign_id: string
           character_type: string
@@ -276,7 +320,6 @@ export type Database = {
           is_active: boolean
           level: number
           name: string
-          notes: string | null
           personality_traits: string | null
           player_name: string | null
           portrait_url: string | null
@@ -293,6 +336,8 @@ export type Database = {
           updated_at: string
           weapon_masteries: Json | null
           weight: string | null
+          archived_with_owner: boolean
+          owner_user_id: string | null
         }
         Insert: {
           age?: string | null
@@ -300,7 +345,6 @@ export type Database = {
           appearance?: string | null
           armor_class?: number | null
           background?: string | null
-          backstory?: string | null
           bonds?: string | null
           campaign_id: string
           character_type: string
@@ -321,7 +365,6 @@ export type Database = {
           is_active?: boolean
           level?: number
           name: string
-          notes?: string | null
           personality_traits?: string | null
           player_name?: string | null
           portrait_url?: string | null
@@ -338,6 +381,8 @@ export type Database = {
           updated_at?: string
           weapon_masteries?: Json | null
           weight?: string | null
+          archived_with_owner?: boolean
+          owner_user_id?: string | null
         }
         Update: {
           age?: string | null
@@ -345,7 +390,6 @@ export type Database = {
           appearance?: string | null
           armor_class?: number | null
           background?: string | null
-          backstory?: string | null
           bonds?: string | null
           campaign_id?: string
           character_type?: string
@@ -366,7 +410,6 @@ export type Database = {
           is_active?: boolean
           level?: number
           name?: string
-          notes?: string | null
           personality_traits?: string | null
           player_name?: string | null
           portrait_url?: string | null
@@ -383,6 +426,8 @@ export type Database = {
           updated_at?: string
           weapon_masteries?: Json | null
           weight?: string | null
+          archived_with_owner?: boolean
+          owner_user_id?: string | null
         }
         Relationships: [
           {
@@ -500,11 +545,8 @@ export type Database = {
           campaign_id: string
           created_at: string
           date: string | null
-          experience_awarded: number
           id: string
-          loot: Json | null
           name: string | null
-          notes: string | null
           previous_slugs: string[]
           session_number: number
           slug: string
@@ -515,11 +557,8 @@ export type Database = {
           campaign_id: string
           created_at?: string
           date?: string | null
-          experience_awarded?: number
           id?: string
-          loot?: Json | null
           name?: string | null
-          notes?: string | null
           previous_slugs?: string[]
           session_number: number
           slug?: string
@@ -530,11 +569,8 @@ export type Database = {
           campaign_id?: string
           created_at?: string
           date?: string | null
-          experience_awarded?: number
           id?: string
-          loot?: Json | null
           name?: string | null
-          notes?: string | null
           previous_slugs?: string[]
           session_number?: number
           slug?: string

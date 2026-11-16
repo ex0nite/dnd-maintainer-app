@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import type { ExportData as ExportDataType } from '@/lib/export-sql';
 import { downloadFile, generateSeedSql } from '@/lib/export-sql';
 import { getLogger } from '@/lib/logger';
-import { fetchExportCharacterTables, fetchExportTables } from '@/hooks/dataAccess';
+import { fetchExportCharacterTables, fetchExportSessionTables, fetchExportTables } from '@/hooks/dataAccess';
 import { AlertCircle, CheckSquare, Download, Loader2, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -93,9 +93,11 @@ export default function ExportData() {
       const characterIds = (charactersRes.data ?? []).map((c) => (c as Record<string, unknown>).id as string);
       let buildLevelsData: Record<string, unknown>[] = [];
       let itemsData: Record<string, unknown>[] = [];
+      let characterPrivateData: Record<string, unknown>[] = [];
+      let sessionDmData: Record<string, unknown>[] = [];
 
       if (characterIds.length > 0) {
-        const { buildLevelsRes, itemsRes } = await fetchExportCharacterTables(characterIds);
+        const { buildLevelsRes, itemsRes, characterPrivateRes } = await fetchExportCharacterTables(characterIds);
 
         if (buildLevelsRes.error) {
           logger.error('Export fetch failed (character_build_levels):', buildLevelsRes.error);
@@ -106,15 +108,33 @@ export default function ExportData() {
           throw new Error(t('export.fetchFailed'));
         }
 
+        if (characterPrivateRes.error) {
+          logger.error('Export fetch failed (character_private):', characterPrivateRes.error);
+          throw new Error(t('export.fetchFailed'));
+        }
+
         buildLevelsData = (buildLevelsRes.data ?? []) as Record<string, unknown>[];
+        characterPrivateData = (characterPrivateRes.data ?? []) as Record<string, unknown>[];
         itemsData = (itemsRes.data ?? []) as Record<string, unknown>[];
+      }
+
+      const sessionIds = (sessionsRes.data ?? []).map((s) => (s as Record<string, unknown>).id as string);
+      if (sessionIds.length > 0) {
+        const { sessionDmRes } = await fetchExportSessionTables(sessionIds);
+        if (sessionDmRes.error) {
+          logger.error('Export fetch failed (session_dm):', sessionDmRes.error);
+          throw new Error(t('export.fetchFailed'));
+        }
+        sessionDmData = (sessionDmRes.data ?? []) as Record<string, unknown>[];
       }
 
       const data: ExportDataType = {
         campaigns: campaignsRes.data,
         campaign_dm: campaignDmRes.data ?? [],
         characters: charactersRes.data ?? [],
+        character_private: characterPrivateData,
         sessions: sessionsRes.data ?? [],
+        session_dm: sessionDmData,
         encounters: encountersRes.data ?? [],
         notes: notesRes.data ?? [],
         character_build_levels: buildLevelsData,

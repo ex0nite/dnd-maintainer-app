@@ -20,6 +20,13 @@ describe('CHARACTER_SUMMARY_COLS', () => {
   });
 });
 
+describe('private columns (AD-5)', () => {
+  it('keeps backstory and notes out of the readable character columns', () => {
+    expect(CHARACTER_DETAIL_COLS).not.toMatch(/\bbackstory\b/);
+    expect(CHARACTER_DETAIL_COLS).not.toMatch(/\bnotes\b/);
+  });
+});
+
 describe('CHARACTER_DETAIL_COLS', () => {
   it('contains species (word boundary match)', () => {
     expect(CHARACTER_DETAIL_COLS).toMatch(/\bspecies\b/);

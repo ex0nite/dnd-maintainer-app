@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { writeCharacterPrivate } from '@/hooks/privateData';
 import type { Character } from '@/types/database';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
 import type { ResolvedCharacter } from '@/types/resolved';
@@ -86,8 +87,6 @@ export function useBuilderAutosave(existingCharacterId?: string) {
             bonds: character.bonds,
             flaws: character.flaws,
             appearance: character.appearance,
-            backstory: character.backstory,
-            notes: character.notes,
             portrait_url: character.portrait_url,
             heroic_inspiration: character.heroic_inspiration,
             exhaustion_level: character.exhaustion_level,
@@ -132,6 +131,12 @@ export function useBuilderAutosave(existingCharacterId?: string) {
             characterIdRef.current = savedId;
             queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
           }
+
+          // Backstory and notes live in character_private (AD-5); its row exists already (trigger).
+          await writeCharacterPrivate(savedId, {
+            backstory: character.backstory ?? null,
+            notes: character.notes ?? null,
+          });
 
           // Batch upsert all build level rows in a single call
           const allUpserts: TablesInsert<'character_build_levels'>[] = rows.map((row) => {

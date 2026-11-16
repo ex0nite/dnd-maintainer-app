@@ -226,7 +226,9 @@ Then('the equipment list shows the longsword', function (this: DndWorld) {
 function characterRow(world: DndWorld): Row {
   const row = (world.db.rows('characters') as Row[]).find((c) => c.id === 'cs-char');
   if (!row) throw new Error('Setup error: seeded character not found in the store');
-  return row;
+  // Backstory and notes live in character_private (AD-5): merge them for assertions.
+  const priv = (world.db.rows('character_private') as Row[]).find((p) => p.character_id === 'cs-char');
+  return { ...row, ...(priv ?? {}) };
 }
 
 // React 19 controlled inputs need user-event to fire onChange.
