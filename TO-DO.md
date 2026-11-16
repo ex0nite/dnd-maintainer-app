@@ -20,8 +20,7 @@ si la réponse change le besoin). Les points marqués `BLOQUANT` là-bas bloquen
 - [x] Corriger les 6 erreurs de lint `no-console` (D-27, dans `dev`)
 - [x] Corriger le format et les scénarios BDD en CI (stub de `VITE_SUPABASE_PUBLISHABLE_KEY` dans le chargeur BDD, exclusion
       Prettier des fichiers BMAD générés)
-- [ ] (story 1.1) Ajouter un `.gitattributes` (`* text=auto eol=lf`) pour que `format:check`, `coverage-matrix` et le BDD se comportent
-      sous Windows comme sous Linux (aujourd'hui ils échouent en local sur Windows, mais passent en CI)
+- [x] (story 1.1) Ajouter un `.gitattributes` (`* text=auto eol=lf`)
 - [ ] Corriger la doc : `CLAUDE.md` dit « RLS sans policy » alors que les 7 policies sont `USING (true)` (et 4 policies
       publiques sur `storage.objects`), et « ESLint 9 » alors que `package.json` est en ESLint 10 ; le nom de
       variable est `VITE_SUPABASE_PUBLISHABLE_KEY` dans le code mais `VITE_SUPABASE_ANON_KEY` dans `CLAUDE.md`, `src/locales/en/common.json`,
@@ -41,7 +40,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Epic 1 : une app verrouillée où le MJ retrouve tout
 
-- [ ] 1.1 Banc d'essai pgTAP en CI et fins de ligne LF (`.gitattributes`)
+- [x] 1.1 Banc d'essai pgTAP en CI et fins de ligne LF (`.gitattributes`)
 - [ ] 1.2 Le propriétaire crée le compte MJ hors de l'app (`profiles`, script d'amorçage)
 - [ ] 1.3 Le MJ se connecte avec son pseudo (app et MCP), contrôle 360 px / contraste en CI
 - [ ] 1.4 Campagnes et appartenance sous contrôle strict

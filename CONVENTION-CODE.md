@@ -15,7 +15,7 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
 
 - Prettier (config dans `.prettierrc.json` : guillemets simples, point-virgule, 120 colonnes) et ESLint se
   lancent automatiquement à l'écriture (hook `.claude/settings.json`). Ne pas formater à la main.
-- Fins de ligne : cible LF (`.gitattributes` à ajouter, voir `TO-DO.md`).
+- Fins de ligne : LF, imposé par `.gitattributes` (`* text=auto eol=lf`). Après un clone sous Windows, `git rm --cached -r . && git reset --hard` normalise la copie de travail.
 - Documentation et fichiers de pilotage (`*.md` racine) en **français** ; code, identifiants, commits et messages
   d'erreur techniques en **anglais**.
 
@@ -61,9 +61,14 @@ conflit, `CLAUDE.md` décrit l'existant et ce fichier décrit ce qu'on attend du
   `src/test/hook-test-helpers.ts`.
 - Toute nouvelle fonctionnalité : tests unitaires + scénarios BDD (`features/`). Fonctionnalité manquante : tag
   `@future`; on ne modifie pas `src/` ou les migrations pour faire passer un scénario (voir `docs/bdd.md`).
-- Toute nouvelle policy RLS : tests SQL (pgTAP) pour **chaque** rôle (anonyme, joueur propriétaire, autre joueur,
-  non-membre, MJ) et chaque opération (SELECT, INSERT, UPDATE, DELETE).
-- Avant la revue : `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:bdd`, `npm run format:check`, `npm run build` passent ; `npm run supabase:types` après une migration.
+- Toute nouvelle policy RLS : tests SQL (pgTAP) pour **chaque** identité (anonyme, joueur propriétaire, autre joueur,
+  joueur archivé, joueur au mot de passe temporaire, non-membre, MJ) et chaque opération (SELECT, INSERT, UPDATE,
+  DELETE).
+- Tests SQL dans `supabase/tests/database/` (`npm run test:sql`, pile locale démarrée). `00000-setup-test-helpers.sql` installe
+  les aides du schéma `tests` (`tests.set_identity('dm')`, `tests.uid(...)`, `tests.rows_affected(...)`) ; chaque fichier de
+  test est une transaction terminée par `rollback`. Une écriture bloquée par la RLS touche **0 ligne sans erreur** : on
+  compte les lignes (`tests.rows_affected`) ; un `INSERT` ou `WITH CHECK` refusé lève `42501`.
+- Avant la revue : `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:bdd`, `npm run test:sql` (si SQL touché), `npm run format:check`, `npm run build` passent ; `npm run supabase:types` après une migration.
 
 ## Git
 
