@@ -7,7 +7,7 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default defineConfig(
   {
-    ignores: ['dist/', 'node_modules/', '.claude/'],
+    ignores: ['dist/', 'dist-e2e/', 'test-results/', 'playwright-report/', 'node_modules/', '.claude/'],
   },
   {
     files: ['features/**/*.{js,mjs,ts,tsx}'],
@@ -80,6 +80,38 @@ export default defineConfig(
     files: ['features/support/register.mjs'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    // Only src/hooks/ talks to Supabase (AD-1): pages and components go through hooks.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/hooks/**', 'src/lib/supabase.ts', 'src/**/*.test.{ts,tsx}', 'src/test/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@supabase/supabase-js',
+              message: 'Seul src/hooks/ appelle Supabase (AD-1)',
+              allowTypeImports: true,
+            },
+          ],
+          patterns: [
+            {
+              regex: '(^|/)lib/supabase(\\.ts)?/?$|^(\\.{1,2}/)+supabase(\\.ts)?$|^\\./supabase(\\.ts)?$',
+              message: 'Seul src/hooks/ appelle Supabase (AD-1)',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/supabase/]',
+          message: 'Seul src/hooks/ appelle Supabase (AD-1)',
+        },
+      ],
     },
   },
   {

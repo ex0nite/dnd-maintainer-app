@@ -892,5 +892,15 @@
     "nameRequired": "Name is required",
     "titleRequired": "Title is required",
     "itemNameRequired": "Item name is required"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInButton": "Sign in",
+    "signingIn": "Signing in...",
+    "pseudo": "Username",
+    "password": "Password",
+    "invalidCredentials": "Incorrect credentials",
+    "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
+    "signOut": "Sign out"
   }
 }

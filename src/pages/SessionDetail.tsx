@@ -1,8 +1,7 @@
 import { parseIntOrDefault } from '@/lib/utils';
 import { getLogger } from '@/lib/logger';
-import { supabase } from '@/lib/supabase';
+import { updateSessionDmNotes, updateSessionFields, updateSessionLoot } from '@/hooks/dataAccess';
 import { Session } from '@/types/database';
-import type { Json, TablesUpdate } from '@/types/supabase';
 import { useSession } from '@/hooks/useSessions';
 import { useSessionEncounters } from '@/hooks/useEncounters';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -96,12 +95,7 @@ export default function SessionDetail() {
     mutationFn: async (updates: Partial<Session>) => {
       if (!session?.id) throw new Error('Session ID is required');
 
-      const { error } = await supabase
-        .from('sessions')
-        .update(updates as unknown as TablesUpdate<'sessions'>)
-        .eq('id', session.id);
-
-      if (error) throw error;
+      await updateSessionFields(session.id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session', sessionSlug] });
@@ -114,12 +108,7 @@ export default function SessionDetail() {
     mutationFn: async (content: string) => {
       if (!session?.id) throw new Error('Session ID is required');
 
-      const { error } = await supabase
-        .from('sessions')
-        .update({ notes: content.trim() || null })
-        .eq('id', session.id);
-
-      if (error) throw error;
+      await updateSessionDmNotes(session.id, content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session', sessionSlug] });
@@ -133,12 +122,7 @@ export default function SessionDetail() {
       if (!session?.id) throw new Error('Session ID is required');
 
       const updatedLoot = [...loot.filter((l) => l.id !== lootEntry.id), lootEntry];
-      const { error } = await supabase
-        .from('sessions')
-        .update({ loot: updatedLoot as unknown as Json })
-        .eq('id', session.id);
-
-      if (error) throw error;
+      await updateSessionLoot(session.id, updatedLoot);
     },
     onSuccess: (_data, lootEntry) => {
       setLoot((prev) => [...prev.filter((l) => l.id !== lootEntry.id), lootEntry]);
@@ -152,12 +136,7 @@ export default function SessionDetail() {
       if (!session?.id) throw new Error('Session ID is required');
 
       const updatedLoot = loot.filter((l) => l.id !== lootId);
-      const { error } = await supabase
-        .from('sessions')
-        .update({ loot: updatedLoot as unknown as Json })
-        .eq('id', session.id);
-
-      if (error) throw error;
+      await updateSessionLoot(session.id, updatedLoot);
     },
     onSuccess: (_data, lootId) => {
       setLoot((prev) => prev.filter((l) => l.id !== lootId));

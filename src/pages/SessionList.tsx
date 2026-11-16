@@ -1,5 +1,5 @@
 import { parseIntOrDefault } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
+import { fetchTotalXp, insertSession } from '@/hooks/dataAccess';
 import { useSessions } from '@/hooks/useSessions';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -35,16 +35,7 @@ export default function SessionList() {
   // Fetch total XP awarded
   const { data: totalXp = 0 } = useQuery({
     queryKey: ['sessions-xp', campaignId],
-    queryFn: async () => {
-      if (!campaignId) return 0;
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('experience_awarded')
-        .eq('campaign_id', campaignId);
-
-      if (error) throw error;
-      return data.reduce((sum, session) => sum + (session.experience_awarded || 0), 0);
-    },
+    queryFn: () => (campaignId ? fetchTotalXp(campaignId) : Promise.resolve(0)),
     enabled: !!campaignId,
   });
 
@@ -53,20 +44,7 @@ export default function SessionList() {
     mutationFn: async (session: typeof newSession) => {
       if (!campaignId) throw new Error('Campaign ID is required');
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .insert([
-          {
-            campaign_id: campaignId,
-            name: session.name,
-            session_number: session.session_number,
-            date: session.date,
-          },
-        ])
-        .select();
-
-      if (error) throw error;
-      return data[0];
+      return insertSession(campaignId, session);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessions', campaignId] });
