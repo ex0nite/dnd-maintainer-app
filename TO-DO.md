@@ -47,7 +47,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [x] 1.4 Campagnes et appartenance sous contrôle strict
 - [x] 1.5 Les données privées quittent les tables lisibles (`character_private`, `session_dm`, `campaign_dm`)
 - [x] 1.6 Les tables de personnages sont verrouillées
-- [ ] 1.7 Le reste du schéma et le stockage sont verrouillés
+- [x] 1.7 Le reste du schéma et le stockage sont verrouillés
 - [ ] 1.8 Bascule transactionnelle des données existantes
 
 ### Epic 7, première partie (à lancer tôt, en parallèle de l'epic 1)
@@ -78,6 +78,13 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Reprises transverses
 
+- [ ] `storage.objects` appartient à `supabase_storage_admin` : la migration ne peut pas retirer les droits de table de `anon`
+      (seule la RLS le protège, vérifiée par pgTAP : aucune policy pour anon/public, restrictive `access_active`). À revérifier
+      sur la pile du QNAP (story 7.2). Les privilèges par défaut de `supabase_admin` (objets qu'il crée) ne sont pas modifiables
+      non plus : nos migrations tournent en `postgres`, dont les défauts sont corrigés.
+- [ ] Portraits : les lignes existantes sont converties en chemins de stockage par la migration 1.7 ; vérifier sur les
+      vraies données à la bascule (story 1.8) que chaque portrait s'affiche via une URL signée
+
 - [ ] Performance des policies : les policies appellent `public.is_dm()` / `is_active_user()` sans `(select ...)` (évaluation
       possible par ligne) ; sans enjeu pour 5 joueurs, à reprendre si une liste ralentit (adapter alors les tests de structure)
 - [ ] Matrice pgTAP des tables de personnages : un personnage (niveau, objet) par identité pour distinguer propriétaire et
@@ -98,7 +105,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
       restent ouverts à `anon` : ne pas exposer l'app avant la 1.7
 
 - [ ] Réécrire les specs BDD `@draft` (D-29), en `@future`, au fil de chaque epic
-- [ ] Retirer `GRANT EXECUTE` à `anon` sur `last_activity_at` (migration 20260607000000) : couvert par la story 1.7
+- [x] Retirer `GRANT EXECUTE` à `anon` sur `last_activity_at` : fait en story 1.7 (et sur toutes les fonctions de `public`)
 - [ ] Mettre à jour `docs/security-review-2026-06-01.md` avant la mise en ligne
 
 ## Plus tard

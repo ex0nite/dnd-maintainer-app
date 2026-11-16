@@ -5,7 +5,7 @@
 -- Uses a throwaway table inside the transaction; nothing is left behind.
 begin;
 
-select plan(18);
+select plan(19);
 
 create table public.harness_probe (
   id    int primary key,
@@ -34,12 +34,22 @@ select is(current_user::text, 'authenticated', 'owner runs as role authenticated
 
 select tests.set_identity('anon');
 select is(current_user::text, 'anon', 'anon identity runs as role anon');
--- Supabase grants table privileges to anon by default (revoked in story 1.7), so
--- RLS is what protects the row: with no policy for anon it sees nothing.
-select is(
-  (select count(*) from public.harness_probe),
-  0::bigint,
-  'anon sees no row through RLS'
+-- Story 1.7 revoked anon's default table privileges: a new table is closed to anon from the start.
+select throws_ok(
+  $q$select count(*) from public.harness_probe$q$,
+  '42501',
+  null,
+  'anon has no privilege on a new table'
+);
+
+-- A function created by the migration role is not executable by anon or PUBLIC (story 1.7: EXECUTE for PUBLIC is
+-- revoked globally by default privileges).
+select tests.reset_identity();
+create function public.harness_fn() returns int language sql as $f$ select 1 $f$;
+select ok(
+  not has_function_privilege('anon', 'public.harness_fn()', 'EXECUTE')
+  and not has_function_privilege('public', 'public.harness_fn()', 'EXECUTE'),
+  'a new function is closed to anon and PUBLIC by default'
 );
 
 select tests.reset_identity();
