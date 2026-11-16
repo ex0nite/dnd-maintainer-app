@@ -8,6 +8,9 @@ describe('pseudoToEmail', () => {
   it('uses the default domain', () => {
     expect(pseudoToEmail('maitre')).toBe('maitre@table.invalid');
   });
+  it('rejects an invalid domain label', () => {
+    expect(pseudoToEmail('maitre', 'a.b')).toBeNull();
+  });
   it.each(['', 'ab', 'a b', 'a@b.c', 'x'.repeat(21), 'café'])('rejects %j', (input) => {
     expect(pseudoToEmail(input)).toBeNull();
   });

@@ -90,12 +90,26 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
+          paths: [
+            {
+              name: '@supabase/supabase-js',
+              message: 'Seul src/hooks/ appelle Supabase (AD-1)',
+              allowTypeImports: true,
+            },
+          ],
           patterns: [
             {
-              regex: '(^@/lib/supabase$|^(\\.{1,2}/)+(lib/)?supabase$|^\\./supabase$)',
+              regex: '(^|/)lib/supabase(\\.ts)?/?$|^(\\.{1,2}/)+supabase(\\.ts)?$|^\\./supabase(\\.ts)?$',
               message: 'Seul src/hooks/ appelle Supabase (AD-1)',
             },
           ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/supabase/]',
+          message: 'Seul src/hooks/ appelle Supabase (AD-1)',
         },
       ],
     },

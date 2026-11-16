@@ -53,3 +53,18 @@ for (const pageUnderTest of PAGES) {
     }
   }
 }
+
+// Story 1.3, criterion 1: a visitor without a session is sent to the sign-in page and no
+// campaign data is requested.
+test('a visitor is redirected to sign-in and nothing is fetched', async ({ page }) => {
+  await stubBackend(page, { signedIn: false });
+  const dataRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/rest/v1/')) dataRequests.push(request.url());
+  });
+
+  await page.goto('/campaign/la-mine-perdue');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByLabel('Password')).toBeVisible();
+  expect(dataRequests).toEqual([]);
+});

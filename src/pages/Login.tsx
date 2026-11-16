@@ -14,7 +14,7 @@ export default function Login() {
   const location = useLocation();
   const [pseudo, setPseudo] = useState('');
   const [password, setPassword] = useState('');
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<'invalid' | 'unavailable' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // usePageTitle needs the Layout outlet; the login page lives outside it.
@@ -23,20 +23,20 @@ export default function Login() {
   }, [t]);
 
   const from = (location.state as { from?: string } | null)?.from;
-  const destination = from && from !== '/login' ? from : '/';
+  const destination = from && from.startsWith('/') && !from.startsWith('//') && from !== '/login' ? from : '/';
 
   if (!isLoading && session) return <Navigate to={destination} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setFailed(false);
-    const ok = await signIn(pseudo, password);
+    setFailed(null);
+    const result = await signIn(pseudo, password);
     setSubmitting(false);
-    if (ok) navigate(destination, { replace: true });
+    if (result === 'ok') navigate(destination, { replace: true });
     else {
       setPassword('');
-      setFailed(true);
+      setFailed(result);
     }
   };
 
@@ -59,7 +59,7 @@ export default function Login() {
             spellCheck={false}
             value={pseudo}
             onChange={(e) => setPseudo(e.target.value)}
-            aria-invalid={failed}
+            aria-invalid={failed === 'invalid'}
             aria-describedby={failed ? 'login-error' : undefined}
           />
         </div>
@@ -72,14 +72,14 @@ export default function Login() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            aria-invalid={failed}
+            aria-invalid={failed === 'invalid'}
             aria-describedby={failed ? 'login-error' : undefined}
           />
         </div>
 
         {failed && (
           <p id="login-error" role="alert" className="text-sm text-destructive">
-            {t('auth.invalidCredentials')}
+            {failed === 'unavailable' ? t('auth.unavailable') : t('auth.invalidCredentials')}
           </p>
         )}
 

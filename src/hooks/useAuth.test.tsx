@@ -49,12 +49,12 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(new QueryClient()) });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    let ok = false;
+    let ok = '';
     await act(async () => {
       ok = await result.current.signIn('  Maitre ', 'a-long-enough-pass');
     });
 
-    expect(ok).toBe(true);
+    expect(ok).toBe('ok');
     expect(auth.signInWithPassword).toHaveBeenCalledWith({
       email: 'maitre@table.invalid',
       password: 'a-long-enough-pass',
@@ -62,21 +62,60 @@ describe('useAuth', () => {
   });
 
   it('answers the same way for a wrong password and an impossible pseudo', async () => {
-    auth.signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login credentials' } });
+    auth.signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login credentials', status: 400 } });
     const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(new QueryClient()) });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    let wrongPassword = true;
-    let impossiblePseudo = true;
+    let wrongPassword = '';
+    let impossiblePseudo = '';
     await act(async () => {
       wrongPassword = await result.current.signIn('maitre', 'wrong');
       impossiblePseudo = await result.current.signIn('x', 'whatever');
     });
 
-    expect(wrongPassword).toBe(false);
-    expect(impossiblePseudo).toBe(false);
+    expect(wrongPassword).toBe('invalid');
+    expect(impossiblePseudo).toBe('invalid');
     // The impossible pseudo never reaches the network.
     expect(auth.signInWithPassword).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells an outage from wrong credentials', async () => {
+    auth.signInWithPassword.mockResolvedValue({ error: { message: 'boom', status: 503 } });
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(new QueryClient()) });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let outcome = '';
+    await act(async () => {
+      outcome = await result.current.signIn('maitre', 'a-long-enough-pass');
+    });
+
+    expect(outcome).toBe('unavailable');
+  });
+
+  it('drops the local session even when the network sign-out fails', async () => {
+    auth.signOut.mockResolvedValueOnce({ error: { message: 'offline' } });
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(new QueryClient()) });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.signOut();
+    });
+
+    expect(auth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
+  });
+
+  it('empties the query cache when another user takes over', async () => {
+    auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'a' } } } });
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['campaigns'], [{ id: 'secret' }]);
+    renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
+    await waitFor(() => expect(auth.onAuthStateChange).toHaveBeenCalled());
+    await waitFor(() => expect(auth.getSession).toHaveBeenCalled());
+    await act(async () => {});
+
+    act(() => listener('SIGNED_IN', { user: { id: 'b' } }));
+
+    expect(queryClient.getQueryData(['campaigns'])).toBeUndefined();
   });
 
   it('empties the query cache when the session ends', async () => {
@@ -112,6 +151,13 @@ describe('RequireAuth', () => {
       { wrapper: makeWrapper(new QueryClient()) }
     );
   }
+
+  it('renders nothing private while the stored session is still being read', () => {
+    auth.getSession.mockReturnValue(new Promise(() => {}));
+    renderGuard();
+    expect(screen.queryByText(PRIVATE)).not.toBeInTheDocument();
+    expect(screen.queryByText(LOGIN_PAGE)).not.toBeInTheDocument();
+  });
 
   it('sends a visitor to the login page without rendering the content', async () => {
     renderGuard();
