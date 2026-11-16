@@ -99,6 +99,12 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
 - Une migration qui déplace des données (copie, puis suppression de colonnes) est enveloppée dans `begin; ... commit;` et
   verrouille les tables touchées (`lock table ... in access exclusive mode`) : aucune écriture ne doit passer entre la
   copie et la pose des triggers.
+- `supabase/tests/database/00900-structure.test.sql` est le filet de la CI : il échoue si une table de `public` n'a pas la
+  RLS ou la policy `access_active` (hors `profiles`), s'il existe une policy `true` ou applicable à `anon`/`public` (schémas
+  `public` et `storage`), un droit de `anon` sur une table, une séquence ou une fonction de `public`, une vue qui n'est pas
+  `security_invoker`, ou un bucket public. Une nouvelle table se crée donc fermée, avec ses policies et sa matrice.
+- Les portraits sont dans un bucket privé : la base garde le chemin (`<id>/portrait.jpg`), le navigateur demande une URL
+  signée (`usePortraitSrc`, `PortraitImage`), jamais d'URL publique.
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.

@@ -1,3 +1,4 @@
+import { PortraitImage } from '@/components/PortraitImage';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -212,10 +213,10 @@ export default function CharacterList() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     {character.portrait_url ? (
-                      <img
-                        src={character.portrait_url}
+                      <PortraitImage
+                        stored={character.portrait_url}
                         alt={character.name}
-                        className="size-12 rounded-full object-cover shrink-0"
+                        className="block size-12 rounded-full object-cover shrink-0"
                       />
                     ) : (
                       <div className="size-12 rounded-full bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0">

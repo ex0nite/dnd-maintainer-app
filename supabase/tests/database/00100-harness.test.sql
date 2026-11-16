@@ -34,12 +34,12 @@ select is(current_user::text, 'authenticated', 'owner runs as role authenticated
 
 select tests.set_identity('anon');
 select is(current_user::text, 'anon', 'anon identity runs as role anon');
--- Supabase grants table privileges to anon by default (revoked in story 1.7), so
--- RLS is what protects the row: with no policy for anon it sees nothing.
-select is(
-  (select count(*) from public.harness_probe),
-  0::bigint,
-  'anon sees no row through RLS'
+-- Story 1.7 revoked anon's default table privileges: a new table is closed to anon from the start.
+select throws_ok(
+  $q$select count(*) from public.harness_probe$q$,
+  '42501',
+  null,
+  'anon has no privilege on a new table'
 );
 
 select tests.reset_identity();

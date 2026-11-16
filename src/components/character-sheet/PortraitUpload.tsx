@@ -5,6 +5,7 @@ import { Loader2, X } from 'lucide-react';
 import { usePortraitUpload } from '@/hooks/usePortraitUpload';
 import { ValidationError } from '@/components/ui/validation-error';
 import { Button } from '@/components/ui/button';
+import { PortraitImage } from '@/components/PortraitImage';
 
 interface PortraitUploadProps {
   characterId: string;
@@ -87,10 +88,11 @@ export function PortraitUpload({ characterId, portraitUrl, characterName }: Port
             title={t('portrait.change')}
             aria-label={t('portrait.change')}
           >
-            <img
-              src={`${portraitUrl}?v=${cacheBust}`}
+            <PortraitImage
+              key={cacheBust}
+              stored={portraitUrl}
               alt={characterName}
-              className="size-24 rounded-full object-cover"
+              className="block size-24 rounded-full object-cover"
             />
           </button>
         ) : (
