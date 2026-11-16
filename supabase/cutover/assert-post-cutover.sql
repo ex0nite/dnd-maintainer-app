@@ -1,6 +1,8 @@
 -- Story 1.8: after the cutover every value of fixture-pre-lock.sql is still there, in its new home,
 -- and nothing was invented. Any failed check raises an exception (run with ON_ERROR_STOP).
 -- Runs as the database owner (RLS does not apply): this proves the DATA moved, the pgTAP matrix proves who may read it.
+set plpgsql.check_asserts = on;
+
 do $$
 declare
   n integer;
@@ -43,6 +45,17 @@ begin
   assert v = 'DRAFT BACKSTORY', 'draft backstory lost';
   select count(*) into n from public.character_private;
   assert n = (select count(*) from public.characters), 'every character has exactly one character_private row';
+
+  -- NULLs stay NULL (no invented text) where the new column allows it.
+  assert (select backstory from public.character_private where character_id = 'ca000000-0000-4000-8000-000000000002') is null, 'Ireena backstory should still be NULL';
+  assert (select notes from public.character_private where character_id = 'ca000000-0000-4000-8000-000000000003') is null, 'draft notes should still be NULL';
+  assert (select notes from public.session_dm where session_id = '5e000000-0000-4000-8000-000000000002') is null, 'session 2 notes should still be NULL';
+  assert (select experience_awarded from public.session_dm where session_id = '5e000000-0000-4000-8000-000000000002') = 450, 'session 2 XP lost';
+  assert (select loot from public.session_dm where session_id = '5e000000-0000-4000-8000-000000000002') is null, 'session 2 loot should still be NULL';
+
+  -- Level history and inventory keep their values, not only their counts.
+  assert (select array_agg(class_id || ':' || class_level order by sequence) from public.character_build_levels where character_id = 'ca000000-0000-4000-8000-000000000001') = array['fighter:1', 'fighter:2'], 'build levels altered';
+  assert (select array_agg(item_id || ':' || quantity || ':' || equipped order by item_id) from public.character_items where character_id = 'ca000000-0000-4000-8000-000000000001') = array['longsword:1:true', 'rope-hempen:2:false'], 'inventory altered';
 
   -- Free-text player name untouched, no owner assigned (the DM does it later, story 3.9).
   select player_name into v from public.characters where id = 'ca000000-0000-4000-8000-000000000001';

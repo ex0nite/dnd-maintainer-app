@@ -13,7 +13,7 @@ insert into campaigns (id, name, status, description, dm_notes) values
 insert into characters (id, campaign_id, name, character_type, player_name, level, backstory, notes, portrait_url) values
   ('ca000000-0000-4000-8000-000000000001', 'c0ffee00-0000-4000-8000-000000000001', 'Aldric', 'pc', 'Marie (the real one)', 3,
    'ALDRIC BACKSTORY: orphan raised by monks', 'ALDRIC NOTES: afraid of fire',
-   'http://127.0.0.1:54321/storage/v1/object/public/character-portraits/ca000000-0000-4000-8000-000000000001/portrait.jpg'),
+   'http://127.0.0.1:54321/storage/v1/object/public/character-portraits/ca000000-0000-4000-8000-000000000001/portrait.jpg?v=2'),
   ('ca000000-0000-4000-8000-000000000002', 'c0ffee00-0000-4000-8000-000000000001', 'Ireena', 'npc', null, 1,
    null, 'IREENA NOTES: looks like Tatyana', null),
   ('ca000000-0000-4000-8000-000000000003', 'c0ffee00-0000-4000-8000-000000000002', 'Draft hero', 'pc', 'Paul', 0,

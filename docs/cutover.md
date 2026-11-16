@@ -5,20 +5,32 @@ The app must never be reachable while it is half-locked. The lock-down (migratio
 
 ## Procedure
 
-1. Stop publishing the app (the exposure of story 7.3 is only switched on at the very end, story 7.5).
-2. Check that you have a copy of the data you can live without losing: there is no backup system (D-23), only the RAID.
-   Export from the app (`/export`) and, if possible, a `pg_dump` taken by hand.
-3. Apply every pending migration in one transaction:
+1. **Stop everything that writes**: the front (not published), the MCP server, any open session of the app. The script
+   locks `campaigns`, `characters` and `sessions` for the duration (10 s lock timeout), but a stray write just before it
+   would be lost with the old columns.
+2. **Take a copy of the data (mandatory).** There is no backup system (D-23), only the RAID, and the cutover drops
+   columns: it can not be undone once committed. Take a `pg_dump` by hand and keep it until the new state is checked.
 
    ```bash
-   DB_URL='postgresql://postgres:<password>@<host>:5432/postgres' \
-     bash scripts/cutover/apply-in-one-transaction.sh
+   read -rs PGPASSWORD; export PGPASSWORD   # the password is typed, nothing is echoed or stored in the history
+   pg_dump -Fc -h <host> -U postgres -d postgres -f dnd-before-cutover.dump
    ```
 
-   The first error rolls everything back; nothing is half applied. `DRY_RUN=1` prints the SQL without running it.
-   The script records the versions in `supabase_migrations.schema_migrations`, so `supabase db push` later sees them.
+   Restore it with `pg_restore` into an empty database if anything goes wrong.
 
-4. Create the DM account (`SETUP.md`, "Create the DM account"), then start the MCP server with `DND_DM_PSEUDO` and
+3. **Read what will be applied**, then apply it in one transaction:
+
+   ```bash
+   DB_URL='postgresql://postgres@<host>:5432/postgres' DRY_RUN=1 bash scripts/cutover/apply-in-one-transaction.sh | less
+   DB_URL='postgresql://postgres@<host>:5432/postgres' bash scripts/cutover/apply-in-one-transaction.sh
+   ```
+
+   The first error rolls everything back; nothing is half applied. The script stops if
+   `supabase_migrations.schema_migrations` is missing (it must list what the database already has) or if a migration
+   holds transaction control it can not strip. It records the applied versions in that table, so `supabase db push`
+   later sees them. Never put the password in the URL (it would show in `ps` and in the shell history).
+
+4. Create the DM account (`SETUP.md`, "Create the DM account"), then restart the MCP server with `DND_DM_PSEUDO` and
    `DND_DM_PASSWORD`: its tools work again.
 5. Check what the DM sees: campaigns, characters (their `player_name` is still free text, no owner yet), sessions (notes,
    loot, XP), notes. Portraits are shown through signed URLs.

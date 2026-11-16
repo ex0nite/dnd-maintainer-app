@@ -9,14 +9,32 @@
 #
 # Never point it at a real project: it runs `supabase db reset --local`, which wipes the local database.
 #   bash scripts/cutover/test-cutover.sh
-# Environment: PSQL (see apply-in-one-transaction.sh) to reach the local database; default `psql` on 127.0.0.1:54322.
+# Environment: CUTOVER_TEST_CONTAINER (optional, see below). Everything else from the environment is ignored.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-export DB_URL="${DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
-PSQL="${PSQL:-psql \"$DB_URL\"}"
-export PSQL
-run_psql() { eval "$PSQL \"\$@\""; }
+# SAFETY: this test wipes and rebuilds the database (`supabase db reset --local`). It must never reach a real
+# project, so DB_URL and PSQL from the environment are IGNORED: only the local database is targeted. To go through
+# a docker container instead of a local psql, set CUTOVER_TEST_CONTAINER=<local supabase db container name>.
+unset PGPASSWORD PGHOST PGPORT PGUSER PGDATABASE PGSERVICE
+export DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+if [ -n "${CUTOVER_TEST_CONTAINER:-}" ]; then
+  case "$CUTOVER_TEST_CONTAINER" in
+    supabase_db_*) ;;
+    *) echo "CUTOVER_TEST_CONTAINER must be a local supabase_db_* container" >&2; exit 1 ;;
+  esac
+  export PSQL="docker exec -i $CUTOVER_TEST_CONTAINER psql -U postgres"
+else
+  unset PSQL
+fi
+run_psql() {
+  if [ -n "${PSQL:-}" ]; then
+    # shellcheck disable=SC2086
+    $PSQL "$@"
+  else
+    psql "$DB_URL" "$@"
+  fi
+}
 
 BEFORE_LOCK=20260607000000
 
