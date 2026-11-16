@@ -22,6 +22,7 @@ D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, cha
 - `npm run test:watch` — run tests in watch mode
 - `npm run test:coverage` — run tests with v8 coverage report
 - `npm run test:bdd` — run the Cucumber BDD suite (default profile, stays green). See `docs/bdd.md`.
+- `npm run test:sql` — run the pgTAP SQL tests in `supabase/tests/database/` against the running local Supabase (see CONVENTION-CODE.md)
 - `npm run test:bdd:future` — run spec-ahead BDD scenarios (`@future` profile, expected to fail). See `docs/bdd.md`.
 - `npm run coverage:matrix` — regenerate `docs/coverage-matrix.md` from `src/lib/sources/coverage-matrix.ts`
 - `npm run uat:checklist` — generate a manual UAT checklist (one row per BDD scenario) from `features/` into `docs/uat-checklist.csv`. Add `-- --format md` (or `both`) for a printable Markdown checklist. See `scripts/gen-uat-checklist.ts`.

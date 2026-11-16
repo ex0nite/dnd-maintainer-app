@@ -48,6 +48,7 @@ peut pas lire son marqueur. Le front ne sait alors pas qu'il doit afficher l'éc
 interblocage.
 
 **Correction.**
+
 - `profiles` : **aucun** `INSERT`, `UPDATE` ni `DELETE` pour `authenticated` (pas de policy et `REVOKE`). Écritures par
   `account-admin` seulement.
 - Lecture de son propre profil **sans** `is_active_user()` (exception explicite à AD-4). Lecture des pseudos des autres
@@ -72,6 +73,7 @@ portraits. Son jeton reste valable jusqu'à une heure, et indéfiniment si la r�
 en va de même pour `character_items` et `character_build_levels`, qui « suivent `owns_character()` ».
 
 **Correction.** Rendre l'invariant structurel :
+
 - sur **chaque** table de `public` et sur `storage.objects` (pour le bucket), une policy
   `AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_dm() OR public.is_active_user())` avec le même `WITH CHECK`.
   Une restrictive se combine par **ET** : un oubli dans une policy permissive ne rouvre plus l'accès ;
@@ -95,6 +97,7 @@ identifiants des personnages fuient eux aussi, alors que la RLS d'AD-6 les cache
 l'énumération est impossible, ce qu'AD-8 ne garantit pas.
 
 **Correction.**
+
 - Soit bucket **privé** (`public=false`) : `SELECT` sur `storage.objects` réservé à `is_dm()` ou à « le premier segment
   désigne un personnage que l'appelant peut lire » (fonction `can_read_character(uuid)`). L'affichage passe par
   `createSignedUrl` (TTL court, mis en cache par TanStack Query). `portrait_url` stocke le **chemin**, pas l'URL.
@@ -117,6 +120,7 @@ nouveau trigger s'appelle par exemple `characters_protect_columns` (`p` > `m`), 
 `characters_guard_columns`, ça fonctionne. Deux équipes conformes à l'AD obtiennent deux comportements opposés.
 
 **Correction.** Préciser dans AD-6 :
+
 - (a) le trigger ne s'applique que si `current_user = 'authenticated'` (ou `auth.role() = 'authenticated'`) et
   `NOT public.is_dm()`. `service_role`, `postgres` et `supabase_auth_admin` sont exemptés ;
 - (b) son nom force une exécution **avant** `characters_manage_slug` (par exemple `characters_a_guard`), ou bien il ne
@@ -145,6 +149,7 @@ campagne fait l'objet d'un test explicite.
 ### H3 — Les contrôles d'`INSERT` se contournent par `UPDATE`, et la règle d'auteur contredit FR-19 et FR-17 (AD-7, AD-6)
 
 **Scénario 1 : changement de clé étrangère par `UPDATE`.**
+
 - `session_comments` : AD-7 n'exige « séance publiée et même campagne » qu'à l'insertion. Le joueur publie un
   commentaire, puis `PATCH session_comments?id=eq.<c> {"session_id":"<séance non publiée>"}`, ou une séance d'une autre
   campagne. Si la policy `UPDATE` ne vérifie que l'auteur, ça passe. On obtient au minimum un oracle d'existence et une
@@ -165,6 +170,7 @@ tranchée.
 
 **Correction.** Pour chaque table d'AD-7, donner un tableau « opération × identité » avec `USING` et `WITH CHECK`
 explicites :
+
 - `WITH CHECK` de l'`UPDATE` = mêmes conditions que l'`INSERT` (appartenance, séance publiée de la même campagne) ;
 - `author_id` et `campaign_id` (et `session_id`) **immuables**, par trigger ou par absence de `GRANT UPDATE` sur ces
   colonnes (`GRANT UPDATE (title, body, ...)`, ce que PostgREST respecte) ;
@@ -177,15 +183,16 @@ explicites :
 
 **Faits vérifiés dans le schéma.** Toutes les colonnes citées existent :
 
-| Colonne | Table | Source |
-| --- | --- | --- |
-| `backstory`, `notes` | `characters` | `00001_initial_schema.sql`, lignes 206 et 212 |
-| `notes`, `experience_awarded` (`NOT NULL DEFAULT 0`), `loot` (`jsonb DEFAULT '[]'`) | `sessions` | lignes 247 à 249 |
-| `dm_notes` | `campaigns` | ligne 138 |
+| Colonne                                                                             | Table        | Source                                        |
+| ----------------------------------------------------------------------------------- | ------------ | --------------------------------------------- |
+| `backstory`, `notes`                                                                | `characters` | `00001_initial_schema.sql`, lignes 206 et 212 |
+| `notes`, `experience_awarded` (`NOT NULL DEFAULT 0`), `loot` (`jsonb DEFAULT '[]'`) | `sessions`   | lignes 247 à 249                              |
+| `dm_notes`                                                                          | `campaigns`  | ligne 138                                     |
 
 La copie est donc faisable par `INSERT ... SELECT`.
 
 **Problèmes.**
+
 1. **Quand les colonnes sont-elles supprimées ?** AD-5 dit « suppression de ces colonnes » sans dire à quel temps.
    Supprimées au temps 1, elles cassent le MCP actuel : `tools/read.ts` lit `c.backstory`, `c.notes`, `s.notes`,
    `s.loot`, `c.dm_notes` ; `tools/write.ts` écrit `dm_notes` (l. 55), `sessions.notes` et `experience_awarded`
@@ -209,6 +216,7 @@ La copie est donc faisable par `INSERT ... SELECT`.
    MCP auront `owner_user_id = NULL`, et aucun outil ne permet de l'assigner (FR-9 « le MJ … l'assigne »).
 
 **Correction.**
+
 - Temps 1 : uniquement des ajouts (tables, fonctions, policies strictes sur les nouvelles tables), **pas de copie**, et
   la pile **non publiée sur Internet** tant que le temps 2 n'est pas appliqué (à écrire en règle dans AD-9 et AD-13).
 - Temps 2 : **une seule migration transactionnelle** (copie, suppression des colonnes, remplacement des policies,
@@ -276,6 +284,7 @@ explicite du front échoue alors sur la clé primaire. Si personne ne crée la l
 (42501). Un `INSERT` refusé renvoie une erreur. Les tests doivent distinguer ces trois cas.
 
 **Correction.**
+
 - Trigger `AFTER INSERT` (`SECURITY DEFINER`) sur `characters`, `sessions` et `campaigns` qui crée la ligne privée.
   Côté clients : `UPDATE` seulement, jamais `INSERT`. Sinon, `upsert` avec la clé primaire égale à l'identifiant parent,
   ce qui exige des policies `INSERT`, `UPDATE` **et** `SELECT`.
@@ -340,26 +349,26 @@ demande « que le stockage de l'application ». Il faut un `CHECK` par expressio
 
 ## Partie B — Exactitude des affirmations techniques
 
-| Affirmation (AD) | Jugement | Détail |
-| --- | --- | --- |
-| Index unique partiel pour un seul `dm` (AD-3, AD-15) | **Exact** | `CREATE UNIQUE INDEX ON profiles (role) WHERE role = 'dm'` fonctionne. Il n'empêche pas d'avoir **zéro** MJ (voir H5-2). |
-| `SECURITY DEFINER STABLE` et `search_path=''` (AD-4) | **Exact** | C'est la bonne pratique. Le propriétaire de la table (`postgres`) contourne la RLS de `profiles` dans la fonction, ce qui évite la récursion. Envelopper l'appel dans les policies (`(select public.is_dm())`) pour l'évaluer une fois par requête, et pas par ligne : c'est important sur le Celeron. |
-| `REVOKE EXECUTE … FROM PUBLIC, anon` (AD-4) | **Exact mais incomplet** | `authenticated` doit garder `EXECUTE`. Les privilèges par défaut de Supabase redonnent `anon` à chaque nouvelle fonction (voir M2). |
-| « `is_active_user()` dans toute policy de joueur » (AD-4) | **Fragile** | Policies permissives combinées par OU. Il faut une policy restrictive (C2). La lecture de son propre profil doit faire exception (C1). |
-| Trigger `BEFORE UPDATE` refusant des colonnes (AD-6) | **Faisable, conflits non traités** | Ordre alphabétique avec `characters_manage_slug` ; appelant sans `auth.uid()` (H1). Rien n'est prévu pour l'`INSERT` (M3). |
-| « Un `UPDATE` bloqué touche 0 ligne sans erreur » (AD-14) | **Partiellement exact** | Vrai si le `USING` exclut la ligne. Faux si le `WITH CHECK` échoue (erreur 42501). Vrai aussi pour `DELETE`, qu'AD-14 omet (M1). |
-| Bucket public plus policies sur `storage.objects` (AD-8) | **Inexact par rapport aux exigences** | Le téléchargement public ne passe pas par la RLS : il contredit FR-13 et AD-1. La policy `SELECT` existante permet de lister tout le bucket (C3). La « garde contre un segment non UUID » ne doit pas reposer sur `a AND b::uuid`, car Postgres ne garantit pas l'ordre d'évaluation d'un `AND` : il faut un `CASE` ou une fonction qui prend du texte et valide en interne. Les policies de stockage s'exécutent sous `authenticated` : `owns_character` doit lui être accordé. |
-| `GOTRUE_DISABLE_SIGNUP=true` (AD-11) | **Exact** | Il faut garder le fournisseur e-mail **actif** (`GOTRUE_EXTERNAL_EMAIL_ENABLED=true`), sinon la connexion par mot de passe échoue. Confirmer aussi que les connexions anonymes sont bloquées (L2). |
-| Mot de passe ≥ 10, jeton 3600 s, rotation (AD-11) | **Exact** | `GOTRUE_PASSWORD_MIN_LENGTH`, `GOTRUE_JWT_EXP`, `GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED`. |
-| « Réinitialisation et archivage révoquent les sessions » (AD-11) | **Non réalisable tel quel** | Aucune API d'administration GoTrue ne révoque par identifiant d'utilisateur. Il faut supprimer dans `auth.sessions` ou utiliser `ban_duration`, dont l'effet sur les jetons de rafraîchissement existants est à vérifier (H5-6). |
-| Adresse `<pseudo>@<domaine>.invalid` (AD-3) | **Non vérifié** | Le validateur d'e-mail de GoTrue (selon la version) peut refuser certains domaines. À tester avec `admin.createUser({ email_confirm: true })` **et** `signInWithPassword` sur la version épinglée, avant de figer la convention. |
-| `GOTRUE_RATE_LIMIT_HEADER` (AD-9) | **Incomplet** | Il faut aussi configurer Kong (`KONG_TRUSTED_IPS`, `KONG_REAL_IP_HEADER`) et faire écraser l'en-tête par NPM (H6). Le verrouillage par pseudo n'est pas natif. |
-| « `account-admin` : lecture du rôle » (diagramme, AD-2) | **Inexact** | Le service doit aussi écrire `profiles` et `characters` (H5-4). |
-| « Le MCP utilise `signInWithPassword` » (AD-13) | **Écart avec le code** | Le client actuel n'a ni connexion ni rafraîchissement (`autoRefreshToken:false`) : il tombe après une heure (H4-4). |
-| Colonnes à déplacer (AD-5, AD-13) | **Exact** | Les six colonnes existent (tableau en H4). Le moment de leur suppression n'est pas fixé (H4-1). |
-| « Le MJ est `dm` de toutes les campagnes sans y figurer » et « rattachement de toutes les campagnes » (AD-3, AD-13) | **Incohérent** | Rien à rattacher si le MJ est global. Seuls les personnages existants (`owner_user_id`, laissé `NULL`) et éventuellement les membres sont concernés. |
-| `last_activity_at` (existant) | **À noter** | `SECURITY INVOKER` : sous RLS, un joueur obtient une date calculée seulement sur les séances **publiées**. Ce comportement est acceptable, mais il faut retirer le `GRANT … TO anon`. |
-| AD-10 « environ 2 Go de RAM disponibles » | **Cohérent** | Conforme au relevé de `DECISIONS.md`. Seuil de 500 Mo libres conforme au SM-4 du PRD. |
+| Affirmation (AD)                                                                                                    | Jugement                              | Détail                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Index unique partiel pour un seul `dm` (AD-3, AD-15)                                                                | **Exact**                             | `CREATE UNIQUE INDEX ON profiles (role) WHERE role = 'dm'` fonctionne. Il n'empêche pas d'avoir **zéro** MJ (voir H5-2).                                                                                                                                                                                                                                                                                                                                                         |
+| `SECURITY DEFINER STABLE` et `search_path=''` (AD-4)                                                                | **Exact**                             | C'est la bonne pratique. Le propriétaire de la table (`postgres`) contourne la RLS de `profiles` dans la fonction, ce qui évite la récursion. Envelopper l'appel dans les policies (`(select public.is_dm())`) pour l'évaluer une fois par requête, et pas par ligne : c'est important sur le Celeron.                                                                                                                                                                           |
+| `REVOKE EXECUTE … FROM PUBLIC, anon` (AD-4)                                                                         | **Exact mais incomplet**              | `authenticated` doit garder `EXECUTE`. Les privilèges par défaut de Supabase redonnent `anon` à chaque nouvelle fonction (voir M2).                                                                                                                                                                                                                                                                                                                                              |
+| « `is_active_user()` dans toute policy de joueur » (AD-4)                                                           | **Fragile**                           | Policies permissives combinées par OU. Il faut une policy restrictive (C2). La lecture de son propre profil doit faire exception (C1).                                                                                                                                                                                                                                                                                                                                           |
+| Trigger `BEFORE UPDATE` refusant des colonnes (AD-6)                                                                | **Faisable, conflits non traités**    | Ordre alphabétique avec `characters_manage_slug` ; appelant sans `auth.uid()` (H1). Rien n'est prévu pour l'`INSERT` (M3).                                                                                                                                                                                                                                                                                                                                                       |
+| « Un `UPDATE` bloqué touche 0 ligne sans erreur » (AD-14)                                                           | **Partiellement exact**               | Vrai si le `USING` exclut la ligne. Faux si le `WITH CHECK` échoue (erreur 42501). Vrai aussi pour `DELETE`, qu'AD-14 omet (M1).                                                                                                                                                                                                                                                                                                                                                 |
+| Bucket public plus policies sur `storage.objects` (AD-8)                                                            | **Inexact par rapport aux exigences** | Le téléchargement public ne passe pas par la RLS : il contredit FR-13 et AD-1. La policy `SELECT` existante permet de lister tout le bucket (C3). La « garde contre un segment non UUID » ne doit pas reposer sur `a AND b::uuid`, car Postgres ne garantit pas l'ordre d'évaluation d'un `AND` : il faut un `CASE` ou une fonction qui prend du texte et valide en interne. Les policies de stockage s'exécutent sous `authenticated` : `owns_character` doit lui être accordé. |
+| `GOTRUE_DISABLE_SIGNUP=true` (AD-11)                                                                                | **Exact**                             | Il faut garder le fournisseur e-mail **actif** (`GOTRUE_EXTERNAL_EMAIL_ENABLED=true`), sinon la connexion par mot de passe échoue. Confirmer aussi que les connexions anonymes sont bloquées (L2).                                                                                                                                                                                                                                                                               |
+| Mot de passe ≥ 10, jeton 3600 s, rotation (AD-11)                                                                   | **Exact**                             | `GOTRUE_PASSWORD_MIN_LENGTH`, `GOTRUE_JWT_EXP`, `GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED`.                                                                                                                                                                                                                                                                                                                                                                                |
+| « Réinitialisation et archivage révoquent les sessions » (AD-11)                                                    | **Non réalisable tel quel**           | Aucune API d'administration GoTrue ne révoque par identifiant d'utilisateur. Il faut supprimer dans `auth.sessions` ou utiliser `ban_duration`, dont l'effet sur les jetons de rafraîchissement existants est à vérifier (H5-6).                                                                                                                                                                                                                                                 |
+| Adresse `<pseudo>@<domaine>.invalid` (AD-3)                                                                         | **Non vérifié**                       | Le validateur d'e-mail de GoTrue (selon la version) peut refuser certains domaines. À tester avec `admin.createUser({ email_confirm: true })` **et** `signInWithPassword` sur la version épinglée, avant de figer la convention.                                                                                                                                                                                                                                                 |
+| `GOTRUE_RATE_LIMIT_HEADER` (AD-9)                                                                                   | **Incomplet**                         | Il faut aussi configurer Kong (`KONG_TRUSTED_IPS`, `KONG_REAL_IP_HEADER`) et faire écraser l'en-tête par NPM (H6). Le verrouillage par pseudo n'est pas natif.                                                                                                                                                                                                                                                                                                                   |
+| « `account-admin` : lecture du rôle » (diagramme, AD-2)                                                             | **Inexact**                           | Le service doit aussi écrire `profiles` et `characters` (H5-4).                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| « Le MCP utilise `signInWithPassword` » (AD-13)                                                                     | **Écart avec le code**                | Le client actuel n'a ni connexion ni rafraîchissement (`autoRefreshToken:false`) : il tombe après une heure (H4-4).                                                                                                                                                                                                                                                                                                                                                              |
+| Colonnes à déplacer (AD-5, AD-13)                                                                                   | **Exact**                             | Les six colonnes existent (tableau en H4). Le moment de leur suppression n'est pas fixé (H4-1).                                                                                                                                                                                                                                                                                                                                                                                  |
+| « Le MJ est `dm` de toutes les campagnes sans y figurer » et « rattachement de toutes les campagnes » (AD-3, AD-13) | **Incohérent**                        | Rien à rattacher si le MJ est global. Seuls les personnages existants (`owner_user_id`, laissé `NULL`) et éventuellement les membres sont concernés.                                                                                                                                                                                                                                                                                                                             |
+| `last_activity_at` (existant)                                                                                       | **À noter**                           | `SECURITY INVOKER` : sous RLS, un joueur obtient une date calculée seulement sur les séances **publiées**. Ce comportement est acceptable, mais il faut retirer le `GRANT … TO anon`.                                                                                                                                                                                                                                                                                            |
+| AD-10 « environ 2 Go de RAM disponibles »                                                                           | **Cohérent**                          | Conforme au relevé de `DECISIONS.md`. Seuil de 500 Mo libres conforme au SM-4 du PRD.                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ---
 
