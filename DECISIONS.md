@@ -191,6 +191,30 @@ Il n'y a **qu'un seul rôle de gestion** : le MJ. Il crée les comptes, les dés
 (D-19). Les specs BDD `@draft` sont réécrites en conséquence : `auth/` et `admin/` fusionnent dans la gestion des
 comptes par le MJ, `collaboration/` suit D-02 et D-10 à D-18. Elles passent en `@future` au fil du développement.
 
+### D-30 · 2026-11-15 · Taille de la table et départ d'un joueur
+
+- La table compte **5 joueurs** (dimensionnement de référence).
+- Un joueur qui quitte la table : son **compte et ses personnages sont archivés** (conservés, plus actifs).
+- Un **MJ unique** suffit à la gestion des comptes.
+
+### D-31 · 2026-11-15 · Identifiant de connexion et MJ unique
+
+- Les joueurs se connectent avec un **pseudo simple**, traduit en interne en adresse fictive ; aucune adresse e-mail réelle.
+- Le **MJ est unique et global** : seul gestionnaire des comptes et créateur des campagnes, `dm` de toutes les campagnes.
+
+### D-32 · 2026-11-15 · Rendu « livre » inspiré de Homebrewery, réservé au MJ
+
+- « Utiliser Homebrewery » signifie : le MJ écrit avec un **sous-ensemble de la syntaxe Homebrewery** et l'app produit un
+  **rendu de type livre** (lecture sur téléphone, mode page et impression). L'app n'héberge pas Homebrewery et ne reprend
+  ni ses polices, ni ses feuilles de style, ni ses illustrations.
+- Un brew collé peut être **simplifié** à l'affichage (positions libres, couleurs, CSS du brew, images externes,
+  diagrammes), par sécurité : l'app est exposée sur Internet.
+- Le texte enrichi est écrit par le **MJ seul** (récapitulatifs de séance, bibliothèque « Règles de la table » par
+  campagne pour les mécaniques homebrew). Les joueurs gardent le **texte brut** pour leurs notes et commentaires.
+- Les images de contenu sont **envoyées dans l'app** (pas de lien vers un autre site).
+- Calendrier : le MVP sort avec des récapitulatifs en texte brut ; l'epic « contenu riche du MJ » suit immédiatement.
+  Le MJ fournit 5 à 10 brews réels pour le corpus de compatibilité.
+
 ## Faits d'outillage (constats, pas des décisions)
 
 - BMAD : module `bmm`, outil `claude-code`, v6.12.4. Skills dans `.claude/skills/`, configuration dans `_bmad/`.
