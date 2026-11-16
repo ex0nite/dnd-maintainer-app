@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, characters, sessions, encounters, and DM notes. The target ruleset is the 2024 D&D Player's Handbook. No auth is implemented yet (RLS is enabled but no policies are defined).
+D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, characters, sessions, encounters, and DM notes. The target ruleset is the 2024 D&D Player's Handbook. Authentication (GoTrue, closed: no self-signup) is enabled and the `profiles` table exists (story 1.2); the access rules (RLS) are being locked down story by story (see `_bmad-output/planning-artifacts/epics.md`, epic 1).
 
 ## Commands
 

@@ -121,6 +121,16 @@ flowchart LR
   repose à `true` après une réinitialisation. `campaign_members(campaign_id, user_id)` : **écriture réservée au MJ**. Le
   MJ est `dm` de toutes les campagnes sans y figurer. Aucun droit n'est lu dans `user_metadata` ni `app_metadata`.
   [ADOPTED : D-31]
+  **Vérifié (story 1.2)** : l'authentification locale (GoTrue de la CLI 2.122) accepte `<pseudo>@<domaine>.invalid`
+  (création confirmée par l'API d'administration, puis connexion par mot de passe) ; aucun domaine de repli n'est
+  nécessaire. Réglages : `[auth] enable_signup = false` ferme l'inscription publique (vérifié : « Signups not allowed »),
+  mais `[auth.email] enable_signup` doit rester `true`, sinon la connexion par mot de passe est refusée ; longueur
+  minimale de mot de passe 12 (plus strict que les 10 d'AD-11 : écart accepté) ; `[auth.email] enable_confirmations = true`
+  pour qu'un utilisateur connecté ne puisse pas changer son adresse (le courriel de confirmation ne part nulle part) ;
+  `secure_password_change = false` reste nécessaire (pas de courriel pour réauthentifier) : un jeton volé suffit à
+  changer le mot de passe, risque accepté. Le module crée le compte **banni**, écrit le profil, puis lève le bannissement :
+  un échec en cours de route ne laisse jamais de compte utilisable sans profil. `createDmAccount` (script d'amorçage) et
+  `createPlayerAccount` (service) sont les seules entrées. À refaire sur la pile du QNAP (story 7.2).
 
 ### AD-4 — L'accès actif est une policy restrictive sur toute table
 

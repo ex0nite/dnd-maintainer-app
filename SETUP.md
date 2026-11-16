@@ -51,6 +51,20 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
+## Create the DM account (once)
+
+The app is closed: there is no sign-up. The single DM account is created from a terminal, by the owner, with the shared
+account module (`services/account-admin/`, AD-2 / AD-15). Secrets come from the environment only, never from the repo.
+
+```bash
+read -rs SUPABASE_SERVICE_ROLE_KEY && export SUPABASE_SERVICE_ROLE_KEY   # paste the admin key, nothing is echoed
+SUPABASE_URL=<api url> ACCOUNT_DOMAIN=<label> npm run bootstrap:dm -- <pseudo>
+```
+
+The password (12 characters minimum) is typed twice in the terminal and is never stored. The pseudo must match
+`^[a-z0-9_-]{3,20}$`. The authentication address is derived as `<pseudo>@<ACCOUNT_DOMAIN>.invalid` and is never shown or
+used as a mailbox. A second DM is refused by the database. Never put the admin key on the command line (shell history). `ACCOUNT_DOMAIN` defaults to `table`.
+
 ## Supabase Dashboard
 
 Access the local Supabase dashboard at **http://127.0.0.1:54323** to browse tables, run SQL, and manage data directly.
