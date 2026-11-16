@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/lib/supabase';
+import { fetchCharacterCounts, fetchSessionCounts } from '@/hooks/dataAccess';
 import { CampaignSummary } from '@/types/database';
 import { useCampaigns, useCampaignMutations } from '@/hooks/useCampaigns';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -44,37 +44,12 @@ export default function CampaignList() {
 
   const { data: characterCounts = {} } = useQuery({
     queryKey: ['campaign-character-counts'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('characters').select('campaign_id, character_type');
-      if (error) throw error;
-
-      const counts: Record<string, { pc: number; npc: number }> = {};
-      data.forEach((char) => {
-        if (!counts[char.campaign_id]) {
-          counts[char.campaign_id] = { pc: 0, npc: 0 };
-        }
-        if (char.character_type === 'npc') {
-          counts[char.campaign_id].npc++;
-        } else {
-          counts[char.campaign_id].pc++;
-        }
-      });
-      return counts;
-    },
+    queryFn: fetchCharacterCounts,
   });
 
   const { data: sessionCounts = {} } = useQuery({
     queryKey: ['campaign-session-counts'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sessions').select('campaign_id');
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      data.forEach((session) => {
-        counts[session.campaign_id] = (counts[session.campaign_id] || 0) + 1;
-      });
-      return counts;
-    },
+    queryFn: fetchSessionCounts,
   });
 
   const handleCreateCampaign = (e: React.FormEvent) => {

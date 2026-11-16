@@ -3,6 +3,7 @@ import {
   BookOpen,
   ChevronDown,
   Download,
+  LogOut,
   ExternalLink,
   ScrollText,
   Settings,
@@ -15,6 +16,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface SidebarProps {
   campaigns: CampaignSummary[];
@@ -47,6 +49,7 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const { t } = useTranslation('common');
+  const { signOut } = useAuth();
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const location = useLocation();
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
@@ -87,6 +90,7 @@ export function Sidebar({
         {/* Logo/Title */}
         <Link
           to="/"
+          aria-label={t('app.title')}
           className="px-4 py-6 border-b border-sidebar-border flex items-center gap-3 hover:bg-sidebar-accent transition-colors"
         >
           <Sword className="size-8 text-sidebar-primary shrink-0" />
@@ -114,6 +118,7 @@ export function Sidebar({
                 flex items-center justify-between gap-2
               `}
               title={currentCampaign?.name}
+              aria-label={currentCampaign?.name ?? t('nav.selectCampaign')}
             >
               <span className={!isCollapsed ? 'truncate' : ''}>
                 {currentCampaign ? (
@@ -267,6 +272,15 @@ export function Sidebar({
             <Download className="size-5 shrink-0" />
             {!isCollapsed && <span className="font-medium text-sm">{t('nav.exportData')}</span>}
           </NavLink>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="flex w-full items-center gap-3 px-3 py-3 rounded-lg text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-200"
+            title={t('auth.signOut')}
+          >
+            <LogOut className="size-5 shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">{t('auth.signOut')}</span>}
+          </button>
           {!isCollapsed && (
             <div className="flex items-center gap-2 px-3 mt-3">
               <p className="text-xs text-muted-foreground flex-1">

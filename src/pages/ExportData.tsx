@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import type { ExportData as ExportDataType } from '@/lib/export-sql';
 import { downloadFile, generateSeedSql } from '@/lib/export-sql';
 import { getLogger } from '@/lib/logger';
-import { supabase } from '@/lib/supabase';
+import { fetchExportCharacterTables, fetchExportTables } from '@/hooks/dataAccess';
 import { AlertCircle, CheckSquare, Download, Loader2, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,13 +62,7 @@ export default function ExportData() {
       const ids = Array.from(selectedIds);
 
       // Full export — all columns needed; select('*') is intentional
-      const [campaignsRes, charactersRes, sessionsRes, encountersRes, notesRes] = await Promise.all([
-        supabase.from('campaigns').select('*').in('id', ids),
-        supabase.from('characters').select('*').in('campaign_id', ids),
-        supabase.from('sessions').select('*').in('campaign_id', ids),
-        supabase.from('encounters').select('*').in('campaign_id', ids),
-        supabase.from('notes').select('*').in('campaign_id', ids),
-      ]);
+      const { campaignsRes, charactersRes, sessionsRes, encountersRes, notesRes } = await fetchExportTables(ids);
 
       const namedResults = [
         { table: 'campaigns', ...campaignsRes },
@@ -99,16 +93,7 @@ export default function ExportData() {
       let itemsData: Record<string, unknown>[] = [];
 
       if (characterIds.length > 0) {
-        const [buildLevelsRes, itemsRes] = await Promise.all([
-          supabase
-            .from('character_build_levels')
-            .select('*')
-            .in('character_id', characterIds)
-            .is('deleted_at', null)
-            .order('character_id')
-            .order('sequence'),
-          supabase.from('character_items').select('*').in('character_id', characterIds),
-        ]);
+        const { buildLevelsRes, itemsRes } = await fetchExportCharacterTables(characterIds);
 
         if (buildLevelsRes.error) {
           logger.error('Export fetch failed (character_build_levels):', buildLevelsRes.error);

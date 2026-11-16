@@ -892,5 +892,14 @@
     "nameRequired": "Name is required",
     "titleRequired": "Title is required",
     "itemNameRequired": "Item name is required"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInButton": "Sign in",
+    "signingIn": "Signing in...",
+    "pseudo": "Username",
+    "password": "Password",
+    "invalidCredentials": "Incorrect credentials",
+    "signOut": "Sign out"
   }
 }

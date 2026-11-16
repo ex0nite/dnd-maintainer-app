@@ -65,6 +65,10 @@ The password (12 characters minimum) is typed twice in the terminal and is never
 `^[a-z0-9_-]{3,20}$`. The authentication address is derived as `<pseudo>@<ACCOUNT_DOMAIN>.invalid` and is never shown or
 used as a mailbox. A second DM is refused by the database. Never put the admin key on the command line (shell history). `ACCOUNT_DOMAIN` defaults to `table`.
 
+## Signing in
+
+Open the app: you are sent to the sign-in page. Type the pseudo and password of the account (the derived address is never shown). The app must use the same `ACCOUNT_DOMAIN` as the account creation: set `VITE_ACCOUNT_DOMAIN` in `.env.local` if it is not `table`. The MCP server signs in the same way with `DND_DM_PSEUDO` / `DND_DM_PASSWORD` (see its README).
+
 ## Supabase Dashboard
 
 Access the local Supabase dashboard at **http://127.0.0.1:54323** to browse tables, run SQL, and manage data directly.
