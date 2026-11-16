@@ -24,6 +24,7 @@ D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, cha
 - `npm run test:bdd` — run the Cucumber BDD suite (default profile, stays green). See `docs/bdd.md`.
 - `npm run test:e2e` — Playwright checks at 360 px (no horizontal scroll) and WCAG AA contrast on the 3 themes in light and dark, against a stubbed backend (`e2e/`). Add each new screen to `PAGES` in `e2e/layout-a11y.e2e.ts`. First run: `npx playwright install chromium`.
 - `npm run test:sql` — run the pgTAP SQL tests in `supabase/tests/database/` against the running local Supabase (see CONVENTION-CODE.md)
+- BDD on Windows: `npm run test:bdd` fails locally (esmock/paths). Run it on Linux in Docker instead: `docker run --rm -v <repo>:/src:ro -e VITE_SUPABASE_URL=http://127.0.0.1:54321 -e VITE_SUPABASE_PUBLISHABLE_KEY=x node:24 bash -c "mkdir /work && cd /src && tar --exclude=node_modules --exclude=.git --exclude=dist -cf - . | tar -xf - -C /work && cd /work && npm ci && npm run test:bdd"`
 - `npm run test:bdd:future` — run spec-ahead BDD scenarios (`@future` profile, expected to fail). See `docs/bdd.md`.
 - `npm run coverage:matrix` — regenerate `docs/coverage-matrix.md` from `src/lib/sources/coverage-matrix.ts`
 - `npm run uat:checklist` — generate a manual UAT checklist (one row per BDD scenario) from `features/` into `docs/uat-checklist.csv`. Add `-- --format md` (or `both`) for a printable Markdown checklist. See `scripts/gen-uat-checklist.ts`.
