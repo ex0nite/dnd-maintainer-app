@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { writeCharacterPrivate } from '@/hooks/privateData';
+import { rollbackInsert, writeCharacterPrivate } from '@/hooks/privateData';
 import type { Character } from '@/types/database';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
 import type { ResolvedCharacter } from '@/types/resolved';
@@ -37,6 +37,8 @@ export interface AutosavePayload {
  */
 export function useBuilderAutosave(existingCharacterId?: string) {
   const characterIdRef = useRef<string | null>(existingCharacterId ?? null);
+  // Last backstory/notes successfully written to character_private; null = unknown (write once).
+  const lastPrivateRef = useRef<{ backstory: string | null; notes: string | null } | null>(null);
   const savingRef = useRef<Promise<string> | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const queryClient = useQueryClient();
@@ -99,6 +101,7 @@ export function useBuilderAutosave(existingCharacterId?: string) {
           };
 
           let savedId: string;
+          let created = false;
 
           // Decide UPDATE vs INSERT. The seeded characterIdRef (from the existingCharacterId arg)
           // is load-bearing for the /edit route — CharacterBuilder.tsx always passes the resumed
@@ -129,14 +132,35 @@ export function useBuilderAutosave(existingCharacterId?: string) {
             if (!data?.id) throw new Error('Insert succeeded but no character ID was returned');
             savedId = (data as { id: string; slug: string }).id;
             characterIdRef.current = savedId;
+            created = true;
+            // A new draft's private row starts empty (trigger): that is the baseline to compare with.
+            lastPrivateRef.current = { backstory: null, notes: null };
             queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
           }
 
           // Backstory and notes live in character_private (AD-5); its row exists already (trigger).
-          await writeCharacterPrivate(savedId, {
-            backstory: character.backstory ?? null,
-            notes: character.notes ?? null,
-          });
+          // Only touch it when something changed (a player without write access must not fail every tick).
+          const nextPrivate = { backstory: character.backstory ?? null, notes: character.notes ?? null };
+          const lastPrivate = lastPrivateRef.current;
+          if (
+            !lastPrivate ||
+            lastPrivate.backstory !== nextPrivate.backstory ||
+            lastPrivate.notes !== nextPrivate.notes
+          ) {
+            try {
+              await writeCharacterPrivate(savedId, nextPrivate);
+              lastPrivateRef.current = nextPrivate;
+            } catch (privateError) {
+              if (created) {
+                // No orphan draft: remove what this tick created, and forget it.
+                characterIdRef.current = null;
+                lastPrivateRef.current = null;
+                queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
+                await rollbackInsert('characters', savedId, privateError);
+              }
+              throw privateError;
+            }
+          }
 
           // Batch upsert all build level rows in a single call
           const allUpserts: TablesInsert<'character_build_levels'>[] = rows.map((row) => {

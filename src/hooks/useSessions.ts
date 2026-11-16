@@ -8,7 +8,7 @@ import {
   SESSION_SUMMARY_PRIVATE_EMBED,
   SESSION_DETAIL_PRIVATE_EMBED,
 } from '@/lib/query-columns';
-import { flattenSession, splitSessionPrivate, writeSessionDm } from '@/hooks/privateData';
+import { flattenSession, rollbackInsert, splitSessionPrivate, writeSessionDm } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
 
 export function useSessions(campaignId: string) {
@@ -56,8 +56,12 @@ export function useCreateSession() {
         .select()
         .single();
       if (error) throw error;
-      // The DM row exists already (trigger): fill it.
-      await writeSessionDm(data.id, priv);
+      // The DM row exists already (trigger): fill it; if that fails, remove the new session.
+      try {
+        await writeSessionDm(data.id, priv);
+      } catch (privateError) {
+        await rollbackInsert('sessions', data.id, privateError);
+      }
       return flattenSession<Session>({ ...data, session_dm: priv });
     },
     onSuccess: (data) => {
@@ -82,6 +86,8 @@ export function useUpdateSession() {
           .single();
         if (res.error) throw res.error;
         data = res.data as unknown as Record<string, unknown>;
+        // Two tables, two writes (no transaction through PostgREST): a failure on the private half
+        // is raised as is, never swallowed.
         await writeSessionDm(id, priv);
         if (Object.keys(priv).length > 0) data.session_dm = { ...(data.session_dm as object), ...priv };
       } else {

@@ -1,7 +1,7 @@
 -- Story 1.5 (AD-5, AD-14): character_private, session_dm, owns_character, for the seven identities.
 begin;
 
-select plan(62);
+select plan(94);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (privileged test owner)
@@ -21,19 +21,27 @@ values (tests.uid('dm'), 'maitre', 'dm', false, null),
 insert into public.campaigns (id, name)
 values ('aaaaaaaa-0000-4000-8000-00000000000a', 'Campaign A');
 
+insert into public.campaign_members (campaign_id, user_id)
+values ('aaaaaaaa-0000-4000-8000-00000000000a', tests.uid('owner')),
+       ('aaaaaaaa-0000-4000-8000-00000000000a', tests.uid('other_player')),
+       ('aaaaaaaa-0000-4000-8000-00000000000a', tests.uid('archived')),
+       ('aaaaaaaa-0000-4000-8000-00000000000a', tests.uid('temp_password'));
+
 -- One character per player-ish identity, so each can be tested as "their own".
 insert into public.characters (id, campaign_id, name, character_type, owner_user_id)
 values ('c1000000-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Alice PC', 'pc', tests.uid('owner')),
        ('c2000000-0000-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Bob PC', 'pc', tests.uid('other_player')),
        ('c3000000-0000-4000-8000-000000000003', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Carol PC', 'pc', tests.uid('archived')),
        ('c4000000-0000-4000-8000-000000000004', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Dave PC', 'pc', tests.uid('temp_password')),
-       ('c5000000-0000-4000-8000-000000000005', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Orphan NPC', 'npc', null);
+       ('c5000000-0000-4000-8000-000000000005', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Orphan NPC', 'npc', null),
+       ('c7000000-0000-4000-8000-000000000007', 'aaaaaaaa-0000-4000-8000-00000000000a', 'Erin PC', 'pc', tests.uid('non_member'));
 
 insert into public.sessions (id, campaign_id, session_number)
 values ('51000000-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-00000000000a', 1);
 
 update public.character_private set backstory = 'ALICE SECRET', notes = 'alice notes'
  where character_id = 'c1000000-0000-4000-8000-000000000001';
+update public.character_private set backstory = 'ERIN SECRET' where character_id = 'c7000000-0000-4000-8000-000000000007';
 update public.character_private set backstory = 'BOB SECRET'
  where character_id = 'c2000000-0000-4000-8000-000000000002';
 update public.session_dm set notes = 'DM SESSION SECRET', experience_awarded = 300, loot = '[{"item":"gem"}]'::jsonb
@@ -42,7 +50,7 @@ update public.session_dm set notes = 'DM SESSION SECRET', experience_awarded = 3
 -- ---------------------------------------------------------------------------
 -- Structure
 -- ---------------------------------------------------------------------------
-select is((select count(*)::int from public.character_private), 5, 'every character got its private row (trigger)');
+select is((select count(*)::int from public.character_private), 6, 'every character got its private row (trigger)');
 select is((select count(*)::int from public.session_dm), 1, 'every session got its DM row (trigger)');
 select hasnt_column('public', 'characters', 'backstory', 'characters no longer carries backstory');
 select hasnt_column('public', 'characters', 'notes', 'characters no longer carries notes');
@@ -118,9 +126,9 @@ select is((select count(*)::int from public.character_private), 0, 'archived own
 select tests.set_identity('temp_password');
 select is((select count(*)::int from public.character_private), 0, 'temporary-password owner reads nothing');
 select tests.set_identity('non_member');
-select is((select count(*)::int from public.character_private), 0, 'non-member reads nothing');
+select is((select count(*)::int from public.character_private), 0, 'a non-member who owns a character still reads nothing (AD-4: owner AND member)');
 select tests.set_identity('dm');
-select is((select count(*)::int from public.character_private), 5, 'dm reads every private part');
+select is((select count(*)::int from public.character_private), 6, 'dm reads every private part');
 
 -- character_private: writes (owner writes arrive with epic 3: today the DM only)
 select tests.set_identity('owner');
@@ -171,6 +179,106 @@ select tests.set_identity('dm');
 select is((select notes from public.session_dm), 'DM SESSION SECRET', 'dm reads session_dm');
 select is(tests.rows_affected($$update public.session_dm set experience_awarded = 400$$)::int, 1, 'dm writes session_dm');
 select is((select loot from public.session_dm), '[{"item":"gem"}]'::jsonb, 'loot survives as jsonb');
+
+-- ---------------------------------------------------------------------------
+-- Review additions: ownership guard, removed membership, more operations, structure
+-- ---------------------------------------------------------------------------
+select tests.reset_identity();
+delete from public.campaign_members where user_id = tests.uid('other_player');
+select tests.set_identity('other_player');
+select is((select count(*)::int from public.character_private), 0, 'an owner removed from the campaign loses access to their private part');
+
+select tests.set_identity('owner');
+select throws_ok(
+  $$update public.characters set owner_user_id = tests.uid('owner') where id = 'c2000000-0000-4000-8000-000000000002'$$,
+  '42501', null, 'a player cannot take over another character'
+);
+select throws_ok(
+  $$update public.characters set owner_user_id = null where id = 'c1000000-0000-4000-8000-000000000001'$$,
+  '42501', null, 'a player cannot disown their own character'
+);
+select throws_ok(
+  $$update public.characters set archived_with_owner = true where id = 'c1000000-0000-4000-8000-000000000001'$$,
+  '42501', null, 'a player cannot flip archived_with_owner'
+);
+select lives_ok(
+  $$update public.characters set name = 'Alice renamed' where id = 'c1000000-0000-4000-8000-000000000001'$$,
+  'ordinary updates of characters are not blocked by the guard (story 1.6 narrows them)'
+);
+select tests.set_identity('non_member');
+select throws_ok(
+  $$update public.characters set owner_user_id = tests.uid('non_member')$$,
+  '42501', null, 'a non-member cannot take characters either'
+);
+select tests.set_identity('anon');
+select throws_ok(
+  $$update public.characters set owner_user_id = null$$,
+  '42501', null, 'anon cannot reassign characters'
+);
+select tests.set_identity('dm');
+select lives_ok(
+  $$update public.characters set owner_user_id = tests.uid('owner') where id = 'c5000000-0000-4000-8000-000000000005'$$,
+  'the DM assigns an owner'
+);
+select tests.reset_identity();
+select lives_ok(
+  $$update public.characters set archived_with_owner = true where id = 'c5000000-0000-4000-8000-000000000005'$$,
+  'a privileged server-side role (account-admin) can flag characters'
+);
+
+-- More operations on the private tables
+select tests.set_identity('other_player');
+select is(tests.rows_affected($$delete from public.character_private$$)::int, 0, 'other_player: character_private not deletable');
+select tests.set_identity('archived');
+select is(tests.rows_affected($$delete from public.character_private$$)::int, 0, 'archived: character_private not deletable');
+select throws_ok($$insert into public.character_private (character_id) values ('c5000000-0000-4000-8000-000000000005')$$, '42501', null, 'archived: cannot insert');
+select tests.set_identity('temp_password');
+select is(tests.rows_affected($$delete from public.character_private$$)::int, 0, 'temp_password: character_private not deletable');
+select throws_ok($$insert into public.character_private (character_id) values ('c5000000-0000-4000-8000-000000000005')$$, '42501', null, 'temp_password: cannot insert');
+select tests.set_identity('anon');
+select throws_ok($$delete from public.character_private$$, '42501', null, 'anon: character_private delete refused');
+select throws_ok($$insert into public.session_dm (session_id) values ('51000000-0000-4000-8000-000000000001')$$, '42501', null, 'anon: session_dm insert refused');
+select throws_ok($$delete from public.session_dm$$, '42501', null, 'anon: session_dm delete refused');
+select tests.set_identity('other_player');
+select throws_ok($$insert into public.session_dm (session_id) values ('51000000-0000-4000-8000-000000000001')$$, '42501', null, 'other_player: session_dm insert refused');
+select is(tests.rows_affected($$delete from public.session_dm$$)::int, 0, 'other_player: session_dm not deletable');
+select tests.set_identity('archived');
+select throws_ok($$insert into public.session_dm (session_id) values ('51000000-0000-4000-8000-000000000001')$$, '42501', null, 'archived: session_dm insert refused');
+select is(tests.rows_affected($$delete from public.session_dm$$)::int, 0, 'archived: session_dm not deletable');
+select tests.set_identity('temp_password');
+select throws_ok($$insert into public.session_dm (session_id) values ('51000000-0000-4000-8000-000000000001')$$, '42501', null, 'temp_password: session_dm insert refused');
+select is(tests.rows_affected($$delete from public.session_dm$$)::int, 0, 'temp_password: session_dm not deletable');
+select tests.set_identity('non_member');
+select throws_ok($$insert into public.session_dm (session_id) values ('51000000-0000-4000-8000-000000000001')$$, '42501', null, 'non_member: session_dm insert refused');
+
+-- DM: insert and delete controls, and updated_at really moves
+select tests.reset_identity();
+update public.character_private set updated_at = '2000-01-01' where character_id = 'c2000000-0000-4000-8000-000000000002';
+select tests.set_identity('dm');
+select is(tests.rows_affected($$update public.character_private set notes = 'touched' where character_id = 'c2000000-0000-4000-8000-000000000002'$$)::int, 1, 'dm touches a private part');
+select ok((select updated_at from public.character_private where character_id = 'c2000000-0000-4000-8000-000000000002') > '2000-01-01', 'the trigger moved updated_at');
+select is(tests.rows_affected($$delete from public.character_private where character_id = 'c2000000-0000-4000-8000-000000000002'$$)::int, 1, 'dm deletes a private part');
+select lives_ok($$insert into public.character_private (character_id, backstory) values ('c2000000-0000-4000-8000-000000000002', 'rewritten')$$, 'dm inserts a private part');
+select is(tests.rows_affected($$delete from public.session_dm$$)::int, 1, 'dm deletes session_dm');
+select lives_ok($$insert into public.session_dm (session_id, notes) values ('51000000-0000-4000-8000-000000000001', 'again')$$, 'dm inserts session_dm');
+
+-- Trigger functions: definer, empty search_path, not callable
+select tests.reset_identity();
+select is(
+  (select count(*)::int from pg_proc p
+    where p.pronamespace = 'public'::regnamespace
+      and p.proname in ('create_character_private_row', 'create_session_dm_row', 'create_campaign_dm_row')
+      and p.prosecdef and p.proconfig = array['search_path=""']
+      and not has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      and not has_function_privilege('anon', p.oid, 'EXECUTE')),
+  3, 'the row-creating trigger functions are SECURITY DEFINER, pinned, and not callable'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.guard_character_ownership()', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.guard_character_ownership()', 'EXECUTE'),
+  'the ownership guard is not callable'
+);
+
 
 -- ---------------------------------------------------------------------------
 -- Cascade and trigger positive controls (privileged)

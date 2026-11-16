@@ -57,6 +57,24 @@ export function flattenSession<T>(row: unknown): T {
   } as T;
 }
 
+/**
+ * Compensation for a create whose private half failed: delete the row that was just inserted so
+ * no half-created record (and no duplicate on retry) is left behind, then re-throw the original
+ * error. supabase-js resolves on a failed delete, so a rollback failure is surfaced explicitly.
+ */
+export async function rollbackInsert(table: 'characters' | 'sessions', id: string, original: unknown): Promise<never> {
+  const { error } = await supabase.from(table).delete().eq('id', id);
+  if (error) {
+    const message = original instanceof Error ? original.message : String(original);
+    throw new Error(
+      `Private data write failed and rollback also failed; an orphaned ${table} row (${id}) may remain. ` +
+        `Original error: ${message}; rollback error: ${error.message}`,
+      { cause: original }
+    );
+  }
+  throw original;
+}
+
 export async function writeCharacterPrivate(characterId: string, priv: Row): Promise<void> {
   if (Object.keys(priv).length === 0) return;
   const { data, error } = await supabase

@@ -96,6 +96,9 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   la même migration demande `set local check_function_bodies = off`.
 - Une donnée réservée au MJ ne reste jamais dans une table lisible par les membres : table à part (`campaign_dm`, puis
   `session_dm`, `character_private`), créée par un trigger `AFTER INSERT`.
+- Une migration qui déplace des données (copie, puis suppression de colonnes) est enveloppée dans `begin; ... commit;` et
+  verrouille les tables touchées (`lock table ... in access exclusive mode`) : aucune écriture ne doit passer entre la
+  copie et la pose des triggers.
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.

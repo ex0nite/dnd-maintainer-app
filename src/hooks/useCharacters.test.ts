@@ -27,6 +27,7 @@ import {
   useCharacterMutations,
   useCampaignDrafts,
 } from '@/hooks/useCharacters';
+import { writeCharacterPrivate } from '@/hooks/privateData';
 import type { Character, CharacterSummary } from '@/types/database';
 
 const baseCharacter: Character = {
@@ -242,6 +243,49 @@ describe('useCharacterMutations', () => {
     expect(result.current.create.data).toEqual(baseCharacter);
   });
 
+  it('create writes the private part to character_private and keeps it out of the characters insert', async () => {
+    mockQueryResult.data = baseCharacter;
+
+    const { result } = renderHook(() => useCharacterMutations(), { wrapper: createWrapper() });
+    const { id: _i, created_at: _c, updated_at: _u, is_active: _a, ...createPayload } = baseCharacter;
+    result.current.create.mutate({ ...createPayload, backstory: 'A secret past', notes: 'DM-only note' });
+
+    await waitFor(() => expect(result.current.create.isSuccess).toBe(true));
+    const inserted = vi.mocked(supabase.insert).mock.calls[0][0] as Record<string, unknown>;
+    expect(inserted).not.toHaveProperty('backstory');
+    expect(inserted).not.toHaveProperty('notes');
+    expect(writeCharacterPrivate).toHaveBeenCalledWith('char-1', { backstory: 'A secret past', notes: 'DM-only note' });
+    expect(result.current.create.data).toMatchObject({ backstory: 'A secret past', notes: 'DM-only note' });
+  });
+
+  it('create removes the new character when its private part cannot be written', async () => {
+    mockQueryResult.data = baseCharacter;
+    vi.mocked(writeCharacterPrivate).mockRejectedValueOnce(new Error('0 rows affected'));
+
+    const { result } = renderHook(() => useCharacterMutations(), { wrapper: createWrapper() });
+    const { id: _i, created_at: _c, updated_at: _u, is_active: _a, ...createPayload } = baseCharacter;
+    result.current.create.mutate({ ...createPayload, backstory: 'x' });
+
+    await waitFor(() => expect(result.current.create.isError).toBe(true));
+    expect(result.current.create.error).toEqual(new Error('0 rows affected'));
+    expect(supabase.delete).toHaveBeenCalled();
+    expect(supabase.eq).toHaveBeenCalledWith('id', 'char-1');
+  });
+
+  it('update sends private fields to character_private only, and raises a private failure as is', async () => {
+    mockQueryResult.data = { ...baseCharacter };
+    vi.mocked(writeCharacterPrivate).mockRejectedValueOnce(new Error('private write refused'));
+
+    const { result } = renderHook(() => useCharacterMutations(), { wrapper: createWrapper() });
+    result.current.update.mutate({ id: 'char-1', name: 'New Name', backstory: 'New past' });
+
+    await waitFor(() => expect(result.current.update.isError).toBe(true));
+    expect(result.current.update.error).toEqual(new Error('private write refused'));
+    const patch = vi.mocked(supabase.update).mock.calls[0][0] as Record<string, unknown>;
+    expect(patch).toEqual({ name: 'New Name' });
+    expect(writeCharacterPrivate).toHaveBeenCalledWith('char-1', { backstory: 'New past' });
+  });
+
   it('update patches character by id', async () => {
     const updated = { ...baseCharacter, name: 'New Name' };
     mockQueryResult.data = updated;
@@ -283,6 +327,9 @@ describe('useCharacterMutations', () => {
       expect(payload.name).toBe('Copy of Aria Silverwind');
       expect(payload.slug).toBe('');
       expect(payload.previous_slugs).toEqual([]);
+      // A copy belongs to nobody until the DM assigns it.
+      expect(payload).not.toHaveProperty('owner_user_id');
+      expect(payload).not.toHaveProperty('archived_with_owner');
       // DB-managed columns are dropped so the database regenerates them.
       expect(payload).not.toHaveProperty('id');
       expect(payload).not.toHaveProperty('created_at');

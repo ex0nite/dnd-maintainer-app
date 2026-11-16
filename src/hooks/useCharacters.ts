@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { Character, CharacterSummary } from '@/types/database';
 import type { TablesInsert, TablesUpdate } from '@/types/supabase';
 import { CHARACTER_SUMMARY_COLS, CHARACTER_DETAIL_COLS, CHARACTER_PRIVATE_EMBED } from '@/lib/query-columns';
-import { flattenCharacter, splitCharacterPrivate, writeCharacterPrivate } from '@/hooks/privateData';
+import { flattenCharacter, splitCharacterPrivate, writeCharacterPrivate, rollbackInsert } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
 
 // --- Queries ---
@@ -96,8 +96,12 @@ export function useCharacterMutations() {
         .select()
         .single();
       if (error) throw error;
-      // The private row exists already (trigger): fill it.
-      await writeCharacterPrivate(data.id, priv);
+      // The private row exists already (trigger): fill it; if that fails, remove the new character.
+      try {
+        await writeCharacterPrivate(data.id, priv);
+      } catch (privateError) {
+        await rollbackInsert('characters', data.id, privateError);
+      }
       return flattenCharacter<Character>({ ...data, character_private: priv });
     },
     onSuccess: (data) => {
@@ -118,6 +122,8 @@ export function useCharacterMutations() {
           .single();
         if (res.error) throw res.error;
         data = res.data as unknown as Record<string, unknown>;
+        // Two tables, two writes (no transaction through PostgREST): a failure on the private half
+        // is raised as is, never swallowed; the caller sees the error and the form stays dirty.
         await writeCharacterPrivate(id, priv);
         if (Object.keys(priv).length > 0) data.character_private = { ...(data.character_private as object), ...priv };
       } else {
@@ -182,6 +188,9 @@ export function useCharacterMutations() {
       delete characterPayload.id;
       delete characterPayload.created_at;
       delete characterPayload.updated_at;
+      // A copy belongs to nobody until the DM assigns it (story 3.9).
+      delete characterPayload.owner_user_id;
+      delete characterPayload.archived_with_owner;
       characterPayload.name = newName;
       characterPayload.slug = '';
       characterPayload.previous_slugs = [];

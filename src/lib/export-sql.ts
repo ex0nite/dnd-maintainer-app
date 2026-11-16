@@ -49,6 +49,8 @@ const TABLE_COLUMNS = {
     { name: 'slug', type: 'text' },
     { name: 'previous_slugs', type: 'text[]' },
     { name: 'campaign_id', type: 'uuid' },
+    { name: 'owner_user_id', type: 'uuid' },
+    { name: 'archived_with_owner', type: 'boolean' },
     { name: 'name', type: 'text' },
     { name: 'character_type', type: 'text' },
     { name: 'player_name', type: 'text' },

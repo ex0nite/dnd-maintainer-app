@@ -7,6 +7,12 @@
 -- (campaign_dm arrived with story 1.4.) The old columns are dropped after the data is copied.
 -- Rows are created by AFTER INSERT triggers, so the app never has to create them.
 
+-- One transaction: the lock below needs it, and a half-applied move of private data must not exist.
+begin;
+
+-- No insert may slip between the copy below and the triggers that make the private rows.
+lock table public.characters, public.sessions in access exclusive mode;
+
 -- ---------------------------------------------------------------------------
 -- Character ownership (nullable: existing characters have no account yet, story 3.9 assigns)
 -- ---------------------------------------------------------------------------
@@ -28,11 +34,37 @@ as $$
     select 1 from public.characters c
     where c.id = owns_character.character_id
       and c.owner_user_id = (select auth.uid())
+      -- AD-4: an owner who is no longer a member of the campaign loses the access too.
+      and public.is_member(c.campaign_id)
   )
 $$;
 
 revoke execute on function public.owns_character(uuid) from public, anon;
 grant execute on function public.owns_character(uuid) to authenticated;
+
+-- Ownership can only be changed by the DM (or a privileged server-side role such as
+-- account-admin). Until story 1.6 closes the policies of `characters`, this trigger is what
+-- stops a player from re-assigning a character to themselves to read its private part.
+create or replace function public.guard_character_ownership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if (new.owner_user_id is distinct from old.owner_user_id
+      or new.archived_with_owner is distinct from old.archived_with_owner)
+     and (current_user = 'anon' or (current_user = 'authenticated' and not public.is_dm())) then
+    raise exception 'only the DM can change the owner of a character' using errcode = '42501';
+  end if;
+  return new;
+end
+$$;
+
+revoke execute on function public.guard_character_ownership() from public, anon, authenticated;
+
+create trigger characters_guard_ownership
+  before update on public.characters
+  for each row execute function public.guard_character_ownership();
 
 -- ---------------------------------------------------------------------------
 -- Private tables
@@ -141,3 +173,5 @@ create policy access_active on public.character_private
 create policy access_active on public.session_dm
   as restrictive for all to authenticated
   using (public.is_dm() or public.is_active_user());
+
+commit;
