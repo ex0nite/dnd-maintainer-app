@@ -46,7 +46,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [x] 1.3 Le MJ se connecte avec son pseudo (app et MCP), contrôle 360 px / contraste en CI
 - [x] 1.4 Campagnes et appartenance sous contrôle strict
 - [x] 1.5 Les données privées quittent les tables lisibles (`character_private`, `session_dm`, `campaign_dm`)
-- [ ] 1.6 Les tables de personnages sont verrouillées
+- [x] 1.6 Les tables de personnages sont verrouillées
 - [ ] 1.7 Le reste du schéma et le stockage sont verrouillés
 - [ ] 1.8 Bascule transactionnelle des données existantes
 
@@ -78,9 +78,10 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Reprises transverses
 
-- [ ] Story 1.6 : le trigger `characters_guard_ownership` (story 1.5) est un garde-fou provisoire contre le changement de
-      `owner_user_id` ; il sera repris dans le trigger de garde complet d'AD-6, et la policy ouverte de `characters` doit
-      disparaître AVANT toute exposition (la 1.5 ne se déploie jamais seule sur une pile joignable)
+- [ ] Epic 3 : le trigger `characters_guard_ownership` (story 1.5) refuse le changement de `owner_user_id` et de
+      `archived_with_owner` par un non-MJ ; à étendre en trigger de garde complet d'AD-6 (colonnes de liaison, statut) quand
+      les joueurs obtiendront une policy d'écriture sur `characters`. Il est testé par une policy temporaire dans le pgTAP.
+      La 1.6 a fermé `characters`, `character_items` et `character_build_levels` au MJ seul.
 - [ ] Story 1.8 : la CLI Supabase applique chaque instruction séparément ; la bascule « en une transaction » demande
       de rejouer toutes les migrations dans une seule transaction (`psql -1`), pas seulement `supabase db push`
 - [ ] Écriture non atomique entre table principale et table privée (compensation par suppression en cas d'échec) :

@@ -1,7 +1,7 @@
 -- Story 1.5 (AD-5, AD-14): character_private, session_dm, owns_character, for the seven identities.
 begin;
 
-select plan(94);
+select plan(99);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (privileged test owner)
@@ -189,27 +189,15 @@ select tests.set_identity('other_player');
 select is((select count(*)::int from public.character_private), 0, 'an owner removed from the campaign loses access to their private part');
 
 select tests.set_identity('owner');
-select throws_ok(
-  $$update public.characters set owner_user_id = tests.uid('owner') where id = 'c2000000-0000-4000-8000-000000000002'$$,
-  '42501', null, 'a player cannot take over another character'
-);
-select throws_ok(
-  $$update public.characters set owner_user_id = null where id = 'c1000000-0000-4000-8000-000000000001'$$,
-  '42501', null, 'a player cannot disown their own character'
-);
-select throws_ok(
-  $$update public.characters set archived_with_owner = true where id = 'c1000000-0000-4000-8000-000000000001'$$,
-  '42501', null, 'a player cannot flip archived_with_owner'
-);
-select lives_ok(
-  $$update public.characters set name = 'Alice renamed' where id = 'c1000000-0000-4000-8000-000000000001'$$,
-  'ordinary updates of characters are not blocked by the guard (story 1.6 narrows them)'
+select is(tests.rows_affected($$update public.characters set owner_user_id = tests.uid('owner') where id = 'c2000000-0000-4000-8000-000000000002'$$)::int, 0, 'a player cannot take over another character (0 rows: characters are DM-only)');
+select is(tests.rows_affected($$update public.characters set owner_user_id = null where id = 'c1000000-0000-4000-8000-000000000001'$$)::int, 0, 'a player cannot disown their own character (0 rows)');
+select is(tests.rows_affected($$update public.characters set archived_with_owner = true where id = 'c1000000-0000-4000-8000-000000000001'$$)::int, 0, 'a player cannot flip archived_with_owner (0 rows)');
+select is(
+  tests.rows_affected($$update public.characters set name = 'Alice renamed' where id = 'c1000000-0000-4000-8000-000000000001'$$)::int, 0,
+  'a player update of characters is blocked by the policy before the guard even runs'
 );
 select tests.set_identity('non_member');
-select throws_ok(
-  $$update public.characters set owner_user_id = tests.uid('non_member')$$,
-  '42501', null, 'a non-member cannot take characters either'
-);
+select is(tests.rows_affected($$update public.characters set owner_user_id = tests.uid('non_member')$$)::int, 0, 'a non-member cannot take characters either (0 rows)');
 select tests.set_identity('anon');
 select throws_ok(
   $$update public.characters set owner_user_id = null$$,
@@ -279,6 +267,20 @@ select ok(
   'the ownership guard is not callable'
 );
 
+
+-- The ownership guard in isolation: epic 3 will give players an UPDATE policy on characters; simulate
+-- one here (transaction-local) and check the guard still refuses ownership changes.
+select tests.reset_identity();
+create policy tmp_players_update on public.characters for all to authenticated using (true) with check (true);
+select tests.set_identity('owner');
+select throws_ok($$update public.characters set owner_user_id = tests.uid('owner') where id = 'c2000000-0000-4000-8000-000000000002'$$, '42501', null, 'guard: a player cannot take over another character');
+select throws_ok($$update public.characters set owner_user_id = null where id = 'c1000000-0000-4000-8000-000000000001'$$, '42501', null, 'guard: a player cannot disown their character');
+select throws_ok($$update public.characters set archived_with_owner = true where id = 'c1000000-0000-4000-8000-000000000001'$$, '42501', null, 'guard: a player cannot flip archived_with_owner');
+select is(tests.rows_affected($$update public.characters set name = 'Alice renamed' where id = 'c1000000-0000-4000-8000-000000000001'$$)::int, 1, 'guard: ordinary updates still pass');
+select tests.set_identity('anon');
+select throws_ok($$update public.characters set owner_user_id = null$$, '42501', null, 'guard: anon is refused (privilege, then guard)');
+select tests.reset_identity();
+drop policy tmp_players_update on public.characters;
 
 -- ---------------------------------------------------------------------------
 -- Cascade and trigger positive controls (privileged)
