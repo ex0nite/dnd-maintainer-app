@@ -75,3 +75,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+  sql:
+    name: SQL tests (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Database only: the access rules are tested in SQL (AD-14). Later stories that
+      # need Auth or Storage remove services from this exclusion list.
+      - name: Start local Supabase (database only)
+        run: npx supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Run pgTAP tests
+        run: npx supabase test db
