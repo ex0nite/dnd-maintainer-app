@@ -6,14 +6,16 @@ const SIGNED_URL_SECONDS = 3600;
 
 export const portraitQueryKey = (path: string | null) => ['portrait-src', path] as const;
 
-/** A short-lived signed URL for a stored portrait (the bucket is private). Null while loading or if none. */
-export function usePortraitSrc(stored: string | null | undefined): string | null {
+/** A short-lived signed URL for a stored portrait (the bucket is private). `src` is null while loading or if none. */
+export function usePortraitSrc(stored: string | null | undefined): { src: string | null; isError: boolean } {
   const path = portraitStoragePath(stored);
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: portraitQueryKey(path),
     enabled: !!path,
-    // Refresh well before the URL expires.
+    // Refresh well before the URL expires, even for a component that stays mounted.
     staleTime: (SIGNED_URL_SECONDS - 600) * 1000,
+    refetchInterval: (SIGNED_URL_SECONDS - 600) * 1000,
+    retry: false,
     queryFn: async () => {
       const { data: signed, error } = await supabase.storage
         .from(PORTRAIT_BUCKET)
@@ -22,5 +24,5 @@ export function usePortraitSrc(stored: string | null | undefined): string | null
       return signed.signedUrl;
     },
   });
-  return path ? (data ?? null) : null;
+  return { src: path ? (data ?? null) : null, isError };
 }

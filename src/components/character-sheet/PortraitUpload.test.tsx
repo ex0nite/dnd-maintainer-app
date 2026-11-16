@@ -24,7 +24,10 @@ const mockHookState: UsePortraitUploadResult = {
 
 // The bucket is private: portraits are shown through signed URLs (hook mocked here).
 vi.mock('@/hooks/usePortraitSrc', () => ({
-  usePortraitSrc: (stored: string | null) => (stored ? `https://signed.example/${stored}?token=t` : null),
+  usePortraitSrc: (stored: string | null) => ({
+    src: stored ? `https://signed.example/${stored}?token=t` : null,
+    isError: false,
+  }),
 }));
 
 vi.mock('@/hooks/usePortraitUpload', () => ({
@@ -52,13 +55,10 @@ describe('PortraitUpload', () => {
   });
 
   it('renders an img element when portraitUrl is provided', () => {
-    render(<PortraitUpload {...baseProps} portraitUrl="https://example.com/portrait.jpg" />);
+    render(<PortraitUpload {...baseProps} portraitUrl="char-1/portrait.jpg" />);
     const img = screen.getByRole('img', { name: 'Aldric' });
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute(
-      'src',
-      expect.stringContaining('https://signed.example/https://example.com/portrait.jpg')
-    );
+    expect(img).toHaveAttribute('src', expect.stringContaining('https://signed.example/char-1/portrait.jpg'));
   });
 
   it('shows a remove button when portraitUrl is provided', () => {

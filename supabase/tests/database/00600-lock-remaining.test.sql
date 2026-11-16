@@ -3,7 +3,7 @@
 begin;
 select set_config('storage.allow_delete_query', 'true', true);
 
-select plan(133);
+select plan(136);
 
 insert into auth.users (id, email)
 select tests.uid(i), i || '@table.invalid'
@@ -212,6 +212,17 @@ select is((select count(*)::int from storage.objects where bucket_id = 'characte
 select throws_ok($$insert into storage.objects (bucket_id, name) values ('character-portraits', 'x/portrait.jpg')$$, '42501', null, 'non_member: cannot upload');
 select is(tests.rows_affected($$update storage.objects set name = 'y/portrait.jpg'$$)::int, 0, 'non_member: cannot rename');
 select is(tests.rows_affected($$delete from storage.objects$$)::int, 0, 'non_member: cannot delete');
+-- access_active in effect on storage: a temporary permissive policy must still leave archived / temp-password out
+select tests.reset_identity();
+create policy tmp_open on storage.objects for all to authenticated using (true) with check (true);
+select tests.set_identity('archived');
+select is((select count(*)::int from storage.objects), 0, 'archived: still sees nothing in storage (restrictive rule)');
+select tests.set_identity('temp_password');
+select is((select count(*)::int from storage.objects), 0, 'temp_password: still sees nothing in storage (restrictive rule)');
+select tests.set_identity('owner');
+select ok((select count(*)::int from storage.objects) > 0, 'owner: sees objects once a permissive policy exists');
+select tests.reset_identity();
+drop policy tmp_open on storage.objects;
 select tests.set_identity('dm');
 select is((select count(*)::int from storage.objects where bucket_id = 'character-portraits'), 1, 'dm: sees the portrait');
 select lives_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'new/portrait.jpg', 'x')$$, 'dm: uploads');

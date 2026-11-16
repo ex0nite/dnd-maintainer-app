@@ -48,8 +48,18 @@ update storage.buckets set public = false where id = 'character-portraits';
 
 -- Existing characters stored the public URL of their portrait: keep only the storage path.
 update public.characters
-   set portrait_url = regexp_replace(portrait_url, '^.*/character-portraits/', '')
+   set portrait_url = regexp_replace(regexp_replace(portrait_url, '^.*/character-portraits/', ''), '\?.*$', '')
  where portrait_url like '%/character-portraits/%';
+
+-- Anything that is not "<own id>/portrait.jpg" (an external URL typed by hand, a path of another
+-- character) can not be served from the private bucket: clear it rather than leave a dead link.
+update public.characters set portrait_url = null
+ where portrait_url is not null and portrait_url <> id::text || '/portrait.jpg';
+
+-- A character's portrait is always its own object: a path pointing elsewhere is refused.
+alter table public.characters
+  add constraint characters_portrait_path_check
+  check (portrait_url is null or portrait_url = id::text || '/portrait.jpg');
 
 create policy storage_dm_all on storage.objects
   for all to authenticated using (public.is_dm()) with check (public.is_dm());
@@ -67,11 +77,17 @@ revoke all on all sequences in schema public from anon;
 -- Functions are executable by PUBLIC by default: take it back. The ones the app calls are granted
 -- explicitly to authenticated (helpers and last_activity_at already are).
 revoke execute on all functions in schema public from public, anon;
+-- Called by triggers and computed fields running as the signed-in user: grant them explicitly.
 grant execute on function public.last_activity_at(public.campaigns) to authenticated;
+grant execute on function public.generate_slug(text, uuid) to authenticated;
+grant execute on function public.trigger_manage_slug() to authenticated;
+grant execute on function public.update_updated_at_column() to authenticated;
 
 -- Future objects created by the migration role must not be handed to anon either.
 alter default privileges for role postgres in schema public revoke all on tables from anon;
 alter default privileges for role postgres in schema public revoke all on sequences from anon;
-alter default privileges for role postgres in schema public revoke execute on functions from public, anon;
+-- EXECUTE for PUBLIC is a GLOBAL default (not per schema): revoke it globally, and anon explicitly.
+alter default privileges for role postgres revoke execute on functions from public;
+alter default privileges for role postgres in schema public revoke execute on functions from anon;
 
 commit;

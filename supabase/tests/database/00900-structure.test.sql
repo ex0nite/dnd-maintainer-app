@@ -9,7 +9,7 @@
 --   * a public bucket
 begin;
 
-select plan(9);
+select plan(14);
 
 select is(
   (select array_agg(c.relname::text order by c.relname)
@@ -44,10 +44,44 @@ select is(
 select is(
   (select array_agg(p.schemaname || '.' || p.tablename || ':' || p.policyname order by p.tablename, p.policyname)
      from pg_policies p
-    where p.schemaname in ('public', 'storage') and p.tablename <> 'migrations'
+    where p.schemaname in ('public', 'storage') 
       and (p.roles && array['public'::name, 'anon'::name])),
   null,
   'no policy applies to anon or PUBLIC'
+);
+
+select is(
+  (select array_agg(c.relname::text order by c.relname)
+     from pg_class c
+    where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
+      and (has_table_privilege('authenticated', c.oid, 'TRUNCATE')
+           or has_table_privilege('authenticated', c.oid, 'REFERENCES')
+           or has_table_privilege('authenticated', c.oid, 'TRIGGER'))),
+  null,
+  'authenticated holds no TRUNCATE (it bypasses RLS), REFERENCES or TRIGGER on any table of public'
+);
+
+select is(
+  (select array_agg(c.relname::text order by c.relname)
+     from pg_class c
+    where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p', 'v', 'm', 'S')
+      and (has_any_column_privilege('anon', c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
+           or (c.relkind = 'S' and (has_sequence_privilege('anon', c.oid, 'USAGE, SELECT, UPDATE')
+                                    or has_sequence_privilege('public', c.oid, 'USAGE, SELECT, UPDATE'))))),
+  null,
+  'anon holds no column or sequence privilege in public'
+);
+
+-- A SECURITY DEFINER function of public is callable as an RPC by any signed-in user and bypasses both the
+-- RLS and access_active: each one must be reviewed and listed here.
+select is(
+  (select array_agg(p.proname::text order by p.proname)
+     from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.prosecdef
+      and p.proname not in ('is_dm', 'is_active_user', 'is_member', 'owns_character')
+      and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  null,
+  'no unreviewed SECURITY DEFINER function is executable by authenticated'
 );
 
 select is(
@@ -87,9 +121,26 @@ select is(
 select is(
   (select relrowsecurity from pg_class where oid = 'storage.objects'::regclass)
   and exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects'
-                and policyname = 'access_active' and permissive = 'RESTRICTIVE'),
+                and policyname = 'access_active' and permissive = 'RESTRICTIVE'
+                and roles = '{authenticated}' and cmd = 'ALL' and qual = '(is_dm() OR is_active_user())'),
   true,
-  'storage.objects has RLS and the restrictive access_active policy'
+  'storage.objects has RLS and the exact restrictive access_active policy'
+);
+
+select is(
+  (select array_agg(c.relname::text order by c.relname)
+     from pg_class c
+    where c.relnamespace = 'storage'::regnamespace and c.relkind in ('r', 'p') and not c.relrowsecurity),
+  null,
+  'every table of the storage schema has row-level security enabled'
+);
+
+select is(
+  (select array_agg(p.tablename::text || ':' || p.policyname order by p.tablename, p.policyname)
+     from pg_policies p
+    where p.schemaname = 'storage' and p.tablename <> 'objects'),
+  null,
+  'no policy on the other storage tables (buckets, prefixes, multipart uploads): they stay closed to API roles'
 );
 
 select * from finish();

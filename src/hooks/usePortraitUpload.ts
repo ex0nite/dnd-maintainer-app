@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { resizeImage } from '@/lib/resize-image';
 import { useCharacterMutations } from '@/hooks/useCharacters';
 import { getLogger } from '@/lib/logger';
-import { PORTRAIT_BUCKET, portraitPath, portraitStoragePath } from '@/lib/portrait-path';
+import { PORTRAIT_BUCKET, portraitPath } from '@/lib/portrait-path';
 import { portraitQueryKey } from '@/hooks/usePortraitSrc';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -57,7 +57,9 @@ export function usePortraitUpload(): UsePortraitUploadResult {
     setIsRemoving(true);
     setError(null);
     try {
-      const path = portraitStoragePath(currentPortraitUrl) ?? portraitPath(characterId);
+      // Always the character's own object, whatever the stored value says (a path of another character
+      // must never make us delete someone else's portrait; the database refuses such a value as well).
+      const path = portraitPath(characterId);
       const { error: storageError } = await supabase.storage.from(BUCKET).remove([path]);
       if (storageError) {
         // Log but don't throw — the DB update (portrait_url → null) should still proceed
