@@ -78,6 +78,11 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Reprises transverses
 
+- [ ] Performance des policies : les policies appellent `public.is_dm()` / `is_active_user()` sans `(select ...)` (évaluation
+      possible par ligne) ; sans enjeu pour 5 joueurs, à reprendre si une liste ralentit (adapter alors les tests de structure)
+- [ ] Matrice pgTAP des tables de personnages : un personnage (niveau, objet) par identité pour distinguer propriétaire et
+      autre joueur, à faire en epic 3 quand ces accès s'ouvrent
+
 - [ ] Epic 3 : le trigger `characters_guard_ownership` (story 1.5) refuse le changement de `owner_user_id` et de
       `archived_with_owner` par un non-MJ ; à étendre en trigger de garde complet d'AD-6 (colonnes de liaison, statut) quand
       les joueurs obtiendront une policy d'écriture sur `characters`. Il est testé par une policy temporaire dans le pgTAP.

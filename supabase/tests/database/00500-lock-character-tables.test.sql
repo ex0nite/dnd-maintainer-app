@@ -2,7 +2,7 @@
 -- DM-only. Generated matrix: 7 identities x 3 tables x 4 operations (see structure checks first).
 begin;
 
-select plan(89);
+select plan(107);
 
 insert into auth.users (id, email)
 select tests.uid(i), i || '@table.invalid'
@@ -35,11 +35,14 @@ select is(
   (select count(*)::int from pg_class where oid in ('public.characters'::regclass, 'public.character_build_levels'::regclass, 'public.character_items'::regclass) and relrowsecurity),
   3, 'row-level security is enabled on the three tables'
 );
+select policies_are('public', 'characters', array['characters_dm_all', 'access_active'], 'characters: exactly the DM policy and the active-user rule');
+select policies_are('public', 'character_build_levels', array['character_build_levels_dm_all', 'access_active'], 'character_build_levels: exactly the DM policy and the active-user rule');
+select policies_are('public', 'character_items', array['character_items_dm_all', 'access_active'], 'character_items: exactly the DM policy and the active-user rule');
 select is(
   (select count(*)::int from pg_policies
     where schemaname = 'public' and tablename in ('characters', 'character_build_levels', 'character_items')
-      and (qual = 'true' or with_check = 'true')),
-  0, 'no open (true) policy remains'
+      and policyname like '%_dm_all' and permissive = 'PERMISSIVE' and qual = 'is_dm()' and with_check = 'is_dm()'),
+  3, 'the DM policies are exactly is_dm()'
 );
 select is(
   (select count(*)::int from pg_policies
@@ -58,6 +61,10 @@ select ok(
   not has_table_privilege('authenticated', 'public.characters', 'TRUNCATE')
   and not has_table_privilege('authenticated', 'public.character_build_levels', 'TRUNCATE')
   and not has_table_privilege('authenticated', 'public.character_items', 'TRUNCATE')
+  and not has_table_privilege('authenticated', 'public.characters', 'REFERENCES')
+  and not has_table_privilege('authenticated', 'public.characters', 'TRIGGER')
+  and not has_table_privilege('authenticated', 'public.character_build_levels', 'REFERENCES')
+  and not has_table_privilege('authenticated', 'public.character_items', 'TRIGGER')
   and not has_any_column_privilege('anon', 'public.characters', 'SELECT')
   and not has_any_column_privilege('anon', 'public.character_build_levels', 'SELECT')
   and not has_any_column_privilege('anon', 'public.character_items', 'SELECT'),
@@ -148,6 +155,33 @@ select is((select count(*)::int from public.character_items), 0, 'non_member: ch
 select throws_ok($$insert into public.character_items (character_id, item_id) values ('c1000000-0000-4000-8000-000000000001', 'dagger')$$, '42501', null, 'non_member: character_items insert refused');
 select is(tests.rows_affected($$update public.character_items set quantity = 99$$)::int, 0, 'non_member: character_items update touches 0 rows');
 select is(tests.rows_affected($$delete from public.character_items$$)::int, 0, 'non_member: character_items delete touches 0 rows');
+-- ---------------- access_active in effect: a temporary permissive policy (what epic 3 will add) must still leave archived and temporary-password accounts out
+select tests.reset_identity();
+create policy tmp_open on public.characters for all to authenticated using (true) with check (true);
+create policy tmp_open on public.character_build_levels for all to authenticated using (true) with check (true);
+create policy tmp_open on public.character_items for all to authenticated using (true) with check (true);
+select tests.set_identity('owner');
+select ok((select count(*)::int from public.characters) > 0, 'owner: sees characters once a permissive policy exists');
+select ok((select count(*)::int from public.character_build_levels) > 0, 'owner: sees character_build_levels once a permissive policy exists');
+select ok((select count(*)::int from public.character_items) > 0, 'owner: sees character_items once a permissive policy exists');
+select tests.set_identity('archived');
+select is((select count(*)::int from public.characters), 0, 'archived: still sees nothing in characters (restrictive rule)');
+select throws_ok($$insert into public.characters (campaign_id, name, character_type) values ('aaaaaaaa-0000-4000-8000-00000000000a', 'Hijack', 'pc')$$, '42501', null, 'archived: still cannot insert into characters');
+select is((select count(*)::int from public.character_build_levels), 0, 'archived: still sees nothing in character_build_levels (restrictive rule)');
+select throws_ok($$insert into public.character_build_levels (character_id, sequence, class_id, class_level) values ('c1000000-0000-4000-8000-000000000001', 2, 'fighter', 2)$$, '42501', null, 'archived: still cannot insert into character_build_levels');
+select is((select count(*)::int from public.character_items), 0, 'archived: still sees nothing in character_items (restrictive rule)');
+select throws_ok($$insert into public.character_items (character_id, item_id) values ('c1000000-0000-4000-8000-000000000001', 'dagger')$$, '42501', null, 'archived: still cannot insert into character_items');
+select tests.set_identity('temp_password');
+select is((select count(*)::int from public.characters), 0, 'temp_password: still sees nothing in characters (restrictive rule)');
+select throws_ok($$insert into public.characters (campaign_id, name, character_type) values ('aaaaaaaa-0000-4000-8000-00000000000a', 'Hijack', 'pc')$$, '42501', null, 'temp_password: still cannot insert into characters');
+select is((select count(*)::int from public.character_build_levels), 0, 'temp_password: still sees nothing in character_build_levels (restrictive rule)');
+select throws_ok($$insert into public.character_build_levels (character_id, sequence, class_id, class_level) values ('c1000000-0000-4000-8000-000000000001', 2, 'fighter', 2)$$, '42501', null, 'temp_password: still cannot insert into character_build_levels');
+select is((select count(*)::int from public.character_items), 0, 'temp_password: still sees nothing in character_items (restrictive rule)');
+select throws_ok($$insert into public.character_items (character_id, item_id) values ('c1000000-0000-4000-8000-000000000001', 'dagger')$$, '42501', null, 'temp_password: still cannot insert into character_items');
+select tests.reset_identity();
+drop policy tmp_open on public.characters;
+drop policy tmp_open on public.character_build_levels;
+drop policy tmp_open on public.character_items;
 -- ---------------- dm (positive controls)
 select tests.set_identity('dm');
 select is((select count(*)::int from public.characters), 2, 'dm: reads every characters row');

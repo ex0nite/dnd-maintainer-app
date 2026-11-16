@@ -204,8 +204,8 @@ select throws_ok(
   '42501', null, 'anon cannot reassign characters'
 );
 select tests.set_identity('dm');
-select lives_ok(
-  $$update public.characters set owner_user_id = tests.uid('owner') where id = 'c5000000-0000-4000-8000-000000000005'$$,
+select is(
+  tests.rows_affected($$update public.characters set owner_user_id = tests.uid('owner') where id = 'c5000000-0000-4000-8000-000000000005'$$)::int, 1,
   'the DM assigns an owner'
 );
 select tests.reset_identity();
@@ -278,7 +278,7 @@ select throws_ok($$update public.characters set owner_user_id = null where id = 
 select throws_ok($$update public.characters set archived_with_owner = true where id = 'c1000000-0000-4000-8000-000000000001'$$, '42501', null, 'guard: a player cannot flip archived_with_owner');
 select is(tests.rows_affected($$update public.characters set name = 'Alice renamed' where id = 'c1000000-0000-4000-8000-000000000001'$$)::int, 1, 'guard: ordinary updates still pass');
 select tests.set_identity('anon');
-select throws_ok($$update public.characters set owner_user_id = null$$, '42501', null, 'guard: anon is refused (privilege, then guard)');
+select throws_ok($$update public.characters set owner_user_id = null$$, '42501', null, 'anon is refused (no privilege)');
 select tests.reset_identity();
 drop policy tmp_players_update on public.characters;
 
