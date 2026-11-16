@@ -84,7 +84,7 @@ export default defineConfig(
   },
   {
     // Standalone CLI tooling (run via tsx, not bundled into the app).
-    files: ['scripts/**/*.ts'],
+    files: ['scripts/**/*.ts', 'services/**/*.ts'],
     rules: {
       'no-console': 'off',
     },

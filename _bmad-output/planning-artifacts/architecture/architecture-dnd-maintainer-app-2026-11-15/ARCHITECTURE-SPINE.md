@@ -121,6 +121,11 @@ flowchart LR
   repose à `true` après une réinitialisation. `campaign_members(campaign_id, user_id)` : **écriture réservée au MJ**. Le
   MJ est `dm` de toutes les campagnes sans y figurer. Aucun droit n'est lu dans `user_metadata` ni `app_metadata`.
   [ADOPTED : D-31]
+  **Vérifié (story 1.2)** : l'authentification locale (GoTrue de la CLI 2.122) accepte `<pseudo>@<domaine>.invalid`
+  (création confirmée par l'API d'administration, puis connexion par mot de passe) ; aucun domaine de repli n'est
+  nécessaire. Réglages : `[auth] enable_signup = false` ferme l'inscription publique (vérifié : « Signups not allowed »),
+  mais `[auth.email] enable_signup` doit rester `true`, sinon la connexion par mot de passe est refusée ; longueur
+  minimale de mot de passe 12. À refaire sur la pile du QNAP (story 7.2).
 
 ### AD-4 — L'accès actif est une policy restrictive sur toute table
 
