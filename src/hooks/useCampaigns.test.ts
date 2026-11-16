@@ -42,7 +42,6 @@ const baseCampaign: Campaign = {
   description: null,
   setting: null,
   image_url: null,
-  dm_notes: null,
   theme: null,
   archived_at: null,
   allowed_source_books: ['phb-2024'],

@@ -40,7 +40,6 @@ export type Database = {
           archived_at: string | null
           created_at: string
           description: string | null
-          dm_notes: string | null
           id: string
           image_url: string | null
           name: string
@@ -56,7 +55,6 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
-          dm_notes?: string | null
           id?: string
           image_url?: string | null
           name: string
@@ -72,7 +70,6 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
-          dm_notes?: string | null
           id?: string
           image_url?: string | null
           name?: string

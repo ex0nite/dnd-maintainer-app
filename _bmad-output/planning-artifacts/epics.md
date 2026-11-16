@@ -302,9 +302,10 @@ So that chacun ne voie que les campagnes dont il est membre (FR6, FR26).
 **Then** `is_dm()`, `is_active_user()`, `is_member(campaign_id)` existent en `SECURITY DEFINER STABLE` avec `SET search_path = ''` et `REVOKE EXECUTE ... FROM PUBLIC, anon`
 **And** `campaign_members(campaign_id, user_id)` n'accepte d'écriture que du MJ
 
-**Given** les tables `campaigns` et `campaign_members`
+**Given** les tables `campaigns`, `campaign_members` et `campaign_dm` (les notes du MJ sur la campagne, déplacées ici
+depuis `campaigns.dm_notes` : un champ réservé au MJ ne peut pas rester dans une table lisible par les membres)
 **When** un joueur actif membre lit `campaigns`
-**Then** il ne voit que ses campagnes, jamais `dm_notes`
+**Then** il ne voit que ses campagnes et ne lit jamais `campaign_dm`
 **And** il reçoit un refus (`42501`) en créant une campagne, même par requête directe
 
 **Given** le MJ
@@ -323,10 +324,10 @@ So that la base filtre ce qu'un joueur ne doit jamais lire (FR15, FR20, AD-5).
 
 **Acceptance Criteria:**
 
-**Given** des données existantes dans `characters.backstory`, `characters.notes`, `sessions.notes`, `sessions.loot`, `sessions.experience_awarded` et `campaigns.dm_notes`
+**Given** des données existantes dans `characters.backstory`, `characters.notes`, `sessions.notes`, `sessions.loot` et `sessions.experience_awarded` (`campaigns.dm_notes` a déjà rejoint `campaign_dm` en story 1.4)
 **When** la migration s'applique
-**Then** `character_private`, `session_dm` et `campaign_dm` les reçoivent sans perte et les anciennes colonnes disparaissent
-**And** un trigger `AFTER INSERT` crée la ligne privée vide à la création d'un personnage, d'une séance ou d'une campagne
+**Then** `character_private` et `session_dm` les reçoivent sans perte et les anciennes colonnes disparaissent
+**And** un trigger `AFTER INSERT` crée la ligne privée vide à la création d'un personnage ou d'une séance (celle de `campaign_dm` existe depuis la story 1.4)
 
 **Given** la migration additive `characters.owner_user_id` (nullable, `ON DELETE SET NULL`) et `characters.archived_with_owner`, et la fonction `owns_character(character_id)` (`SECURITY DEFINER STABLE`, `SET search_path = ''`, `REVOKE` explicite)
 **When** elle s'applique
