@@ -51,7 +51,7 @@ On the QNAP the Docker binaries are not in the default `PATH`:
    about a minute and a half), then the rest:
 
    ```bash
-   export COMPOSE_PROJECT_NAME=dnd SITE_DIR=/share/Container/dnd/site   # the folder holding the built front
+   export COMPOSE_PROJECT_NAME=dnd
    docker compose --env-file ../dnd-secrets/.env -f deploy/qnap/docker-compose.yml up -d db
    bash deploy/qnap/wait-db.sh ../dnd-secrets/.env   # NOT just "healthy": the health check also answers during init
    docker compose --env-file ../dnd-secrets/.env -f deploy/qnap/docker-compose.yml up -d
@@ -73,7 +73,7 @@ On the QNAP the Docker binaries are not in the default `PATH`:
    copy `deploy/qnap/account-admin/server.mjs` to the QNAP, then
    `docker compose --env-file ../dnd-secrets/.env -f deploy/qnap/docker-compose.yml --profile admin up -d --build account-admin`.
 8. **Front**: build with `VITE_SUPABASE_URL=https://<public-host>` (same origin: the gateway routes `/auth/v1`, `/rest/v1`,
-   `/storage/v1`) and `VITE_SUPABASE_PUBLISHABLE_KEY=<ANON_KEY>` (public by design), then copy `dist/` to `SITE_DIR`.
+   `/storage/v1`) and `VITE_SUPABASE_PUBLISHABLE_KEY=<ANON_KEY>` (public by design), then publish it with `bash deploy/qnap/publish-site.sh ../dnd-secrets/.env <folder holding the built front>` (it fills a Docker volume: a bind-mounted folder of a QNAP share is unreadable by the `nginx` user because of the share ACLs).
 
 ## 2. Network and HTTPS (story 7.3)
 
@@ -118,7 +118,7 @@ On the QNAP the Docker binaries are not in the default `PATH`:
 
 The app is never opened before it is locked (AD-13): stack up and **not published** (no NPM proxy host yet) → copy of the
 data (`pg_dump`, mandatory, see `docs/cutover.md`) → migrations in one transaction → DM account → front published to
-`SITE_DIR` → MCP reconnected (`DND_DM_PSEUDO`/`DND_DM_PASSWORD`, tools checked) → **only then** the NPM proxy host.
+`publish-site.sh` → MCP reconnected (`DND_DM_PSEUDO`/`DND_DM_PASSWORD`, tools checked) → **only then** the NPM proxy host.
 
 **There is no backup (D-23).** Only the RAID 5 protects the data, against a disk failure, not against a deletion, a
 corruption or the loss of the QNAP. The owner confirms this again before the opening.

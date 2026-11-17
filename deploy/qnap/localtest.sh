@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 DIR="${LOCALTEST_DIR:-$(pwd)/.localtest-stack}"   # git-ignored
-export COMPOSE_PROJECT_NAME=dndqt EDGE_NETWORK=dndqt-edge GATEWAY_PORT=8081 SITE_DIR="$DIR/site"
+export COMPOSE_PROJECT_NAME=dndqt EDGE_NETWORK=dndqt-edge GATEWAY_PORT=8081
 COMPOSE=(docker compose --env-file "$DIR/.env" -f deploy/qnap/docker-compose.yml --profile admin)
 
 case "${1:-}" in
@@ -20,6 +20,7 @@ case "${1:-}" in
     "${COMPOSE[@]}" up -d db
     bash deploy/qnap/wait-db.sh "$DIR/.env"
     "${COMPOSE[@]}" up -d --build
+    bash deploy/qnap/publish-site.sh "$DIR/.env" "$DIR/site"
     bash deploy/qnap/apply-migrations.sh "$DIR/.env"
     ;;
   down) "${COMPOSE[@]}" down -v; rm -rf "$DIR" ;;

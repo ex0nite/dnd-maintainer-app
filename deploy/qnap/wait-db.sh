@@ -8,7 +8,7 @@
 #
 #   deploy/qnap/wait-db.sh <env-file> [timeout-s]
 #
-# Run it from the repository root, with the same COMPOSE_PROJECT_NAME / SITE_DIR exports as the compose commands.
+# Run it from the repository root, with the same COMPOSE_PROJECT_NAME export as the compose commands.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
