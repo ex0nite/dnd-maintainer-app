@@ -2,14 +2,24 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
 import { useCampaigns } from '@/hooks/useCampaigns';
-import { useCreatePlayer, usePlayers, useResetPassword, type PlayerRow } from '@/hooks/useAccounts';
+import {
+  useAddMember,
+  useArchivePlayer,
+  useCreatePlayer,
+  usePlayers,
+  useReactivatePlayer,
+  useRemoveMember,
+  useResetPassword,
+  type PlayerRow,
+} from '@/hooks/useAccounts';
+import { AdminApiError } from '@/lib/admin-api';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { PSEUDO_PATTERN } from '@/lib/auth-email';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TemporaryPassword } from '@/components/TemporaryPassword';
+import { PlayerItem } from '@/components/PlayerItem';
 
 const ERROR_KEYS = {
   invalid_pseudo: 'players.errors.invalidPseudo',
@@ -19,6 +29,7 @@ const ERROR_KEYS = {
   account_archived: 'players.errors.accountArchived',
   account_not_found: 'players.errors.accountNotFound',
   reset_in_progress: 'players.errors.resetInProgress',
+  forbidden_target: 'players.errors.forbiddenTarget',
 } as const;
 
 interface Shown {
@@ -37,16 +48,34 @@ export default function Players() {
   const [pseudo, setPseudo] = useState('');
   const [campaignId, setCampaignId] = useState('');
   const [shown, setShown] = useState<Shown | null>(null);
-  const [confirmingReset, setConfirmingReset] = useState<string | null>(null);
 
   const effectiveCampaignId = campaignId || campaigns[0]?.id || '';
   const pseudoValid = PSEUDO_PATTERN.test(pseudo);
   const error = createPlayer.error;
   const errorKey = error && error.code in ERROR_KEYS ? ERROR_KEYS[error.code as keyof typeof ERROR_KEYS] : undefined;
-  const resetError = resetPassword.error;
-  const resetErrorKey =
-    resetError && resetError.code in ERROR_KEYS ? ERROR_KEYS[resetError.code as keyof typeof ERROR_KEYS] : undefined;
-  const campaignName = (id: string): string => campaigns.find((c) => c.id === id)?.name ?? id;
+  const archivePlayer = useArchivePlayer();
+  const reactivatePlayer = useReactivatePlayer();
+  const addMember = useAddMember();
+  const removeMember = useRemoveMember();
+  const busy =
+    resetPassword.isPending ||
+    archivePlayer.isPending ||
+    reactivatePlayer.isPending ||
+    addMember.isPending ||
+    removeMember.isPending;
+  const actionError =
+    resetPassword.error ?? archivePlayer.error ?? reactivatePlayer.error ?? addMember.error ?? removeMember.error;
+  const actionErrorCode = actionError instanceof AdminApiError ? actionError.code : undefined;
+  const actionErrorKey =
+    actionErrorCode && actionErrorCode in ERROR_KEYS
+      ? ERROR_KEYS[actionErrorCode as keyof typeof ERROR_KEYS]
+      : undefined;
+
+  /** Any new action starts from a clean slate: one error at a time, no stale message. */
+  const run = <V,>(mutation: { mutate: (v: V) => void; reset: () => void }, value: V): void => {
+    [resetPassword, archivePlayer, reactivatePlayer, addMember, removeMember, createPlayer].forEach((m) => m.reset());
+    mutation.mutate(value);
+  };
 
   const submit = (e: FormEvent): void => {
     e.preventDefault();
@@ -63,7 +92,6 @@ export default function Players() {
 
   const reset = (player: PlayerRow): void => {
     createPlayer.reset();
-    setConfirmingReset(null);
     resetPassword.mutate(player.userId, {
       onSuccess: (result) => setShown({ pseudo: player.pseudo, password: result.temporaryPassword, kind: 'reset' }),
     });
@@ -140,10 +168,10 @@ export default function Players() {
             <h2 id="players-list-title" className="text-lg font-semibold">
               {t('players.list.title')}
             </h2>
-            {resetError && (
+            {actionError && (
               <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
                 <AlertCircle className="size-4 shrink-0" />
-                {t(resetErrorKey ?? 'players.errors.resetFailed')}
+                {t(actionErrorKey ?? 'players.errors.actionFailed')}
               </p>
             )}
             {playersError ? (
@@ -155,46 +183,17 @@ export default function Players() {
             ) : (
               <ul className="divide-y rounded-lg border bg-card">
                 {players.map((player) => (
-                  <li key={player.userId} className="flex flex-wrap items-center gap-3 p-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{player.pseudo}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {player.campaignIds.map(campaignName).join(', ') || t('players.list.noCampaign')}
-                      </p>
-                    </div>
-                    <Badge variant={player.status === 'active' ? 'default' : 'outline'}>
-                      {t(`players.status.${player.status}`)}
-                    </Badge>
-                    {player.status !== 'archived' &&
-                      (confirmingReset === player.userId ? (
-                        <span className="flex gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            autoFocus
-                            aria-label={t('players.reset.confirmFor', { pseudo: player.pseudo })}
-                            onClick={() => reset(player)}
-                            disabled={resetPassword.isPending}
-                          >
-                            {t('players.reset.confirm')}
-                          </Button>
-                          <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingReset(null)}>
-                            {t('players.reset.cancel')}
-                          </Button>
-                        </span>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          aria-label={t('players.reset.button', { pseudo: player.pseudo })}
-                          disabled={resetPassword.isPending}
-                          onClick={() => setConfirmingReset(player.userId)}
-                        >
-                          {t('players.reset.short')}
-                        </Button>
-                      ))}
-                  </li>
+                  <PlayerItem
+                    key={player.userId}
+                    player={player}
+                    campaigns={campaigns}
+                    busy={busy}
+                    onReset={reset}
+                    onArchive={(p) => run(archivePlayer, p.userId)}
+                    onReactivate={(p) => run(reactivatePlayer, p.userId)}
+                    onAddToCampaign={(p, id) => run(addMember, { userId: p.userId, campaignId: id })}
+                    onRemoveFromCampaign={(p, id) => run(removeMember, { userId: p.userId, campaignId: id })}
+                  />
                 ))}
               </ul>
             )}

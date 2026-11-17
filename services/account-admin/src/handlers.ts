@@ -37,7 +37,8 @@ export interface HandlerDeps {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROUTE_PREFIX = '/admin-api';
-const RESET_ROUTE = /^\/accounts\/([0-9a-f-]{36})\/reset-password$/;
+const ACTION_ROUTE = /^\/accounts\/([0-9a-f-]{36})\/(reset-password|archive|reactivate)$/;
+const BAN_FOREVER = '876000h';
 
 function asObject(body: unknown): Record<string, unknown> {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'invalid_body');
@@ -107,7 +108,7 @@ export function createHandler(deps: HandlerDeps) {
   }
 
   /** A player target only: the DM account (and anything unknown) is never touched (D-31). */
-  async function loadPlayerTarget(targetId: string): Promise<void> {
+  async function loadPlayerTarget(targetId: string): Promise<{ archived: boolean }> {
     if (!UUID.test(targetId)) throw new HttpError(400, 'invalid_target');
     const { data, error } = await deps.admin
       .from('profiles')
@@ -117,9 +118,10 @@ export function createHandler(deps: HandlerDeps) {
     if (error) throw new HttpError(503, 'database_unavailable');
     if (!data) throw new HttpError(404, 'account_not_found');
     if (data.role !== 'player') throw new HttpError(403, 'forbidden_target');
-    if (data.archived_at !== null) throw new HttpError(409, 'account_archived');
+    return { archived: data.archived_at !== null };
   }
 
+  /** One action per account at a time (this service is a single process). */
   const resetsInFlight = new Set<string>();
 
   /**
@@ -134,7 +136,7 @@ export function createHandler(deps: HandlerDeps) {
    * One reset per account at a time (this service is a single process).
    */
   async function resetPassword(targetId: string): Promise<ApiResponse> {
-    await loadPlayerTarget(targetId);
+    if ((await loadPlayerTarget(targetId)).archived) throw new HttpError(409, 'account_archived');
     if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
     resetsInFlight.add(targetId);
     try {
@@ -186,6 +188,51 @@ export function createHandler(deps: HandlerDeps) {
     }
   }
 
+  /**
+   * Archive (FR5, D-30): the database function stamps the profile (immediate cut-off through the restrictive policy),
+   * ends the sessions and disables the player's characters in one transaction; then the authentication account is
+   * banned so no new sign-in is possible. A failure of the ban leaves the account archived and unreadable: retry.
+   */
+  async function archiveAccount(targetId: string): Promise<ApiResponse> {
+    await loadPlayerTarget(targetId);
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    resetsInFlight.add(targetId);
+    try {
+      const { error } = await deps.admin.rpc('archive_player', { p_user_id: targetId });
+      if (error) throw new HttpError(500, 'archive_failed');
+      const { error: banError } = await deps.admin.auth.admin.updateUserById(targetId, { ban_duration: BAN_FOREVER });
+      if (banError) {
+        process.stderr.write(`archive of ${targetId}: ban not applied, retry the archiving\n`);
+        throw new HttpError(500, 'ban_failed');
+      }
+      return { status: 200, body: { userId: targetId, status: 'archived' } };
+    } finally {
+      resetsInFlight.delete(targetId);
+    }
+  }
+
+  /**
+   * Reactivate: database first (only the characters archived WITH their owner come back), then lift the ban, so
+   * a sign-in becomes possible only once the account is whole. Retrying after a failed unban is safe.
+   */
+  async function reactivateAccount(targetId: string): Promise<ApiResponse> {
+    await loadPlayerTarget(targetId);
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    resetsInFlight.add(targetId);
+    try {
+      const { error } = await deps.admin.rpc('reactivate_player', { p_user_id: targetId });
+      if (error) throw new HttpError(500, 'reactivate_failed');
+      const { error: unbanError } = await deps.admin.auth.admin.updateUserById(targetId, { ban_duration: 'none' });
+      if (unbanError) {
+        process.stderr.write(`reactivation of ${targetId}: ban not lifted, retry the reactivation\n`);
+        throw new HttpError(500, 'unban_failed');
+      }
+      return { status: 200, body: { userId: targetId, status: 'active' } };
+    } finally {
+      resetsInFlight.delete(targetId);
+    }
+  }
+
   return async function handle(req: ApiRequest): Promise<ApiResponse> {
     try {
       if (!req.path.startsWith(`${ROUTE_PREFIX}/`)) throw new HttpError(404, 'not_found');
@@ -205,12 +252,14 @@ export function createHandler(deps: HandlerDeps) {
         if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
         return await createPlayer(req.body);
       }
-      const reset = RESET_ROUTE.exec(route);
-      if (reset) {
+      const action = ACTION_ROUTE.exec(route);
+      if (action) {
         if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed');
         const actor = await authenticateDm(authDeps, req.authorization);
         if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
-        return await resetPassword(reset[1]);
+        if (action[2] === 'archive') return await archiveAccount(action[1]);
+        if (action[2] === 'reactivate') return await reactivateAccount(action[1]);
+        return await resetPassword(action[1]);
       }
       throw new HttpError(404, 'not_found');
     } catch (e) {

@@ -50,6 +50,14 @@ export function resetPlayerPassword(token: string, userId: string): Promise<Rese
   return post<ResetPassword>(`/accounts/${encodeURIComponent(userId)}/reset-password`, token, {});
 }
 
+export function archivePlayer(token: string, userId: string): Promise<{ userId: string; status: string }> {
+  return post(`/accounts/${encodeURIComponent(userId)}/archive`, token, {});
+}
+
+export function reactivatePlayer(token: string, userId: string): Promise<{ userId: string; status: string }> {
+  return post(`/accounts/${encodeURIComponent(userId)}/reactivate`, token, {});
+}
+
 export function createPlayer(token: string, input: { pseudo: string; campaignId: string }): Promise<CreatedPlayer> {
   return post<CreatedPlayer>('/accounts', token, input);
 }

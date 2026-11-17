@@ -103,6 +103,13 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
   `public.revoke_user_sessions` (callable by `service_role` only). The DM account is never a valid target. An access
   token issued before the reset still passes the authentication server's signature check for up to an hour, but the
   database refuses its data reads at once (the flag).
+- **Members, archiving (FR5, FR6, D-30):** from the same screen the DM adds a player to other campaigns and removes
+  them from one (straight through the database, policy `campaign_members_dm_all`; a player cannot add anyone).
+  _Archive_ calls `public.archive_player` (one transaction: `archived_at`, sessions ended, the player's characters
+  disabled and marked `archived_with_owner`) and then bans the authentication account; the policy `access_active`
+  cuts data access at once, even with a token still valid. _Reactivate_ clears the stamp, re-enables only the
+  characters marked `archived_with_owner` (one disabled by hand stays disabled), then lifts the ban. Both are
+  idempotent: if the ban step fails the service answers 500 and the DM simply retries. The DM account is refused.
 - Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
 - Deployment: reach the service only over the internal container network (no published port). If it listens on a
   non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would

@@ -423,6 +423,95 @@ describe('POST /admin-api/accounts/:id/reset-password', () => {
   });
 });
 
+describe('POST /admin-api/accounts/:id/archive and /reactivate', () => {
+  const act = (action: string, over: Partial<ApiRequest> = {}): ApiRequest => ({
+    method: 'POST',
+    path: `/admin-api/accounts/${PLAYER_ID}/${action}`,
+    authorization: `Bearer ${jwt('authenticated')}`,
+    ip: '1.2.3.4',
+    body: {},
+    ...over,
+  });
+
+  it('archives in the database first (transaction), then bans the authentication account', async () => {
+    const { handle, calls, admin } = setup();
+    const res = await handle(act('archive'));
+    expect(res).toEqual({ status: 200, body: { userId: PLAYER_ID, status: 'archived' } });
+    expect(calls.order).toEqual(['rpc:archive_player', 'password']);
+    expect(calls.rpcArgs).toEqual([{ p_user_id: PLAYER_ID }]);
+    expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, { ban_duration: '876000h' });
+  });
+
+  it('reactivates in the database first, then lifts the ban', async () => {
+    const { handle, calls, admin } = setup();
+    const res = await handle(act('reactivate'));
+    expect(res).toEqual({ status: 200, body: { userId: PLAYER_ID, status: 'active' } });
+    expect(calls.order).toEqual(['rpc:reactivate_player', 'password']);
+    expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, { ban_duration: 'none' });
+  });
+
+  it('accepts archiving an archived account (retry after a failed ban)', async () => {
+    const { handle } = setup({
+      profiles: {
+        [DM_ID]: { role: 'dm', archived_at: null },
+        [PLAYER_ID]: { role: 'player', archived_at: '2026-01-01T00:00:00Z' },
+      },
+    });
+    expect((await handle(act('archive'))).status).toBe(200);
+  });
+
+  it.each(['archive', 'reactivate'])(
+    '%s refuses the DM account, a player, a visitor and a service_role token',
+    async (action) => {
+      const dm = setup();
+      expect((await dm.handle(act(action, { path: `/admin-api/accounts/${DM_ID}/${action}` }))).status).toBe(403);
+      const player = setup({ authUser: { id: PLAYER_ID, role: 'authenticated' } });
+      expect((await player.handle(act(action))).status).toBe(403);
+      const visitor = setup();
+      expect((await visitor.handle(act(action, { authorization: undefined }))).status).toBe(401);
+      const service = setup();
+      expect((await service.handle(act(action, { authorization: `Bearer ${jwt('service_role')}` }))).status).toBe(401);
+      for (const fake of [dm, player, visitor, service]) {
+        expect(fake.calls.order).toEqual([]);
+        expect(fake.admin.auth.admin.updateUserById).not.toHaveBeenCalled();
+      }
+    }
+  );
+
+  it.each(['archive', 'reactivate'])('%s answers 404 for an unknown account', async (action) => {
+    const { handle, calls } = setup();
+    expect((await handle(act(action, { path: `/admin-api/accounts/${NEW_ID}/${action}` }))).status).toBe(404);
+    expect(calls.order).toEqual([]);
+  });
+
+  it('does not ban when the database step fails, and reports a failed ban for a retry', async () => {
+    const dbFail = setup({ revokeError: true });
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(await dbFail.handle(act('archive'))).toEqual({ status: 500, body: { error: 'archive_failed' } });
+    expect(dbFail.admin.auth.admin.updateUserById).not.toHaveBeenCalled();
+
+    const banFail = setup({ updatePasswordError: true });
+    expect(await banFail.handle(act('archive'))).toEqual({ status: 500, body: { error: 'ban_failed' } });
+    const unbanFail = setup({ updatePasswordError: true });
+    expect(await unbanFail.handle(act('reactivate'))).toEqual({ status: 500, body: { error: 'unban_failed' } });
+  });
+
+  it('shares the per-account lock with the password reset', async () => {
+    const { handle, admin } = setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    (admin.auth.admin.updateUserById as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => {
+      await gate;
+      return { error: null };
+    });
+    const first = handle(act('archive'));
+    await vi.waitFor(() => expect(admin.auth.admin.updateUserById).toHaveBeenCalled());
+    expect((await handle(act('reactivate'))).body).toEqual({ error: 'reset_in_progress' });
+    release();
+    expect((await first).status).toBe(200);
+  });
+});
+
 describe('routing and limits', () => {
   it('serves the health check without authentication', async () => {
     const { handle } = setup();
