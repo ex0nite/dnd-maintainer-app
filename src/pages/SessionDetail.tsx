@@ -12,6 +12,8 @@ import { AlertCircle, ArrowLeft, BookOpen, Calendar, Link as LinkIcon, Lock, Plu
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { RecapPublishToggle } from '@/components/RecapPublishToggle';
+import { DmRecapComments } from '@/components/DmRecapComments';
 import {
   Dialog,
   DialogContent,
@@ -336,6 +338,11 @@ export default function SessionDetail() {
             </div>
           </div>
 
+          {session && (
+            <div className="mb-4">
+              <RecapPublishToggle sessionId={session.id} campaignId={session.campaign_id} />
+            </div>
+          )}
           <div>
             <label className="block text-muted-foreground text-sm font-semibold mb-2">
               {t('sessionDetail.summary')}
@@ -362,6 +369,12 @@ export default function SessionDetail() {
             />
           </div>
         </div>
+
+        {session && (
+          <div className="bg-card border border-border rounded-lg p-6 mb-8">
+            <DmRecapComments sessionId={session.id} campaignId={session.campaign_id} />
+          </div>
+        )}
 
         {/* DM Notes Section */}
         <div className="bg-card border border-border rounded-lg p-6 mb-8">

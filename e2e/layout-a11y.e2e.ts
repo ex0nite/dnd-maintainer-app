@@ -86,6 +86,60 @@ export const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'recaps list (player)',
+    path: '/campaign/la-mine-perdue/recaps',
+    signedIn: true,
+    role: 'player',
+    rest: {
+      sessions: [
+        {
+          id: 's1',
+          slug: 'session-1',
+          campaign_id: '11111111-1111-4111-8111-111111111111',
+          session_number: 1,
+          name: 'La descente dans la mine abandonnée avec un titre vraiment très long pour tester',
+          date: '2026-01-10',
+        },
+      ],
+    },
+    ready: async (page) => {
+      await expect(page.getByRole('link', { name: /Session 1/ })).toBeVisible();
+    },
+  },
+  {
+    name: 'recap with comments (player)',
+    path: '/campaign/la-mine-perdue/recaps/session-1',
+    signedIn: true,
+    role: 'player',
+    rest: {
+      sessions: {
+        id: 's1',
+        slug: 'session-1',
+        campaign_id: '11111111-1111-4111-8111-111111111111',
+        session_number: 1,
+        name: 'La descente',
+        date: '2026-01-10',
+        summary: 'Le groupe est entré dans la mine. ' + 'x'.repeat(300),
+      },
+      session_comments: [
+        {
+          id: 'c1',
+          campaign_id: '11111111-1111-4111-8111-111111111111',
+          session_id: 's1',
+          author_id: 'e2e-user',
+          body: 'Super séance ! https://example.com/a/very/long/address/without/any/space/at/all/for/the/test/ok',
+          created_at: '2026-01-11T00:00:00Z',
+          updated_at: '2026-01-11T00:00:00Z',
+        },
+      ],
+    },
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: /Session 1/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+      await expect(page.getByLabel('Add a comment')).toBeVisible();
+    },
+  },
+  {
     name: 'players',
     path: '/players',
     signedIn: true,

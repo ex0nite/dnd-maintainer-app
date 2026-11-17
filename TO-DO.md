@@ -79,7 +79,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
       2.4 réinitialisation FAIT, 2.5 membres / archivage FAIT, 2.6 limitation des tentatives FAIT)
 - [x] Epic 3 : fiche de personnage (3.1 FAIT ; 3.6, 3.7, 3.9 : base FAITE, interface à faire avec 3.2 ; 3.1 à 3.9 FAITES : policies, accueil joueur, fiches, création, niveaux, reconstruction, portraits, réassignation)
 - [x] Epic 4 : notes de campagne (4.1 à 4.4 FAITES : carnet personnel, lecture MJ, notes communes, modération)
-- [ ] Epic 5 : récapitulatifs de séance (5.1 à 5.4)
+- [x] Epic 5 : récapitulatifs de séance (5.1 à 5.4) (5.1 à 5.4 FAITES : publication, lecture, commentaires, modération)
 - [ ] Epic 6 : page joueur bilingue et adaptée au téléphone (6.1 à 6.4), dont `src/locales/fr/common.json`
 
 ### Epic 7, suite : mise en ligne
@@ -132,3 +132,6 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [x] BMAD dans le dépôt MCP : non (D-24), simple renvoi depuis son `CLAUDE.md`
 - [ ] Traduire les données de règles (`gamedata`, 1 728 clés) en français, par lots (D-28)
+
+- [ ] Export du MJ (`ExportData`, `generateSeedSql`) : n'inclut pas encore `notes_personal`, `notes_shared`, `session_comments` ni `sessions.summary_published` (epics 4 et 5) ; à ajouter avant le basculement (sauvegarde).
+- [ ] Récapitulatif de séance : `summary` sert à la fois de brouillon et de texte publié (chaque autosave est visible des joueurs tant que la séance est publiée) ; envisager `summary_draft`.
