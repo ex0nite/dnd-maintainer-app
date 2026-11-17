@@ -149,6 +149,14 @@ Aucune sauvegarde n'est mise en place pour l'instant. **Risque assumé par le pr
 QNAP protège les données (panne d'un disque), pas une suppression, une corruption ou la perte du QNAP. À réexaminer :
 la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 
+### D-33 · 2026-11-17 · Essai de charge : l'auto-hébergement est retenu
+
+- Mesure du 2026-11-17 sur le QNAP (`docs/qnap-load-test.md`) : 5 joueurs et le MJ pendant 30 minutes, avec puis sans `account-admin`.
+  Mémoire disponible jamais sous **1 250 Mo** (seuil : 500 Mo), pile et `account-admin` compris (environ 400 Mo, dont 26 Mo pour
+  `account-admin`), 0 erreur, lectures sous 40 ms au 95e centile. `nginx-proxy-manager` est resté sain.
+- Le repli sur Supabase cloud (D-20) n'est donc pas nécessaire. À remesurer si la table grandit ou si d'autres services s'ajoutent.
+- L'installation est décrite dans `docs/deploy-qnap.md` ; la pile (`deploy/qnap/`) est épinglée par empreinte et testée en CI.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le
