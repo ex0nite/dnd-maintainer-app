@@ -262,6 +262,12 @@ max_frequency = "5s"
 # Force log out if the user has been inactive longer than the specified duration.
 # inactivity_timeout = "8h"
 
+# Per-pseudo lock of sign-in attempts (story 2.6, FR2): 5 wrong passwords in 15 minutes. The function is created by
+# the migration 20261117300000_login_attempt_lock.sql, which must exist before this hook is enabled in production.
+[auth.hook.password_verification_attempt]
+enabled = true
+uri = "pg-functions://postgres/internal/password_verification_hook"
+
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
 # [auth.hook.before_user_created]
 # enabled = true

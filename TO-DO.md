@@ -59,12 +59,14 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [ ] Masquer le lien et la route « Joueurs » pour un non-MJ (le service refuse déjà ; à faire avec le hook de profil, story 2.3)
 - [ ] Nettoyage des comptes d'authentification sans profil (crash entre création et profil) : tâche manuelle ou job
+- [ ] Story 7.3 : limite par adresse de GoTrue (`GOTRUE_RATE_LIMIT_HEADER` = en-tête que le proxy écrase) et test à deux adresses (AC 2.6)
+- [ ] Story 7.2 : activer le hook `password_verification_attempt` côté QNAP APRÈS la migration (voir SETUP)
 - [ ] Copier le mot de passe temporaire : effacer le presse-papiers après un délai (confort)
 
 ### Epics 2 à 6
 
-- [ ] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
-      2.4 réinitialisation FAIT, 2.5 membres / archivage FAIT, 2.6 limitation des tentatives)
+- [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
+      2.4 réinitialisation FAIT, 2.5 membres / archivage FAIT, 2.6 limitation des tentatives FAIT)
 - [ ] Epic 3 : fiche de personnage (3.1 à 3.9)
 - [ ] Epic 4 : notes de campagne (4.1 à 4.4)
 - [ ] Epic 5 : récapitulatifs de séance (5.1 à 5.4)

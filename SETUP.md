@@ -118,6 +118,29 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
   authentication user (stderr): delete it by hand before retrying the pseudo.
 - Health check without authentication: `GET /admin-api/health`.
 
+## Sign-in attempt limit (FR2)
+
+Five wrong passwords on the same pseudo within 15 minutes lock **that pseudo** for exactly 15 minutes from the fifth
+failure (every attempt in that period is refused even with the right password, and none is recorded, so insisting does
+not extend it; the other players are not affected). A password change (the DM's reset, the player's own change) or a
+reactivation lifts the lock at once. The refusal is
+word for word the one of a wrong password, so the lock is invisible to whoever tries. It is the `password_verification_attempt`
+hook of the authentication server, implemented by `internal.password_verification_hook` (migration
+`20261117300000_login_attempt_lock.sql`, schema `internal`, not exposed by the API). Locally it is enabled by
+`[auth.hook.password_verification_attempt]` in `supabase/config.toml`.
+
+- **Production (story 7.2):** apply the migration first, then give the authentication container
+  `GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_ENABLED=true` and
+  `GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_URI=pg-functions://postgres/internal/password_verification_hook`.
+  The other way round, every sign-in fails (fail closed).
+- **Per address:** the authentication server also limits sign-in requests per client address
+  (`[auth.rate_limit] sign_in_sign_ups`). Behind the reverse proxy it must see the real address: the proxy overwrites
+  the header and the authentication server is told which one to trust (`GOTRUE_RATE_LIMIT_HEADER`). That wiring and
+  its test with two addresses belong to story 7.3.
+- **Limit of the design:** the lock is per pseudo, so someone who knows a pseudo can keep it locked by trying every 15
+  minutes (the DM included). To lift a lock at once, as the database owner: `delete from internal.login_locks; delete from internal.login_attempts;`
+  (or `... where user_id = '<id>'`). The per-address limit and the proxy slow such an attacker down.
+
 ## Signing in
 
 Open the app: you are sent to the sign-in page. Type the pseudo and password of the account (the derived address is never shown). The app must use the same `ACCOUNT_DOMAIN` as the account creation: set `VITE_ACCOUNT_DOMAIN` in `.env.local` if it is not `table`. The MCP server signs in the same way with `DND_DM_PSEUDO` / `DND_DM_PASSWORD` (see its README).
