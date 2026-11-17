@@ -126,6 +126,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
     },
   });
 
@@ -157,6 +158,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
       queryClient.invalidateQueries({ queryKey: ['character'] });
       queryClient.setQueryData(['character', data.slug], data);
     },
@@ -169,6 +171,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (_, { campaignId }) => {
       queryClient.invalidateQueries({ queryKey: ['characters', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
     },
   });
 
@@ -279,6 +282,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
       queryClient.invalidateQueries({ queryKey: ['character-build-levels', data.id] });
       queryClient.invalidateQueries({ queryKey: ['character-items', data.id] });
     },

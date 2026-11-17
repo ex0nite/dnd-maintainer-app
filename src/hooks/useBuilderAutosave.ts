@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { rollbackInsert, writeCharacterPrivate } from '@/hooks/privateData';
+import { RollbackFailedError, rollbackInsert, writeCharacterPrivate } from '@/hooks/privateData';
 import { ownerFieldsForNewCharacter } from '@/hooks/ownership';
 import type { Character } from '@/types/database';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
@@ -143,6 +143,7 @@ export function useBuilderAutosave(existingCharacterId?: string) {
             // A new draft's private row starts empty (trigger): that is the baseline to compare with.
             lastPrivateRef.current = { backstory: null, notes: null };
             queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
+            queryClient.invalidateQueries({ queryKey: ['my-characters'] });
           }
 
           // Backstory and notes live in character_private (AD-5); its row exists already (trigger).
@@ -163,7 +164,18 @@ export function useBuilderAutosave(existingCharacterId?: string) {
                 characterIdRef.current = null;
                 lastPrivateRef.current = null;
                 queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
-                await rollbackInsert('characters', savedId, privateError);
+                queryClient.invalidateQueries({ queryKey: ['my-characters'] });
+                try {
+                  await rollbackInsert('characters', savedId, privateError);
+                } catch (rollbackError) {
+                  if (rollbackError instanceof RollbackFailedError) {
+                    // The draft could not be removed (a player cannot delete): keep tracking it, the next tick
+                    // UPDATES it instead of inserting a duplicate draft.
+                    characterIdRef.current = savedId;
+                    lastPrivateRef.current = { backstory: null, notes: null };
+                  }
+                  throw rollbackError;
+                }
               }
               throw privateError;
             }
@@ -215,6 +227,7 @@ export function useBuilderAutosave(existingCharacterId?: string) {
 
           queryClient.invalidateQueries({ queryKey: ['character'] });
           queryClient.invalidateQueries({ queryKey: ['characters', character.campaign_id] });
+          queryClient.invalidateQueries({ queryKey: ['my-characters'] });
           queryClient.invalidateQueries({ queryKey: ['character-build-levels', savedId] });
           queryClient.invalidateQueries({ queryKey: ['character-items', savedId] });
 
@@ -286,6 +299,7 @@ export function useBuilderAutosave(existingCharacterId?: string) {
         if (!data?.slug) throw new Error('Finalize succeeded but no character slug was returned');
         queryClient.invalidateQueries({ queryKey: ['character'] });
         queryClient.invalidateQueries({ queryKey: ['characters', payload.character.campaign_id] });
+        queryClient.invalidateQueries({ queryKey: ['my-characters'] });
         queryClient.invalidateQueries({ queryKey: ['campaign-drafts', payload.character.campaign_id] });
         queryClient.invalidateQueries({ queryKey: ['character-build-levels', id] });
         queryClient.invalidateQueries({ queryKey: ['character-items', id] });
@@ -322,6 +336,7 @@ export function useBuilderAutosave(existingCharacterId?: string) {
       if (error) throw error;
       characterIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['characters', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
       queryClient.invalidateQueries({ queryKey: ['campaign-drafts', campaignId] });
     },
     [queryClient]

@@ -15,7 +15,7 @@ import { PortraitImage } from '@/components/PortraitImage';
 export default function PlayerHome() {
   const { t } = useTranslation('common');
   usePageTitle(t('playerHome.title'));
-  const { data: campaigns = [], isLoading: campaignsLoading } = useCampaigns();
+  const { data: campaigns = [], isLoading: campaignsLoading, isError: campaignsError } = useCampaigns();
   const { data: characters = [], isLoading: charactersLoading, isError } = useMyCharacters();
 
   if (campaignsLoading || charactersLoading) {
@@ -23,6 +23,17 @@ export default function PlayerHome() {
       <div className="page-container space-y-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
+  if (campaignsError) {
+    return (
+      <div className="page-container max-w-xl space-y-3">
+        <h1 className="page-title">{t('playerHome.title')}</h1>
+        <p role="alert" className="text-sm text-destructive">
+          {t('playerHome.loadError')}
+        </p>
       </div>
     );
   }

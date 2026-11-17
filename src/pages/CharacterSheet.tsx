@@ -283,42 +283,43 @@ function CharacterSheetInner({
         )}
 
         {/* A read-only viewer sees the sheet but every control inside is disabled (the database refuses the writes too). */}
-        <fieldset disabled={!canEdit} className="m-0 min-w-0 border-0 p-0">
-          {/* WotC-inspired layout: stats (left) / combat (center) / roleplay & gear (right) */}
-          <div className="sheet-grid mb-6">
-            {/* Left Column: Abilities, Saving Throws, Skills */}
-            <div className="sheet-area-left">
-              <AbilityScoresPanel abilities={abilities} buildError={buildError} />
-              <SavingThrowsPanel savingThrows={savingThrows} buildError={buildError} />
-              {skills ? (
-                <SkillsPanel skills={skills} />
-              ) : (
-                <div className="sheet-panel text-center text-muted-foreground">
-                  <h2 className="text-lg font-bold text-foreground mb-4">{tc('characterSheet.sections.skills')}</h2>
-                  <p>
-                    {buildError
-                      ? tc('characterSheet.buildError.skills', { message: buildError })
-                      : tc('characterSheet.emptyState.skills')}
-                  </p>
-                </div>
-              )}
-            </div>
+        {/* WotC-inspired layout: stats (left) / combat (center) / roleplay & gear (right) */}
+        <div className="sheet-grid mb-6">
+          {/* Left Column: Abilities, Saving Throws, Skills */}
+          <div className="sheet-area-left">
+            <AbilityScoresPanel abilities={abilities} buildError={buildError} />
+            <SavingThrowsPanel savingThrows={savingThrows} buildError={buildError} />
+            {skills ? (
+              <SkillsPanel skills={skills} />
+            ) : (
+              <div className="sheet-panel text-center text-muted-foreground">
+                <h2 className="text-lg font-bold text-foreground mb-4">{tc('characterSheet.sections.skills')}</h2>
+                <p>
+                  {buildError
+                    ? tc('characterSheet.buildError.skills', { message: buildError })
+                    : tc('characterSheet.emptyState.skills')}
+                </p>
+              </div>
+            )}
+          </div>
 
-            {/* Center Column: Combat & Features */}
-            <div className="sheet-area-center">
-              <CombatPanel
-                resolved={resolved}
-                abilities={abilities}
-                armorClass={armorClass}
-                speedValue={speedValue}
-                speed={resolved?.speed}
-                maxHP={maxHP}
-                profBonus={profBonus}
-                passivePerception={resolved ? 10 + resolved.skills.perception.bonus : null}
-                isStale={isStale}
-                buildError={buildError}
-              />
+          {/* Center Column: Combat & Features */}
+          <div className="sheet-area-center">
+            <CombatPanel
+              resolved={resolved}
+              abilities={abilities}
+              armorClass={armorClass}
+              speedValue={speedValue}
+              speed={resolved?.speed}
+              maxHP={maxHP}
+              profBonus={profBonus}
+              passivePerception={resolved ? 10 + resolved.skills.perception.bonus : null}
+              isStale={isStale}
+              buildError={buildError}
+            />
 
+            {/* Only what WRITES is disabled for a read-only viewer: the details (attacks, skills, bonuses) still open. */}
+            <fieldset disabled={!canEdit} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <ConditionsPanel character={character} onUpdate={handleUpdate} />
 
               {resolved && (
@@ -335,33 +336,33 @@ function CharacterSheetInner({
                   <SpellSlotsPanel resolved={resolved} character={character} onUpdate={handleUpdate} />
                 </>
               )}
+            </fieldset>
 
-              {resolved && <AttacksPanel attacks={resolved.attacks} weaponMasteries={resolved.weaponMasteries} />}
-              {resolved && <ProficienciesPanel resolved={resolved} />}
-              {resolved && <ResourcePoolsPanel resolved={resolved} />}
-              {resolved?.features && resolved.features.length > 0 && <FeaturesPanel features={resolved.features} />}
-            </div>
-
-            {/* Right Column: Equipment, Spells & Personality */}
-            <div className="sheet-area-right">
-              {itemsData.length > 0 && <EquipmentPanel itemsData={itemsData} />}
-              {hasSpells && <SpellcastingPanel spellcasting={resolved.spellcasting!} />}
-              {hasPersonality && (
-                <PersonalityPanel
-                  character={character}
-                  onEdit={canEdit ? () => setEditSection('personality') : undefined}
-                />
-              )}
-            </div>
+            {resolved && <AttacksPanel attacks={resolved.attacks} weaponMasteries={resolved.weaponMasteries} />}
+            {resolved && <ProficienciesPanel resolved={resolved} />}
+            {resolved && <ResourcePoolsPanel resolved={resolved} />}
+            {resolved?.features && resolved.features.length > 0 && <FeaturesPanel features={resolved.features} />}
           </div>
 
-          {/* Full Width Backstory & Appearance */}
-          <BackstoryPanel
-            character={character}
-            onEditBackstory={canEdit ? () => setEditSection('backstory') : undefined}
-            onEditAppearance={canEdit ? () => setEditSection('appearance') : undefined}
-          />
-        </fieldset>
+          {/* Right Column: Equipment, Spells & Personality */}
+          <div className="sheet-area-right">
+            {itemsData.length > 0 && <EquipmentPanel itemsData={itemsData} />}
+            {hasSpells && <SpellcastingPanel spellcasting={resolved.spellcasting!} />}
+            {hasPersonality && (
+              <PersonalityPanel
+                character={character}
+                onEdit={canEdit ? () => setEditSection('personality') : undefined}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Full Width Backstory & Appearance */}
+        <BackstoryPanel
+          character={character}
+          onEditBackstory={canEdit ? () => setEditSection('backstory') : undefined}
+          onEditAppearance={canEdit ? () => setEditSection('appearance') : undefined}
+        />
       </div>
 
       {/* Edit Dialogs */}
