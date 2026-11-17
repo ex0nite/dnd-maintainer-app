@@ -30,6 +30,14 @@ export const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'change password',
+    path: '/change-password',
+    signedIn: true,
+    ready: async (page) => {
+      await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
+    },
+  },
+  {
     name: 'players',
     path: '/players',
     signedIn: true,

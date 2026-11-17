@@ -13,6 +13,7 @@ import ExportData from '@/pages/ExportData';
 import SettingsTheme from '@/pages/SettingsTheme';
 import Login from '@/pages/Login';
 import Players from '@/pages/Players';
+import ChangePassword from '@/pages/ChangePassword';
 import { RequireAuth } from '@/components/RequireAuth';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<RequireAuth />}>
+          <Route path="/change-password" element={<ChangePassword />} />
           <Route element={<Layout />}>
             <Route path="/" element={<CampaignList />} />
             <Route path="/campaign/:campaignSlug" element={<CampaignDashboard />} />

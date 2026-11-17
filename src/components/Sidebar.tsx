@@ -5,6 +5,7 @@ import {
   Download,
   LogOut,
   ExternalLink,
+  KeyRound,
   ScrollText,
   Settings,
   Shield,
@@ -294,6 +295,14 @@ export function Sidebar({
           >
             <Download className="size-5 shrink-0" />
             {!isCollapsed && <span className="font-medium text-sm">{t('nav.exportData')}</span>}
+          </NavLink>
+          <NavLink
+            to="/change-password"
+            className="flex items-center gap-3 px-3 py-3 rounded-lg text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-200"
+            title={t('nav.changePassword')}
+          >
+            <KeyRound className="size-5 shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">{t('nav.changePassword')}</span>}
           </NavLink>
           <button
             type="button"
