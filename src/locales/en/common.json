@@ -849,6 +849,23 @@
     "pseudoHelp": "3 to 20 characters: lower-case letters, digits, hyphen or underscore.",
     "campaign": "Campaign",
     "create": "Create the account",
+    "list": {
+      "title": "Accounts",
+      "empty": "No player account yet.",
+      "noCampaign": "No campaign"
+    },
+    "status": {
+      "active": "Active",
+      "temporary": "Temporary password",
+      "archived": "Archived"
+    },
+    "reset": {
+      "title": "New temporary password for {{pseudo}}",
+      "short": "Reset password",
+      "button": "Reset the password of {{pseudo}}",
+      "confirm": "Confirm: sign them out",
+      "cancel": "Cancel"
+    },
     "noCampaign": "Create a campaign first: a player account is attached to one.",
     "created": {
       "title": "Account created for {{pseudo}}",
@@ -862,6 +879,8 @@
       "invalidPseudo": "This pseudo is not valid: use 3 to 20 lower-case letters, digits, hyphens or underscores.",
       "pseudoTaken": "This pseudo is already used.",
       "campaignNotFound": "This campaign no longer exists.",
+      "accountArchived": "This account is archived.",
+      "accountNotFound": "This account no longer exists.",
       "rateLimited": "Too many attempts. Wait a minute and try again.",
       "generic": "The account could not be created. Try again in a moment."
     }

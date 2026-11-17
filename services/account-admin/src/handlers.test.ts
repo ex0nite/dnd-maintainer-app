@@ -15,7 +15,10 @@ function jwt(role: string): string {
 }
 
 interface FakeOptions {
-  profiles?: Record<string, { role: string; archived_at: string | null } | undefined>;
+  profiles?: Record<string, { role: string; archived_at: string | null; must_change_password?: boolean } | undefined>;
+  raiseError?: boolean;
+  updatePasswordError?: boolean;
+  revokeError?: boolean;
   existingPseudo?: boolean;
   campaignExists?: boolean;
   memberError?: boolean;
@@ -33,6 +36,8 @@ function setup(opts: FakeOptions = {}) {
     deleteUser: vi.fn().mockResolvedValue({ error: null }),
     memberInsert: vi.fn(),
     profileInsert: vi.fn(),
+    profileUpdate: vi.fn(),
+    order: [] as string[],
   };
 
   const from = vi.fn((table: string) => {
@@ -51,6 +56,13 @@ function setup(opts: FakeOptions = {}) {
           calls.profileInsert(row);
           return { error: null };
         },
+        update: (row: unknown) => ({
+          eq: async () => {
+            calls.profileUpdate(row);
+            calls.order.push(`profile:${JSON.stringify(row)}`);
+            return { error: opts.raiseError && calls.profileUpdate.mock.calls.length === 1 ? { message: 'x' } : null };
+          },
+        }),
       };
     }
     if (table === 'campaigns') {
@@ -77,6 +89,10 @@ function setup(opts: FakeOptions = {}) {
   });
   const admin = {
     from,
+    rpc: vi.fn(async (name: string) => {
+      calls.order.push(`rpc:${name}`);
+      return { error: opts.revokeError ? { message: 'x' } : null };
+    }),
     auth: {
       admin: {
         createUser: vi
@@ -86,7 +102,10 @@ function setup(opts: FakeOptions = {}) {
               ? { data: { user: null }, error: { message: opts.createUserError } }
               : { data: { user: { id: NEW_ID } }, error: null }
           ),
-        updateUserById: vi.fn().mockResolvedValue({ error: null }),
+        updateUserById: vi.fn(async () => {
+          calls.order.push('password');
+          return { error: opts.updatePasswordError ? { message: 'x' } : null };
+        }),
         deleteUser: calls.deleteUser,
       },
     },
@@ -240,6 +259,112 @@ describe('POST /admin-api/accounts', () => {
     const { handle } = setup({ memberError: true });
     const res = await handle(create());
     expect(JSON.stringify(res.body)).not.toMatch(/service|key|password/i);
+  });
+});
+
+describe('POST /admin-api/accounts/:id/reset-password', () => {
+  const reset = (over: Partial<ApiRequest> = {}): ApiRequest => ({
+    method: 'POST',
+    path: `/admin-api/accounts/${PLAYER_ID}/reset-password`,
+    authorization: `Bearer ${jwt('authenticated')}`,
+    ip: '1.2.3.4',
+    body: {},
+    ...over,
+  });
+
+  it('raises the flag and the marker BEFORE changing the password, then revokes the sessions', async () => {
+    const { handle, calls, admin } = setup();
+    const res = await handle(reset());
+    expect(res.status).toBe(200);
+    expect(res.body.temporaryPassword).toHaveLength(16);
+    expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, {
+      password: res.body.temporaryPassword,
+    });
+    expect(calls.order).toEqual([
+      'profile:{"must_change_password":true,"password_reset_pending":true}',
+      'password',
+      'rpc:revoke_user_sessions',
+    ]);
+  });
+
+  it('refuses the DM account as a target, whatever the caller', async () => {
+    const { handle, calls } = setup();
+    const res = await handle(reset({ path: `/admin-api/accounts/${DM_ID}/reset-password` }));
+    expect(res).toEqual({ status: 403, body: { error: 'forbidden_target' } });
+    expect(calls.order).toEqual([]);
+  });
+
+  it.each([
+    ['a visitor', { authorization: undefined }, 401],
+    ['a service_role token', { authorization: `Bearer ${jwt('service_role')}` }, 401],
+  ])('refuses %s', async (_label, over, status) => {
+    const { handle, calls } = setup();
+    expect((await handle(reset(over))).status).toBe(status);
+    expect(calls.order).toEqual([]);
+  });
+
+  it('refuses a player caller', async () => {
+    const { handle, calls } = setup({ authUser: { id: PLAYER_ID, role: 'authenticated' } });
+    expect((await handle(reset())).status).toBe(403);
+    expect(calls.order).toEqual([]);
+  });
+
+  it('answers 404 for an unknown account and 409 for an archived one, changing nothing', async () => {
+    const unknown = setup();
+    expect((await unknown.handle(reset({ path: `/admin-api/accounts/${NEW_ID}/reset-password` }))).status).toBe(404);
+    expect(unknown.calls.order).toEqual([]);
+    const archived = setup({
+      profiles: {
+        [DM_ID]: { role: 'dm', archived_at: null },
+        [PLAYER_ID]: { role: 'player', archived_at: '2026-01-01T00:00:00Z' },
+      },
+    });
+    expect((await archived.handle(reset())).status).toBe(409);
+    expect(archived.calls.order).toEqual([]);
+  });
+
+  it('rejects a malformed target id before any database call', async () => {
+    const { handle, calls } = setup();
+    expect((await handle(reset({ path: '/admin-api/accounts/not-a-uuid-at-all/reset-password' }))).status).toBe(404);
+    const almost = `/admin-api/accounts/${'a'.repeat(36)}/reset-password`;
+    expect((await handle(reset({ path: almost }))).status).toBe(400);
+    expect(calls.order).toEqual([]);
+  });
+
+  it('puts the previous flag back and does not leak when the password change fails', async () => {
+    const { handle, calls } = setup({
+      updatePasswordError: true,
+      profiles: {
+        [DM_ID]: { role: 'dm', archived_at: null },
+        [PLAYER_ID]: { role: 'player', archived_at: null, must_change_password: false },
+      },
+    });
+    const res = await handle(reset());
+    expect(res).toEqual({ status: 500, body: { error: 'password_reset_failed' } });
+    expect(calls.profileUpdate).toHaveBeenLastCalledWith({
+      must_change_password: false,
+      password_reset_pending: false,
+    });
+    expect(calls.order).not.toContain('rpc:revoke_user_sessions');
+  });
+
+  it('does not touch the password when the flag could not be raised', async () => {
+    const { handle, calls } = setup({ raiseError: true });
+    expect((await handle(reset())).status).toBe(503);
+    expect(calls.order).not.toContain('password');
+  });
+
+  it('reports a failed session revocation as an error (the DM must retry)', async () => {
+    const { handle } = setup({ revokeError: true });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const res = await handle(reset());
+    expect(res).toEqual({ status: 500, body: { error: 'session_revocation_failed' } });
+    expect(String(write.mock.calls[0][0])).not.toMatch(/password/i);
+  });
+
+  it('only accepts POST', async () => {
+    const { handle } = setup();
+    expect((await handle(reset({ method: 'GET' }))).status).toBe(405);
   });
 });
 

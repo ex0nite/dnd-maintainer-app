@@ -37,6 +37,7 @@ export interface HandlerDeps {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROUTE_PREFIX = '/admin-api';
+const RESET_ROUTE = /^\/accounts\/([0-9a-f-]{36})\/reset-password$/;
 
 function asObject(body: unknown): Record<string, unknown> {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'invalid_body');
@@ -105,6 +106,59 @@ export function createHandler(deps: HandlerDeps) {
     return { status: 201, body: { userId: created.userId, pseudo, temporaryPassword } };
   }
 
+  /** A player target only: the DM account (and anything unknown) is never touched (D-31). */
+  async function loadPlayerTarget(targetId: string): Promise<{ must_change_password: boolean }> {
+    if (!UUID.test(targetId)) throw new HttpError(400, 'invalid_target');
+    const { data, error } = await deps.admin
+      .from('profiles')
+      .select('role, archived_at, must_change_password')
+      .eq('user_id', targetId)
+      .maybeSingle();
+    if (error) throw new HttpError(503, 'database_unavailable');
+    if (!data) throw new HttpError(404, 'account_not_found');
+    if (data.role !== 'player') throw new HttpError(403, 'forbidden_target');
+    if (data.archived_at !== null) throw new HttpError(409, 'account_archived');
+    return { must_change_password: data.must_change_password };
+  }
+
+  /**
+   * DM-initiated reset (FR4). Order matters (docs: password_reset_pending, story 2.3 migration):
+   *  1. raise must_change_password + password_reset_pending: from now on the account reads nothing;
+   *  2. change the password: the trigger keeps the flag up and consumes the marker;
+   *  3. end every session, so the old password's tokens cannot be renewed.
+   * A failure at step 2 puts the previous flag back (the old password still works then).
+   */
+  async function resetPassword(targetId: string): Promise<ApiResponse> {
+    const before = await loadPlayerTarget(targetId);
+
+    const { error: raiseError } = await deps.admin
+      .from('profiles')
+      .update({ must_change_password: true, password_reset_pending: true })
+      .eq('user_id', targetId);
+    if (raiseError) throw new HttpError(503, 'database_unavailable');
+
+    const temporaryPassword = generateTemporaryPassword();
+    const { error: passwordError } = await deps.admin.auth.admin.updateUserById(targetId, {
+      password: temporaryPassword,
+    });
+    if (passwordError) {
+      const { error: restoreError } = await deps.admin
+        .from('profiles')
+        .update({ must_change_password: before.must_change_password, password_reset_pending: false })
+        .eq('user_id', targetId);
+      if (restoreError) process.stderr.write(`reset failed and flag not restored for ${targetId}\n`);
+      throw new HttpError(500, 'password_reset_failed');
+    }
+
+    const { error: revokeError } = await deps.admin.rpc('revoke_user_sessions', { p_user_id: targetId });
+    if (revokeError) {
+      // The new password is set and the account is locked behind it; old tokens just stay renewable until the DM retries.
+      process.stderr.write(`sessions of ${targetId} not revoked after reset\n`);
+      throw new HttpError(500, 'session_revocation_failed');
+    }
+    return { status: 200, body: { userId: targetId, temporaryPassword } };
+  }
+
   return async function handle(req: ApiRequest): Promise<ApiResponse> {
     try {
       if (!req.path.startsWith(`${ROUTE_PREFIX}/`)) throw new HttpError(404, 'not_found');
@@ -123,6 +177,13 @@ export function createHandler(deps: HandlerDeps) {
         const actor = await authenticateDm(authDeps, req.authorization);
         if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
         return await createPlayer(req.body);
+      }
+      const reset = RESET_ROUTE.exec(route);
+      if (reset) {
+        if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed');
+        const actor = await authenticateDm(authDeps, req.authorization);
+        if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
+        return await resetPassword(reset[1]);
       }
       throw new HttpError(404, 'not_found');
     } catch (e) {
