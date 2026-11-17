@@ -17,8 +17,10 @@ function jwt(role: string): string {
 interface FakeOptions {
   profiles?: Record<string, { role: string; archived_at: string | null; must_change_password?: boolean } | undefined>;
   raiseError?: boolean;
+  raiseEmpty?: boolean;
   updatePasswordError?: boolean;
   revokeError?: boolean;
+  revokeFailsOn?: number;
   existingPseudo?: boolean;
   campaignExists?: boolean;
   memberError?: boolean;
@@ -38,6 +40,7 @@ function setup(opts: FakeOptions = {}) {
     profileInsert: vi.fn(),
     profileUpdate: vi.fn(),
     order: [] as string[],
+    rpcArgs: [] as unknown[],
   };
 
   const from = vi.fn((table: string) => {
@@ -56,13 +59,32 @@ function setup(opts: FakeOptions = {}) {
           calls.profileInsert(row);
           return { error: null };
         },
-        update: (row: unknown) => ({
-          eq: async () => {
-            calls.profileUpdate(row);
+        update: (row: unknown) => {
+          const filters: unknown[][] = [];
+          const run = () => {
+            calls.profileUpdate(row, filters);
             calls.order.push(`profile:${JSON.stringify(row)}`);
-            return { error: opts.raiseError && calls.profileUpdate.mock.calls.length === 1 ? { message: 'x' } : null };
-          },
-        }),
+            const first = calls.profileUpdate.mock.calls.length === 1;
+            return {
+              data: opts.raiseEmpty && first ? [] : [{ user_id: filters.find((f) => f[0] === 'user_id')?.[1] }],
+              error: opts.raiseError && first ? { message: 'x' } : null,
+            };
+          };
+          const chain: Record<string, unknown> = {
+            eq: (column: string, value: unknown) => {
+              filters.push([column, value]);
+              return chain;
+            },
+            is: (column: string, value: unknown) => {
+              filters.push([column, value, 'is']);
+              return chain;
+            },
+            select: () => Promise.resolve(run()),
+            then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+              Promise.resolve(run()).then(resolve, reject),
+          };
+          return chain;
+        },
       };
     }
     if (table === 'campaigns') {
@@ -89,9 +111,12 @@ function setup(opts: FakeOptions = {}) {
   });
   const admin = {
     from,
-    rpc: vi.fn(async (name: string) => {
+    rpc: vi.fn(async (name: string, args: unknown) => {
       calls.order.push(`rpc:${name}`);
-      return { error: opts.revokeError ? { message: 'x' } : null };
+      calls.rpcArgs.push(args);
+      return {
+        error: opts.revokeError && calls.rpcArgs.length === (opts.revokeFailsOn ?? 1) ? { message: 'x' } : null,
+      };
     }),
     auth: {
       admin: {
@@ -271,8 +296,10 @@ describe('POST /admin-api/accounts/:id/reset-password', () => {
     body: {},
     ...over,
   });
+  const RAISE = 'profile:{"must_change_password":true,"password_reset_pending":true}';
+  const SETTLE = 'profile:{"must_change_password":true,"password_reset_pending":false}';
 
-  it('raises the flag and the marker BEFORE changing the password, then revokes the sessions', async () => {
+  it('raises, revokes, changes the password, settles the final state, revokes again', async () => {
     const { handle, calls, admin } = setup();
     const res = await handle(reset());
     expect(res.status).toBe(200);
@@ -280,11 +307,15 @@ describe('POST /admin-api/accounts/:id/reset-password', () => {
     expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, {
       password: res.body.temporaryPassword,
     });
-    expect(calls.order).toEqual([
-      'profile:{"must_change_password":true,"password_reset_pending":true}',
-      'password',
-      'rpc:revoke_user_sessions',
+    expect(calls.order).toEqual([RAISE, 'rpc:revoke_user_sessions', 'password', SETTLE, 'rpc:revoke_user_sessions']);
+    // every write is scoped to the target, never to the whole table
+    expect(calls.profileUpdate.mock.calls[0][1]).toEqual([
+      ['user_id', PLAYER_ID],
+      ['role', 'player'],
+      ['archived_at', null, 'is'],
     ]);
+    expect(calls.profileUpdate.mock.calls[1][1]).toEqual([['user_id', PLAYER_ID]]);
+    expect(calls.rpcArgs).toEqual([{ p_user_id: PLAYER_ID }, { p_user_id: PLAYER_ID }]);
   });
 
   it('refuses the DM account as a target, whatever the caller', async () => {
@@ -331,35 +362,59 @@ describe('POST /admin-api/accounts/:id/reset-password', () => {
     expect(calls.order).toEqual([]);
   });
 
-  it('puts the previous flag back and does not leak when the password change fails', async () => {
+  it('never lowers the flag when the password change fails: it only clears the marker', async () => {
     const { handle, calls } = setup({
       updatePasswordError: true,
       profiles: {
         [DM_ID]: { role: 'dm', archived_at: null },
-        [PLAYER_ID]: { role: 'player', archived_at: null, must_change_password: false },
+        [PLAYER_ID]: { role: 'player', archived_at: null, must_change_password: true },
       },
     });
     const res = await handle(reset());
     expect(res).toEqual({ status: 500, body: { error: 'password_reset_failed' } });
-    expect(calls.profileUpdate).toHaveBeenLastCalledWith({
-      must_change_password: false,
-      password_reset_pending: false,
-    });
-    expect(calls.order).not.toContain('rpc:revoke_user_sessions');
+    expect(calls.order).toEqual([RAISE, 'rpc:revoke_user_sessions', 'password', SETTLE]);
   });
 
-  it('does not touch the password when the flag could not be raised', async () => {
-    const { handle, calls } = setup({ raiseError: true });
-    expect((await handle(reset())).status).toBe(503);
-    expect(calls.order).not.toContain('password');
-  });
-
-  it('reports a failed session revocation as an error (the DM must retry)', async () => {
-    const { handle } = setup({ revokeError: true });
+  it('aborts before touching the password when the first session revocation fails', async () => {
+    const { handle, calls } = setup({ revokeError: true });
     const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
     const res = await handle(reset());
     expect(res).toEqual({ status: 500, body: { error: 'session_revocation_failed' } });
+    expect(calls.order).toEqual([RAISE, 'rpc:revoke_user_sessions', SETTLE]);
     expect(String(write.mock.calls[0][0])).not.toMatch(/password/i);
+  });
+
+  it('reports a failed second revocation (the password is already set: the DM must retry)', async () => {
+    const { handle, calls } = setup({ revokeError: true, revokeFailsOn: 2 });
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const res = await handle(reset());
+    expect(res).toEqual({ status: 500, body: { error: 'session_revocation_failed' } });
+    expect(calls.order[calls.order.length - 2]).toBe(SETTLE);
+  });
+
+  it('does not touch the password when the flag could not be raised, or the row is not a live player', async () => {
+    const failed = setup({ raiseError: true });
+    expect((await failed.handle(reset())).status).toBe(503);
+    expect(failed.calls.order).not.toContain('password');
+    const empty = setup({ raiseEmpty: true });
+    expect((await empty.handle(reset())).status).toBe(404);
+    expect(empty.calls.order).not.toContain('password');
+  });
+
+  it('refuses a second reset of the same account while one is running', async () => {
+    const { handle, admin } = setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    (admin.auth.admin.updateUserById as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => {
+      await gate;
+      return { error: null };
+    });
+    const first = handle(reset());
+    await vi.waitFor(() => expect(admin.auth.admin.updateUserById).toHaveBeenCalled());
+    expect((await handle(reset())).body).toEqual({ error: 'reset_in_progress' });
+    release();
+    expect((await first).status).toBe(200);
+    expect((await handle(reset())).status).toBe(200);
   });
 
   it('only accepts POST', async () => {

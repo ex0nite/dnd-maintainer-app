@@ -18,6 +18,7 @@ const ERROR_KEYS = {
   rate_limited: 'players.errors.rateLimited',
   account_archived: 'players.errors.accountArchived',
   account_not_found: 'players.errors.accountNotFound',
+  reset_in_progress: 'players.errors.resetInProgress',
 } as const;
 
 interface Shown {
@@ -30,7 +31,7 @@ export default function Players() {
   const { t } = useTranslation('common');
   usePageTitle(t('players.title'));
   const { data: campaigns = [] } = useCampaigns();
-  const { data: players = [] } = usePlayers();
+  const { data: players = [], isError: playersError } = usePlayers();
   const createPlayer = useCreatePlayer();
   const resetPassword = useResetPassword();
   const [pseudo, setPseudo] = useState('');
@@ -40,8 +41,11 @@ export default function Players() {
 
   const effectiveCampaignId = campaignId || campaigns[0]?.id || '';
   const pseudoValid = PSEUDO_PATTERN.test(pseudo);
-  const error = createPlayer.error ?? resetPassword.error;
+  const error = createPlayer.error;
   const errorKey = error && error.code in ERROR_KEYS ? ERROR_KEYS[error.code as keyof typeof ERROR_KEYS] : undefined;
+  const resetError = resetPassword.error;
+  const resetErrorKey =
+    resetError && resetError.code in ERROR_KEYS ? ERROR_KEYS[resetError.code as keyof typeof ERROR_KEYS] : undefined;
   const campaignName = (id: string): string => campaigns.find((c) => c.id === id)?.name ?? id;
 
   const submit = (e: FormEvent): void => {
@@ -136,7 +140,17 @@ export default function Players() {
             <h2 id="players-list-title" className="text-lg font-semibold">
               {t('players.list.title')}
             </h2>
-            {players.length === 0 ? (
+            {resetError && (
+              <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="size-4 shrink-0" />
+                {t(resetErrorKey ?? 'players.errors.resetFailed')}
+              </p>
+            )}
+            {playersError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {t('players.list.error')}
+              </p>
+            ) : players.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('players.list.empty')}</p>
             ) : (
               <ul className="divide-y rounded-lg border bg-card">
@@ -157,6 +171,8 @@ export default function Players() {
                           <Button
                             type="button"
                             size="sm"
+                            autoFocus
+                            aria-label={t('players.reset.confirmFor', { pseudo: player.pseudo })}
                             onClick={() => reset(player)}
                             disabled={resetPassword.isPending}
                           >
@@ -172,6 +188,7 @@ export default function Players() {
                           size="sm"
                           variant="outline"
                           aria-label={t('players.reset.button', { pseudo: player.pseudo })}
+                          disabled={resetPassword.isPending}
                           onClick={() => setConfirmingReset(player.userId)}
                         >
                           {t('players.reset.short')}

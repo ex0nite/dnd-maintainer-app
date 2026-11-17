@@ -61,6 +61,11 @@ const fresh = await signIn(pseudo, reset.temporaryPassword);
 out('new temporary password', fresh.session ? 'OK' : `FAILED ${fresh.status}`);
 const refreshed = await chosen.client.auth.refreshSession();
 out('old session refresh', refreshed.error ? `refused ${refreshed.error.status}` : 'STILL RENEWABLE (BAD)');
+const hijack = await chosen.client.auth.updateUser({ password: 'Hijacked-password-1' });
+out(
+  'old session changes the password after the reset',
+  hijack.error ? `refused ${hijack.error.status}` : 'ACCEPTED (BAD)'
+);
 const { data: afterReset } = await fresh.client.from('campaigns').select('id');
 out('player on the temporary password reads campaigns', afterReset?.length);
 const { data: staleTokenRead } = await newClient().auth.getUser(chosen.session.access_token);

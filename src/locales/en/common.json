@@ -852,6 +852,7 @@
     "list": {
       "title": "Accounts",
       "empty": "No player account yet.",
+      "error": "The list of accounts could not be loaded.",
       "noCampaign": "No campaign"
     },
     "status": {
@@ -864,6 +865,7 @@
       "short": "Reset password",
       "button": "Reset the password of {{pseudo}}",
       "confirm": "Confirm: sign them out",
+      "confirmFor": "Confirm the reset for {{pseudo}}: they will be signed out",
       "cancel": "Cancel"
     },
     "noCampaign": "Create a campaign first: a player account is attached to one.",
@@ -881,6 +883,8 @@
       "campaignNotFound": "This campaign no longer exists.",
       "accountArchived": "This account is archived.",
       "accountNotFound": "This account no longer exists.",
+      "resetInProgress": "A reset is already running for this account.",
+      "resetFailed": "The password could not be reset. Check the list and try again.",
       "rateLimited": "Too many attempts. Wait a minute and try again.",
       "generic": "The account could not be created. Try again in a moment."
     }

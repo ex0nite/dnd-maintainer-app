@@ -107,56 +107,83 @@ export function createHandler(deps: HandlerDeps) {
   }
 
   /** A player target only: the DM account (and anything unknown) is never touched (D-31). */
-  async function loadPlayerTarget(targetId: string): Promise<{ must_change_password: boolean }> {
+  async function loadPlayerTarget(targetId: string): Promise<void> {
     if (!UUID.test(targetId)) throw new HttpError(400, 'invalid_target');
     const { data, error } = await deps.admin
       .from('profiles')
-      .select('role, archived_at, must_change_password')
+      .select('role, archived_at')
       .eq('user_id', targetId)
       .maybeSingle();
     if (error) throw new HttpError(503, 'database_unavailable');
     if (!data) throw new HttpError(404, 'account_not_found');
     if (data.role !== 'player') throw new HttpError(403, 'forbidden_target');
     if (data.archived_at !== null) throw new HttpError(409, 'account_archived');
-    return { must_change_password: data.must_change_password };
   }
 
+  const resetsInFlight = new Set<string>();
+
   /**
-   * DM-initiated reset (FR4). Order matters (docs: password_reset_pending, story 2.3 migration):
-   *  1. raise must_change_password + password_reset_pending: from now on the account reads nothing;
-   *  2. change the password: the trigger keeps the flag up and consumes the marker;
-   *  3. end every session, so the old password's tokens cannot be renewed.
-   * A failure at step 2 puts the previous flag back (the old password still works then).
+   * DM-initiated reset (FR4). The account must never be readable while the DM knows (or is about to know) its
+   * password, whatever fails or interleaves (docs: password_reset_pending, story 2.3 migration):
+   *  1. raise must_change_password + password_reset_pending, only on a live player row (nothing is readable from now on);
+   *  2. end every session first, so nobody holding one can change the password behind the DM's back; abort if it fails;
+   *  3. change the password (the trigger keeps the flag up and consumes the marker);
+   *  4. write the final state explicitly (flag up, marker down): it does not depend on the marker having survived;
+   *  5. end the sessions again (a sign-in with the old password between steps 2 and 3 would have opened one).
+   * The flag is never lowered by a failure: at worst the player has to choose a new password again.
+   * One reset per account at a time (this service is a single process).
    */
   async function resetPassword(targetId: string): Promise<ApiResponse> {
-    const before = await loadPlayerTarget(targetId);
+    await loadPlayerTarget(targetId);
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    resetsInFlight.add(targetId);
+    try {
+      const settle = async (): Promise<void> => {
+        const { error } = await deps.admin
+          .from('profiles')
+          .update({ must_change_password: true, password_reset_pending: false })
+          .eq('user_id', targetId);
+        if (error) process.stderr.write(`reset of ${targetId}: marker not cleared, retry the reset\n`);
+      };
+      const revoke = async (): Promise<boolean> => {
+        const { error } = await deps.admin.rpc('revoke_user_sessions', { p_user_id: targetId });
+        return !error;
+      };
 
-    const { error: raiseError } = await deps.admin
-      .from('profiles')
-      .update({ must_change_password: true, password_reset_pending: true })
-      .eq('user_id', targetId);
-    if (raiseError) throw new HttpError(503, 'database_unavailable');
-
-    const temporaryPassword = generateTemporaryPassword();
-    const { error: passwordError } = await deps.admin.auth.admin.updateUserById(targetId, {
-      password: temporaryPassword,
-    });
-    if (passwordError) {
-      const { error: restoreError } = await deps.admin
+      const { data: raised, error: raiseError } = await deps.admin
         .from('profiles')
-        .update({ must_change_password: before.must_change_password, password_reset_pending: false })
-        .eq('user_id', targetId);
-      if (restoreError) process.stderr.write(`reset failed and flag not restored for ${targetId}\n`);
-      throw new HttpError(500, 'password_reset_failed');
-    }
+        .update({ must_change_password: true, password_reset_pending: true })
+        .eq('user_id', targetId)
+        .eq('role', 'player')
+        .is('archived_at', null)
+        .select('user_id');
+      if (raiseError) throw new HttpError(503, 'database_unavailable');
+      if (!raised || raised.length !== 1) throw new HttpError(404, 'account_not_found');
 
-    const { error: revokeError } = await deps.admin.rpc('revoke_user_sessions', { p_user_id: targetId });
-    if (revokeError) {
-      // The new password is set and the account is locked behind it; old tokens just stay renewable until the DM retries.
-      process.stderr.write(`sessions of ${targetId} not revoked after reset\n`);
-      throw new HttpError(500, 'session_revocation_failed');
+      if (!(await revoke())) {
+        await settle();
+        process.stderr.write(`sessions of ${targetId} not revoked, reset aborted\n`);
+        throw new HttpError(500, 'session_revocation_failed');
+      }
+
+      const temporaryPassword = generateTemporaryPassword();
+      const { error: passwordError } = await deps.admin.auth.admin.updateUserById(targetId, {
+        password: temporaryPassword,
+      });
+      if (passwordError) {
+        await settle();
+        throw new HttpError(500, 'password_reset_failed');
+      }
+
+      await settle();
+      if (!(await revoke())) {
+        process.stderr.write(`sessions of ${targetId} not revoked after the reset, retry it\n`);
+        throw new HttpError(500, 'session_revocation_failed');
+      }
+      return { status: 200, body: { userId: targetId, temporaryPassword } };
+    } finally {
+      resetsInFlight.delete(targetId);
     }
-    return { status: 200, body: { userId: targetId, temporaryPassword } };
   }
 
   return async function handle(req: ApiRequest): Promise<ApiResponse> {
