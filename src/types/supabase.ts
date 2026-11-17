@@ -575,6 +575,88 @@ export type Database = {
           },
         ]
       }
+      notes_personal: {
+        Row: {
+          author_id: string
+          body: string
+          campaign_id: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string
+          body?: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_personal_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes_shared: {
+        Row: {
+          author_id: string | null
+          body: string
+          campaign_id: string
+          category: string
+          created_at: string
+          id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          body?: string
+          campaign_id: string
+          category?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          campaign_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_shared_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           campaign_id: string
@@ -627,6 +709,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      campaign_member_names: {
+        Args: { p_campaign_id: string }
+        Returns: { user_id: string; pseudo: string }[]
+      }
       generate_slug: {
         Args: { entity_id: string; entity_name: string }
         Returns: string
