@@ -227,10 +227,13 @@ backstory, notes)`, `session_dm(session_id, notes, loot, experience_awarded)`, `
   joueur qui change son adresse d'authentification.
 - **Rule:** inscription désactivée (`GOTRUE_DISABLE_SIGNUP=true`) ; comptes créés confirmés (aucun envoi d'e-mails) ;
   mot de passe minimal de 10 caractères ; jeton valable 3600 s avec rotation du jeton de rafraîchissement ; le
-  changement d'adresse par un utilisateur est désactivé (à vérifier sur la version installée). Aucune autorisation ne
+  changement d'adresse par un utilisateur n'est pas désactivable par configuration (spike 2.1, `docs/auth-spike.md`) :
+  un trigger sur `auth.users` refuse toute modification de `email` / `email_change` (story 2.3). Aucune autorisation ne
   repose sur le contenu du jeton : la base relit `profiles` (AD-4). **Verrouillage par pseudo** : il n'est pas natif ;
-  il s'implémente par le hook de vérification de mot de passe de l'authentification **si** la version installée le
-  permet, sinon seule la limitation par IP s'applique et le PRD (FR-2) est amendé. [À VÉRIFIER]
+  il s'implémente par le hook de vérification de mot de passe de l'authentification (vérifié par le spike 2.1,
+  `docs/auth-spike.md` : disponible, story 2.6). Le message de refus doit être identique à celui d'un mauvais mot de
+  passe, la fonction du hook doit exister avant d'activer la configuration, et le hook n'est pas appelé pour un pseudo
+  inconnu. Le minimum de mot de passe installé est 12 (et non 10)  (écart accepté, voir la section des vérifications).
 
 ### AD-12 — Front : l'interface suit la base
 

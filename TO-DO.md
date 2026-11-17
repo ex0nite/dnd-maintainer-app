@@ -57,7 +57,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Epics 2 à 6
 
-- [ ] Epic 2 : le MJ gère sa table (2.1 spike authentification, 2.2 création de compte, 2.3 mot de passe obligatoire,
+- [ ] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte, 2.3 mot de passe obligatoire,
       2.4 réinitialisation, 2.5 membres / archivage, 2.6 limitation des tentatives)
 - [ ] Epic 3 : fiche de personnage (3.1 à 3.9)
 - [ ] Epic 4 : notes de campagne (4.1 à 4.4)
