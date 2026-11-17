@@ -12,6 +12,7 @@ import NotesPage from '@/pages/NotesPage';
 import ExportData from '@/pages/ExportData';
 import SettingsTheme from '@/pages/SettingsTheme';
 import Login from '@/pages/Login';
+import Players from '@/pages/Players';
 import { RequireAuth } from '@/components/RequireAuth';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/campaign/:campaignSlug/sessions" element={<SessionList />} />
             <Route path="/campaign/:campaignSlug/session/:sessionSlug" element={<SessionDetail />} />
             <Route path="/campaign/:campaignSlug/notes" element={<NotesPage />} />
+            <Route path="/players" element={<Players />} />
             <Route path="/export" element={<ExportData />} />
             <Route path="/settings/theme" element={<SettingsTheme />} />
           </Route>

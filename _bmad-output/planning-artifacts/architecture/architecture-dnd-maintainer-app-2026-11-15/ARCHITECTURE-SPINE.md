@@ -233,7 +233,7 @@ backstory, notes)`, `session_dm(session_id, notes, loot, experience_awarded)`, `
   il s'implémente par le hook de vérification de mot de passe de l'authentification (vérifié par le spike 2.1,
   `docs/auth-spike.md` : disponible, story 2.6). Le message de refus doit être identique à celui d'un mauvais mot de
   passe, la fonction du hook doit exister avant d'activer la configuration, et le hook n'est pas appelé pour un pseudo
-  inconnu. Le minimum de mot de passe installé est 12 (et non 10)  (écart accepté, voir la section des vérifications).
+  inconnu. Le minimum de mot de passe installé est 12 (et non 10) (écart accepté, voir la section des vérifications).
 
 ### AD-12 — Front : l'interface suit la base
 
