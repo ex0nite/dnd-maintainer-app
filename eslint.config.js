@@ -7,7 +7,15 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default defineConfig(
   {
-    ignores: ['dist/', 'dist-e2e/', 'test-results/', 'playwright-report/', 'node_modules/', '.claude/'],
+    ignores: [
+      'dist/',
+      'dist-e2e/',
+      'test-results/',
+      'playwright-report/',
+      'node_modules/',
+      '.claude/',
+      'services/account-admin/spike/',
+    ],
   },
   {
     files: ['features/**/*.{js,mjs,ts,tsx}'],

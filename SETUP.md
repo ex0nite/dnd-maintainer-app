@@ -65,6 +65,34 @@ The password (12 characters minimum) is typed twice in the terminal and is never
 `^[a-z0-9_-]{3,20}$`. The authentication address is derived as `<pseudo>@<ACCOUNT_DOMAIN>.invalid` and is never shown or
 used as a mailbox. A second DM is refused by the database. Never put the admin key on the command line (shell history). `ACCOUNT_DOMAIN` defaults to `table`.
 
+## Player accounts: the account-admin service
+
+Players never sign up. The DM creates their account from the **Players** screen of the app (pseudo + campaign): a
+temporary password is generated, shown once, and the player must choose their own on first sign-in. The screen calls
+the `account-admin` service (`services/account-admin/`, AD-2), the only component that holds the administration key.
+
+```bash
+read -rs SUPABASE_SERVICE_ROLE_KEY && export SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOUNT_DOMAIN=<label> \
+  TRUSTED_IP_HEADER=x-real-ip npm run account-admin      # listens on 127.0.0.1:8787
+```
+
+- Reached by the app at `/admin-api/` (the Vite dev server proxies it to port 8787; in production the reverse proxy does).
+- Every call needs the DM's access token. The service refuses `service_role`/`anon` tokens, asks the authentication server
+  to validate the token and its session, then re-reads `profiles` (role `dm`, not archived). Nothing is trusted from the
+  token content. Calls are throttled per address (before any network call) and per DM.
+- `TRUSTED_IP_HEADER` must name a header the reverse proxy **overwrites** with the real client address; if it is unset
+  the socket address is used (all traffic then looks like the proxy). Never let the client choose that header.
+- The administration key is read from the environment only: it is not in the repository, not in the front bundle and
+  not in the logs (the service logs method, path, status and duration, nothing else).
+- Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
+- Deployment: reach the service only over the internal container network (no published port). If it listens on a
+  non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would
+  share the proxy's address and 30 junk requests a minute would lock the DM out of the screen.
+- If a creation fails half-way and the automatic cleanup also fails, the service logs the id of the leftover
+  authentication user (stderr): delete it by hand before retrying the pseudo.
+- Health check without authentication: `GET /admin-api/health`.
+
 ## Signing in
 
 Open the app: you are sent to the sign-in page. Type the pseudo and password of the account (the derived address is never shown). The app must use the same `ACCOUNT_DOMAIN` as the account creation: set `VITE_ACCOUNT_DOMAIN` in `.env.local` if it is not `table`. The MCP server signs in the same way with `DND_DM_PSEUDO` / `DND_DM_PASSWORD` (see its README).

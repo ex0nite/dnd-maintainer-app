@@ -29,6 +29,14 @@ export const PAGES: PageUnderTest[] = [
       await expect(page.getByText('La mine perdue').first()).toBeVisible();
     },
   },
+  {
+    name: 'players',
+    path: '/players',
+    signedIn: true,
+    ready: async (page) => {
+      await expect(page.getByLabel('Pseudo')).toBeVisible();
+    },
+  },
 ];
 
 for (const pageUnderTest of PAGES) {

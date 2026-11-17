@@ -18,6 +18,7 @@
     "uat:checklist": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx scripts/gen-uat-checklist.ts",
     "supabase:types": "npx supabase gen types typescript --local > src/types/supabase.ts",
     "bootstrap:dm": "tsx services/account-admin/src/bootstrap-dm.ts",
+    "account-admin": "tsx services/account-admin/src/server.ts",
     "test:e2e": "playwright test",
     "test:sql": "npx supabase test db --local",
     "supabase:reset": "npx supabase stop --no-backup && npx supabase start && npm run supabase:types",
