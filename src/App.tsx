@@ -9,6 +9,7 @@ import CharacterSheet from '@/pages/CharacterSheet';
 import SessionList from '@/pages/SessionList';
 import SessionDetail from '@/pages/SessionDetail';
 import NotesPage from '@/pages/NotesPage';
+import CampaignNotes from '@/pages/CampaignNotes';
 import ExportData from '@/pages/ExportData';
 import SettingsTheme from '@/pages/SettingsTheme';
 import Login from '@/pages/Login';
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/players" element={<Players />} />
               <Route path="/export" element={<ExportData />} />
             </Route>
+            <Route path="/campaign/:campaignSlug/table-notes" element={<CampaignNotes />} />
             <Route path="/campaign/:campaignSlug/characters" element={<CharacterList />} />
             <Route path="/campaign/:campaignSlug/character/new" element={<CharacterBuilder />} />
             <Route path="/campaign/:campaignSlug/character/:characterSlug/edit" element={<CharacterBuilder />} />

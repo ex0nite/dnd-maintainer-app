@@ -39,7 +39,10 @@ export async function useTheme(page: Page, theme: string, mode: string): Promise
 }
 
 /** Stub the whole backend: the checks look at layout and colours, not at data. */
-export async function stubBackend(page: Page, opts: { signedIn: boolean; role?: 'dm' | 'player' }): Promise<void> {
+export async function stubBackend(
+  page: Page,
+  opts: { signedIn: boolean; role?: 'dm' | 'player'; rest?: Record<string, unknown> }
+): Promise<void> {
   if (opts.signedIn) {
     await page.addInitScript(
       ([key, token]) => {
@@ -68,6 +71,10 @@ export async function stubBackend(page: Page, opts: { signedIn: boolean; role?: 
     }
     if (url.pathname.startsWith('/rest/v1/campaigns')) {
       return route.fulfill({ json: [SAMPLE_CAMPAIGN] });
+    }
+    const table = url.pathname.replace('/rest/v1/', '').split('/')[0];
+    if (opts.rest && url.pathname.startsWith('/rest/v1/') && table in opts.rest) {
+      return route.fulfill({ json: opts.rest[table] });
     }
     if (url.pathname.startsWith('/rest/v1/')) {
       return route.fulfill({ json: [] });

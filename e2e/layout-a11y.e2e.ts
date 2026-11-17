@@ -9,6 +9,8 @@ interface PageUnderTest {
   path: string;
   signedIn: boolean;
   role?: 'dm' | 'player';
+  /** Canned REST answers by table name (everything else is an empty list). */
+  rest?: Record<string, unknown>;
   /** Something that proves the page really rendered (not a blank or error screen). */
   ready: (page: Page) => Promise<void>;
 }
@@ -48,6 +50,42 @@ export const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'campaign notes (player)',
+    path: '/campaign/la-mine-perdue/table-notes',
+    signedIn: true,
+    role: 'player',
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: 'Campaign notes' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: 'New shared note' })).toBeVisible();
+    },
+  },
+  {
+    name: 'campaign notes with long content and the editor open',
+    path: '/campaign/la-mine-perdue/table-notes',
+    signedIn: true,
+    role: 'player',
+    rest: {
+      notes_shared: [
+        {
+          id: 'n1',
+          campaign_id: '11111111-1111-4111-8111-111111111111',
+          author_id: 'e2e-user',
+          title: 'https://example.com/a/very/long/address/that/has/no/spaces/at/all/and/keeps/going/and/going/forever',
+          category: 'quest',
+          pinned: true,
+          body: 'Une très longue ligne sans espace: ' + 'x'.repeat(300),
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ],
+    },
+    ready: async (page) => {
+      await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+      await page.getByRole('button', { name: 'New shared note' }).click();
+      await expect(page.getByLabel('Title')).toBeVisible();
+    },
+  },
+  {
     name: 'players',
     path: '/players',
     signedIn: true,
@@ -61,7 +99,11 @@ for (const pageUnderTest of PAGES) {
   for (const theme of THEMES) {
     for (const mode of MODES) {
       test(`${pageUnderTest.name} · ${theme} · ${mode}`, async ({ page }) => {
-        await stubBackend(page, { signedIn: pageUnderTest.signedIn, role: pageUnderTest.role });
+        await stubBackend(page, {
+          signedIn: pageUnderTest.signedIn,
+          role: pageUnderTest.role,
+          rest: pageUnderTest.rest,
+        });
         await useTheme(page, theme, mode);
         await page.goto(pageUnderTest.path);
         await pageUnderTest.ready(page);
