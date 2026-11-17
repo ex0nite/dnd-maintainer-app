@@ -78,7 +78,7 @@ describe('PortraitUpload', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await userEvent.upload(input, file);
 
-    expect(mockHookState.upload).toHaveBeenCalledWith(file, 'char-1');
+    expect(mockHookState.upload).toHaveBeenCalledWith(file, 'char-1', null);
   });
 
   it('does not call upload and shows error when a non-image file is selected', async () => {

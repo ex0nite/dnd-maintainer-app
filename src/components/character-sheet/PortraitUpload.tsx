@@ -36,7 +36,7 @@ export function PortraitUpload({ characterId, portraitUrl, characterName }: Port
     setLocalError('');
 
     try {
-      await upload(file, characterId);
+      await upload(file, characterId, portraitUrl);
       setCacheBust(Date.now());
     } catch {
       setLocalError(t('portrait.errors.uploadFailed'));
