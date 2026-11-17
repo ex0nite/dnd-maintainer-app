@@ -827,6 +827,20 @@
       "loading": "Error loading notes"
     }
   },
+  "playerHome": {
+    "title": "My table",
+    "noCampaign": "You are not part of any campaign yet. Your DM will add you to one.",
+    "loadError": "Your characters could not be loaded. Try again in a moment.",
+    "myCharacters": "My characters",
+    "createCharacter": "New character",
+    "noCharacter": "You have no character in this campaign yet.",
+    "levelLine": "Level {{level}}",
+    "inactive": "Inactive",
+    "tableCharacters": "See the characters of the table",
+    "notes": "Notes",
+    "sessions": "Sessions",
+    "comingSoon": "Coming soon."
+  },
   "password": {
     "title": "Choose your password",
     "forced": "You signed in with a temporary password. Choose your own password to continue.",

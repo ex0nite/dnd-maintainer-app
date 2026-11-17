@@ -29,7 +29,7 @@ describe('usePortraitSrc', () => {
     const { result } = renderHook(() => usePortraitSrc('c1/portrait.jpg'), { wrapper });
     await waitFor(() => expect(result.current.src).toBe('https://signed/x?token=t'));
     expect(storage.from).toHaveBeenCalledWith('character-portraits');
-    expect(storage.createSignedUrl).toHaveBeenCalledWith('c1/portrait.jpg', 3600);
+    expect(storage.createSignedUrl).toHaveBeenCalledWith('c1/portrait.jpg', 600);
   });
 
   it('turns a legacy public URL into its storage path before signing', async () => {
@@ -38,7 +38,7 @@ describe('usePortraitSrc', () => {
       () => usePortraitSrc('http://127.0.0.1:54321/storage/v1/object/public/character-portraits/c1/portrait.jpg?v=2'),
       { wrapper }
     );
-    await waitFor(() => expect(storage.createSignedUrl).toHaveBeenCalledWith('c1/portrait.jpg', 3600));
+    await waitFor(() => expect(storage.createSignedUrl).toHaveBeenCalledWith('c1/portrait.jpg', 600));
   });
 
   it('reports an error (no image) when the signature is refused', async () => {

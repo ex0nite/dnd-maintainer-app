@@ -62,14 +62,34 @@ export function flattenSession<T>(row: unknown): T {
  * no half-created record (and no duplicate on retry) is left behind, then re-throw the original
  * error. supabase-js resolves on a failed delete, so a rollback failure is surfaced explicitly.
  */
+export class RollbackFailedError extends Error {
+  readonly id: string;
+
+  constructor(message: string, id: string, cause: unknown) {
+    super(message, { cause });
+    this.name = 'RollbackFailedError';
+    this.id = id;
+  }
+}
+
 export async function rollbackInsert(table: 'characters' | 'sessions', id: string, original: unknown): Promise<never> {
-  const { error } = await supabase.from(table).delete().eq('id', id);
+  // A refused delete (a player has no DELETE right on characters) touches 0 rows WITHOUT an error: count them.
+  const { data, error } = await supabase.from(table).delete().eq('id', id).select('id');
+  if (!error && data && data.length === 0) {
+    const message = original instanceof Error ? original.message : String(original);
+    throw new RollbackFailedError(
+      `Private data write failed and the new ${table} row (${id}) could not be removed. Original error: ${message}`,
+      id,
+      original
+    );
+  }
   if (error) {
     const message = original instanceof Error ? original.message : String(original);
-    throw new Error(
+    throw new RollbackFailedError(
       `Private data write failed and rollback also failed; an orphaned ${table} row (${id}) may remain. ` +
         `Original error: ${message}; rollback error: ${error.message}`,
-      { cause: original }
+      id,
+      original
     );
   }
   throw original;

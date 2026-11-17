@@ -8,6 +8,7 @@ import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { isThemeId } from '@/lib/theme';
+import { useRole } from '@/hooks/usePermissions';
 
 export function Layout() {
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
@@ -25,6 +26,7 @@ export function Layout() {
   const { t } = useTranslation('common');
   const { data: campaigns = [], isLoading, isError, error, refetch } = useCampaigns();
   const { setCampaignThemeOverride } = useTheme();
+  const { isPlayer } = useRole();
 
   // Find the current campaign by current or previous slug
   const currentCampaign = campaigns?.find(
@@ -52,7 +54,8 @@ export function Layout() {
   }, [currentCampaignTheme, setCampaignThemeOverride]);
 
   const handleSelectCampaign = (slug: string) => {
-    navigate(`/campaign/${slug}`);
+    // The campaign dashboard is the DM's: a player lands on the characters of the table.
+    navigate(isPlayer ? `/campaign/${slug}/characters` : `/campaign/${slug}`);
   };
 
   useEffect(() => {

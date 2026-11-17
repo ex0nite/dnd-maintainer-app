@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { PortraitUpload } from '@/components/character-sheet/PortraitUpload';
+import { PortraitImage } from '@/components/PortraitImage';
 import { LevelControls } from '@/components/character-sheet/LevelControls';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
 import { BACKGROUND_SOURCES } from '@/lib/sources/backgrounds';
@@ -17,6 +18,8 @@ export function CharacterSheetHeader({
   onDelete,
   onExportPdf,
   exportingPdf = false,
+  canEdit = true,
+  canManage = true,
 }: {
   character: Character;
   onEdit: () => void;
@@ -25,6 +28,10 @@ export function CharacterSheetHeader({
   onDelete: () => void;
   onExportPdf?: () => void;
   exportingPdf?: boolean;
+  /** The viewer may edit this sheet (default: yes). A read-only viewer gets no portrait upload, no edit, no level controls. */
+  canEdit?: boolean;
+  /** DM-only commands: clone, archive, delete (default: yes). */
+  canManage?: boolean;
 }) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
@@ -58,25 +65,42 @@ export function CharacterSheetHeader({
     <div className="bg-card border rounded-lg p-6 mb-6">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-4">
-          <PortraitUpload
-            characterId={character.id}
-            portraitUrl={character.portrait_url}
-            characterName={character.name}
-          />
+          {canEdit ? (
+            <PortraitUpload
+              characterId={character.id}
+              portraitUrl={character.portrait_url}
+              characterName={character.name}
+            />
+          ) : character.portrait_url ? (
+            <PortraitImage
+              stored={character.portrait_url}
+              alt={character.name}
+              className="block size-24 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="flex size-24 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground"
+            >
+              {character.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <div className="text-sm text-muted-foreground mb-1">{tc('characterSheet.title')}</div>
             <h1 className="hidden md:block text-3xl font-bold text-foreground">{character.name}</h1>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onEdit}
-            title={tc('characterSheet.dialogs.editCharacterInfo')}
-          >
-            <Edit2 size={16} />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onEdit}
+              title={tc('characterSheet.dialogs.editCharacterInfo')}
+            >
+              <Edit2 size={16} />
+            </Button>
+          )}
           {onExportPdf && (
             <Button
               variant="ghost"
@@ -88,21 +112,25 @@ export function CharacterSheetHeader({
               <FileDown size={16} />
             </Button>
           )}
-          <Button variant="ghost" size="icon-sm" onClick={onClone} title={tc('buttons.clone')}>
-            <Copy size={16} />
-          </Button>
-          <Button variant="ghost" size="icon-sm" onClick={onArchive} title={tc('buttons.archive')}>
-            <Archive size={16} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onDelete}
-            title={tc('buttons.delete')}
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 size={16} />
-          </Button>
+          {canManage && (
+            <>
+              <Button variant="ghost" size="icon-sm" onClick={onClone} title={tc('buttons.clone')}>
+                <Copy size={16} />
+              </Button>
+              <Button variant="ghost" size="icon-sm" onClick={onArchive} title={tc('buttons.archive')}>
+                <Archive size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onDelete}
+                title={tc('buttons.delete')}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 size={16} />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -176,7 +204,7 @@ export function CharacterSheetHeader({
         )}
       </div>
 
-      {character.class && DND_CLASSES.some((c) => c.id === character.class) && (
+      {canEdit && character.class && DND_CLASSES.some((c) => c.id === character.class) && (
         <div className="mt-4 pt-4 border-t">
           <LevelControls classId={character.class as ClassId} />
         </div>

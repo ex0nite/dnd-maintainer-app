@@ -5,6 +5,8 @@ vi.mock('@/lib/supabase', () => import('@/test/mocks/supabase'));
 import {
   flattenCharacter,
   flattenSession,
+  RollbackFailedError,
+  rollbackInsert,
   splitCharacterPrivate,
   splitSessionPrivate,
   writeCharacterPrivate,
@@ -88,5 +90,31 @@ describe('write helpers', () => {
     mockQueryResult.data = null;
     mockQueryResult.error = { message: 'boom' } as never;
     await expect(writeSessionDm('s1', { notes: 'n' })).rejects.toMatchObject({ message: 'boom' });
+  });
+});
+
+describe('rollbackInsert', () => {
+  it('removes the row and re-throws the original error', async () => {
+    mockQueryResult.data = [{ id: 'c1' }];
+    mockQueryResult.error = null;
+    const original = new Error('private write failed');
+    await expect(rollbackInsert('characters', 'c1', original)).rejects.toBe(original);
+    expect(supabase.delete).toHaveBeenCalled();
+  });
+
+  it('reports a refused delete (0 rows, no error: a player cannot delete) as a failed rollback carrying the id', async () => {
+    mockQueryResult.data = [];
+    mockQueryResult.error = null;
+    const failure = await rollbackInsert('characters', 'c1', new Error('private write failed')).catch(
+      (e: unknown) => e
+    );
+    expect(failure).toBeInstanceOf(RollbackFailedError);
+    expect(failure).toMatchObject({ id: 'c1' });
+  });
+
+  it('reports a delete error as a failed rollback too', async () => {
+    mockQueryResult.data = null;
+    mockQueryResult.error = { message: 'boom' };
+    await expect(rollbackInsert('characters', 'c1', new Error('x'))).rejects.toBeInstanceOf(RollbackFailedError);
   });
 });

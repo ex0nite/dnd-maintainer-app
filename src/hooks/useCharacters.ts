@@ -5,6 +5,7 @@ import type { TablesInsert, TablesUpdate } from '@/types/supabase';
 import { CHARACTER_SUMMARY_COLS, CHARACTER_DETAIL_COLS, CHARACTER_PRIVATE_EMBED } from '@/lib/query-columns';
 import { flattenCharacter, splitCharacterPrivate, writeCharacterPrivate, rollbackInsert } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
+import { useAuth } from '@/hooks/useAuth';
 
 // --- Queries ---
 
@@ -65,6 +66,25 @@ export function useCharacter(slug: string | undefined) {
   });
 }
 
+/** The signed-in player's own characters, all campaigns (story 3.2). */
+export function useMyCharacters() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  return useQuery({
+    queryKey: ['my-characters', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('characters')
+        .select(CHARACTER_SUMMARY_COLS)
+        .eq('owner_user_id', userId!)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as CharacterSummary[];
+    },
+  });
+}
+
 export function usePlayerNames() {
   return useQuery({
     queryKey: ['player-names'],
@@ -106,6 +126,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
     },
   });
 
@@ -137,6 +158,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
       queryClient.invalidateQueries({ queryKey: ['character'] });
       queryClient.setQueryData(['character', data.slug], data);
     },
@@ -149,6 +171,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (_, { campaignId }) => {
       queryClient.invalidateQueries({ queryKey: ['characters', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
     },
   });
 
@@ -259,6 +282,7 @@ export function useCharacterMutations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['characters', data.campaign_id] });
+      queryClient.invalidateQueries({ queryKey: ['my-characters'] });
       queryClient.invalidateQueries({ queryKey: ['character-build-levels', data.id] });
       queryClient.invalidateQueries({ queryKey: ['character-items', data.id] });
     },

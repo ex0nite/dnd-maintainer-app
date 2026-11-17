@@ -64,9 +64,11 @@ const ALIGNMENT_GRID: Readonly<Record<string, AlignmentId>> = {
 
 interface BasicsStepProps {
   readonly onRequestAdvance?: (targetStep: StepType) => void;
+  /** NPCs (switch and quick generators) are the DM's: false for a player (default: true). */
+  readonly allowNpc?: boolean;
 }
 
-export function BasicsStep({ onRequestAdvance }: BasicsStepProps) {
+export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProps) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
@@ -281,55 +283,61 @@ export function BasicsStep({ onRequestAdvance }: BasicsStepProps) {
 
   return (
     <div className="space-y-6">
-      {/* Quick Random NPC buttons */}
-      <div className="space-y-2">
-        <Label>{tc('characterBuilder.fields.quickNpcLabel')}</Label>
-        <p className="text-xs text-muted-foreground">{tc('characterBuilder.hints.quickNpcDescription')}</p>
-        <div className="flex flex-wrap gap-2">
-          {getQuickNpcClassIds().map((classId) => {
-            const Icon = CLASS_ICONS[classId];
-            const label = tc('characterBuilder.hints.quickNpcButton', { class: t(`classes.${classId}`) });
-            return (
-              <Button
-                key={classId}
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => handleQuickNpc(classId)}
-                title={label}
-                aria-label={label}
-              >
-                <Icon className="size-4" />
-              </Button>
-            );
-          })}
-        </div>
-      </div>
+      {allowNpc && (
+        <>
+          {/* Quick Random NPC buttons */}
+          <div className="space-y-2">
+            <Label>{tc('characterBuilder.fields.quickNpcLabel')}</Label>
+            <p className="text-xs text-muted-foreground">{tc('characterBuilder.hints.quickNpcDescription')}</p>
+            <div className="flex flex-wrap gap-2">
+              {getQuickNpcClassIds().map((classId) => {
+                const Icon = CLASS_ICONS[classId];
+                const label = tc('characterBuilder.hints.quickNpcButton', { class: t(`classes.${classId}`) });
+                return (
+                  <Button
+                    key={classId}
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleQuickNpc(classId)}
+                    title={label}
+                    aria-label={label}
+                  >
+                    <Icon className="size-4" />
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Character Type Switch + Level display */}
       <div className="flex items-center gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <span
-            className={`text-sm font-semibold ${characterType === 'pc' ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            {tc('characterType.pc')}
-          </span>
-          <Switch
-            checked={characterType === 'npc'}
-            onCheckedChange={(checked: boolean) => {
-              cancelPendingAdvance();
-              context.updateCharacter({
-                character_type: checked ? 'npc' : 'pc',
-                player_name: checked ? '' : playerName,
-              });
-            }}
-          />
-          <span
-            className={`text-sm font-semibold ${characterType === 'npc' ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            {tc('characterType.npc')}
-          </span>
-        </label>
+        {allowNpc ? (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <span
+              className={`text-sm font-semibold ${characterType === 'pc' ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              {tc('characterType.pc')}
+            </span>
+            <Switch
+              checked={characterType === 'npc'}
+              onCheckedChange={(checked: boolean) => {
+                cancelPendingAdvance();
+                context.updateCharacter({
+                  character_type: checked ? 'npc' : 'pc',
+                  player_name: checked ? '' : playerName,
+                });
+              }}
+            />
+            <span
+              className={`text-sm font-semibold ${characterType === 'npc' ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              {tc('characterType.npc')}
+            </span>
+          </label>
+        ) : null}
         <span className="text-sm text-muted-foreground">
           {tc('characterBuilder.fields.level')} <span className="font-bold text-foreground text-lg">{level}</span>
         </span>

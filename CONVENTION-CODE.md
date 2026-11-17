@@ -120,6 +120,17 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
 
+## Interface selon le rôle (epic 3)
+
+- L'interface cache ce que la base refuserait de toute façon (`useRole`, `useCharacterPermissions` dans
+  `src/hooks/usePermissions.ts`) : c'est cosmétique, la sécurité est dans les policies. Tant que le profil n'est pas connu,
+  personne n'est traité en joueur (rien n'est caché), pour ne pas casser les écrans du MJ.
+- Les routes du MJ (tableau de bord de campagne, séances, notes, joueurs, export) sont sous `RequireDm` (qui retransmet le
+  contexte du `Layout`). Un joueur arrive sur `PlayerHome` (« Mes personnages » par campagne) ; la fiche d'un autre PJ ou
+  d'un personnage désactivé est en lecture seule (`<fieldset disabled>`, pas d'autosave, pas de dialogues d'édition).
+- Un joueur crée un PJ à lui (`ownerFieldsForNewCharacter` ajoute `owner_user_id` et le type à l'INSERT) ; les brouillons
+  des autres joueurs ne sont ni listés ni reprenables.
+
 ## Dépôt MCP
 
 - Le MCP importe le moteur de règles de l'app (`@/lib/...`) mais ne la modifie pas. Toute évolution de la façon dont
