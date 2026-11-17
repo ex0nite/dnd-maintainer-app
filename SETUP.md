@@ -120,8 +120,10 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
 
 ## Sign-in attempt limit (FR2)
 
-Five wrong passwords on the same pseudo within 15 minutes lock **that pseudo** for 15 minutes (the sixth attempt, and
-the following ones, are refused even with the right password; the other players are not affected). The refusal is
+Five wrong passwords on the same pseudo within 15 minutes lock **that pseudo** for exactly 15 minutes from the fifth
+failure (every attempt in that period is refused even with the right password, and none is recorded, so insisting does
+not extend it; the other players are not affected). A password change (the DM's reset, the player's own change) or a
+reactivation lifts the lock at once. The refusal is
 word for word the one of a wrong password, so the lock is invisible to whoever tries. It is the `password_verification_attempt`
 hook of the authentication server, implemented by `internal.password_verification_hook` (migration
 `20261117300000_login_attempt_lock.sql`, schema `internal`, not exposed by the API). Locally it is enabled by
@@ -136,7 +138,7 @@ hook of the authentication server, implemented by `internal.password_verificatio
   the header and the authentication server is told which one to trust (`GOTRUE_RATE_LIMIT_HEADER`). That wiring and
   its test with two addresses belong to story 7.3.
 - **Limit of the design:** the lock is per pseudo, so someone who knows a pseudo can keep it locked by trying every 15
-  minutes (the DM included). To lift a lock at once, as the database owner: `delete from internal.login_attempts;`
+  minutes (the DM included). To lift a lock at once, as the database owner: `delete from internal.login_locks; delete from internal.login_attempts;`
   (or `... where user_id = '<id>'`). The per-address limit and the proxy slow such an attacker down.
 
 ## Signing in

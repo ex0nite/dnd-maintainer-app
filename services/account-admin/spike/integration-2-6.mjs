@@ -48,9 +48,18 @@ out(
   sql(`select count(*) from internal.login_attempts where user_id = '${ua}'`)
 );
 
-sql(`update internal.login_attempts set attempted_at = now() - interval '16 minutes' where user_id = '${ua}'`);
+sql(`update internal.login_locks set locked_until = now() - interval '1 minute' where user_id = '${ua}'`);
 out('right password after the delay', (await signIn(a, good)).ok ? 'OK' : 'STILL BLOCKED (BAD)');
 out('failures after a success', sql(`select count(*) from internal.login_attempts where user_id = '${ua}'`));
+
+// A password change (the DM reset, story 2.4) lifts a lock at once.
+for (let i = 0; i < 5; i++) await signIn(a, 'Wrong-password-000');
+out('locked again', (await signIn(a, good)).ok ? 'NOT LOCKED (BAD)' : 'refused');
+await admin.auth.admin.updateUserById(ua, { password: 'Another-password-456' });
+out(
+  'right (new) password right after a password change',
+  (await signIn(a, 'Another-password-456')).ok ? 'OK' : 'STILL LOCKED (BAD)'
+);
 
 await admin.auth.admin.deleteUser(ua);
 await admin.auth.admin.deleteUser(ub);
