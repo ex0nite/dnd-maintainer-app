@@ -657,6 +657,36 @@ export type Database = {
           },
         ]
       }
+      session_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          campaign_id: string
+          created_at: string
+          id: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           campaign_id: string
@@ -668,6 +698,7 @@ export type Database = {
           session_number: number
           slug: string
           summary: string | null
+          summary_published: boolean
           updated_at: string
         }
         Insert: {
@@ -680,6 +711,7 @@ export type Database = {
           session_number: number
           slug?: string
           summary?: string | null
+          summary_published?: boolean
           updated_at?: string
         }
         Update: {
@@ -692,6 +724,7 @@ export type Database = {
           session_number?: number
           slug?: string
           summary?: string | null
+          summary_published?: boolean
           updated_at?: string
         }
         Relationships: [

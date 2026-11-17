@@ -32,7 +32,13 @@ export interface SidebarProps {
 
 interface NavItem {
   readonly icon: typeof Shield;
-  readonly labelKey: 'nav.dashboard' | 'nav.characters' | 'nav.sessions' | 'nav.notes' | 'nav.campaignNotes';
+  readonly labelKey:
+    | 'nav.dashboard'
+    | 'nav.characters'
+    | 'nav.sessions'
+    | 'nav.notes'
+    | 'nav.campaignNotes'
+    | 'nav.recaps';
   readonly path: string;
   readonly matchPaths?: readonly string[];
   readonly end?: boolean;
@@ -44,6 +50,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { icon: BookOpen, labelKey: 'nav.sessions', path: '/sessions' },
   { icon: ScrollText, labelKey: 'nav.notes', path: '/notes' },
   { icon: NotebookPen, labelKey: 'nav.campaignNotes', path: '/table-notes' },
+  { icon: ScrollText, labelKey: 'nav.recaps', path: '/recaps', matchPaths: ['/recaps'] },
 ];
 
 export function Sidebar({
@@ -57,9 +64,11 @@ export function Sidebar({
   const { signOut } = useAuth();
   const { isPlayer } = useRole();
   // A player's table: the characters and the campaign notes (recaps come with epic 5). The DM's own notes stay hidden.
+  // The DM reads the recaps in Sessions (where they publish them): the recap list is the players' entry.
+  const PLAYER_ITEMS = ['nav.characters', 'nav.campaignNotes', 'nav.recaps'];
   const navItems = isPlayer
-    ? NAV_ITEMS.filter((item) => item.labelKey === 'nav.characters' || item.labelKey === 'nav.campaignNotes')
-    : NAV_ITEMS;
+    ? NAV_ITEMS.filter((item) => PLAYER_ITEMS.includes(item.labelKey))
+    : NAV_ITEMS.filter((item) => item.labelKey !== 'nav.recaps');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const location = useLocation();
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);

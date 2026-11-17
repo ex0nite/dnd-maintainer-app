@@ -125,6 +125,16 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   MJ), il sert aussi aux commentaires. « Dernier enregistrement gagne » : pas de gestion d'édition simultanée (D-12).
   `campaign_member_names(campaign_id)` (SECURITY DEFINER, membres actifs et MJ seulement) donne les pseudos des auteurs :
   les joueurs d'une même table se voient entre eux par leur pseudo (accepté).
+- Récapitulatifs de séance (epic 5) : `sessions.summary_published` (écriture MJ seul, comme tout `sessions`). Un membre actif
+  lit titre, date et récapitulatif d'une séance PUBLIÉE de sa campagne (`sessions_member_published`) ; notes, butin et XP
+  sont dans `session_dm` (MJ seul), donc un `select *` d'un joueur ne renvoie rien de privé. `session_comments` : le membre
+  commente un récapitulatif publié de sa campagne (clé étrangère `(session_id, campaign_id)` : un commentaire porte la
+  campagne de sa séance), l'auteur modifie et supprime les siens, le MJ modère tout. Dépublier masque le récapitulatif ET
+  ses commentaires aux joueurs sans rien supprimer ; republier les rend. Le commentaire d'un joueur archivé reste visible
+  des autres membres. Droits par COLONNE sur les tables de notes et de commentaires (`grant insert (...)`, `grant update
+(...)`) : ni `id`, ni `author_id` (défaut `auth.uid()`), ni dates, ni déplacement par l'API ; le trigger
+  `guard_row_identity` n'est qu'une ceinture. Le bouton de publication lit/écrit seulement cette colonne (composant
+  `RecapPublishToggle`), jamais via le formulaire de séance, pour qu'un autosave ne republie pas d'un état périmé.
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
