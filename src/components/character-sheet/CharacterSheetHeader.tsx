@@ -7,7 +7,7 @@ import { BACKGROUND_SOURCES } from '@/lib/sources/backgrounds';
 import { deriveOriginFeatInfo } from '@/lib/character-builder/origin-feat-info';
 import { DND_CLASSES, isBackgroundId, type ClassId } from '@/lib/dnd-helpers';
 import type { Character } from '@/types/database';
-import { Archive, Copy, Edit2, FileDown, Trash2 } from 'lucide-react';
+import { Archive, Copy, Edit2, FileDown, Hammer, Trash2, UserCog } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export function CharacterSheetHeader({
@@ -18,6 +18,8 @@ export function CharacterSheetHeader({
   onDelete,
   onExportPdf,
   exportingPdf = false,
+  onRebuild,
+  onAssign,
   canEdit = true,
   canManage = true,
 }: {
@@ -28,6 +30,10 @@ export function CharacterSheetHeader({
   onDelete: () => void;
   onExportPdf?: () => void;
   exportingPdf?: boolean;
+  /** Back to draft to redo the sheet (owner or DM, finalized sheets only). */
+  onRebuild?: () => void;
+  /** Give the character to a player (DM only). */
+  onAssign?: () => void;
   /** The viewer may edit this sheet (default: yes). A read-only viewer gets no portrait upload, no edit, no level controls. */
   canEdit?: boolean;
   /** DM-only commands: clone, archive, delete (default: yes). */
@@ -110,6 +116,21 @@ export function CharacterSheetHeader({
               title={tc('characterSheet.export.button')}
             >
               <FileDown size={16} />
+            </Button>
+          )}
+          {canEdit && onRebuild && character.status === 'ready' && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onRebuild}
+              title={tc('characterSheet.actions.rebuildButton')}
+            >
+              <Hammer size={16} />
+            </Button>
+          )}
+          {canManage && onAssign && (
+            <Button variant="ghost" size="icon-sm" onClick={onAssign} title={tc('characterSheet.assign.title')}>
+              <UserCog size={16} />
             </Button>
           )}
           {canManage && (

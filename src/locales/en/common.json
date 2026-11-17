@@ -604,7 +604,19 @@
       "updateFailed": "Failed to save changes. Please try again.",
       "archiveFailed": "Failed to archive character. Please try again.",
       "deleteFailed": "Failed to delete character. Please try again.",
-      "cloneFailed": "Failed to clone character. Please try again."
+      "cloneFailed": "Failed to clone character. Please try again.",
+      "rebuildFailed": "The sheet could not be put back to draft. Please try again."
+    },
+    "assign": {
+      "title": "Assign to a player",
+      "description": "The player gets the sheet at once, the previous owner loses the right to edit it. Its private notes go with the sheet.",
+      "label": "Player",
+      "nobody": "Nobody (the DM's)",
+      "noPlayer": "No active player in this campaign.",
+      "loadError": "The players could not be loaded.",
+      "save": "Assign",
+      "success": "Owner changed.",
+      "failed": "The owner could not be changed. Please try again."
     },
     "actions": {
       "shortRest": "Short Rest",
@@ -615,6 +627,9 @@
       "deleteConfirm": "Are you sure you want to permanently delete {{name}}? This action cannot be undone.",
       "archiveSuccess": "{{name}} has been archived.",
       "deleteSuccess": "{{name}} has been deleted.",
+      "rebuildTitle": "Rebuild the sheet",
+      "rebuildConfirm": "{{name}} goes back to draft so you can change your choices, then you finalize it again. Your level history and your inventory are kept; the choices come back pre-filled and you can change them. Continue?",
+      "rebuildButton": "Rebuild",
       "cloneTitle": "Clone Character",
       "cloneNameLabel": "New character name",
       "copyOfName": "Copy of {{name}}",
