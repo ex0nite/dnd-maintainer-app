@@ -14,7 +14,16 @@ import SettingsTheme from '@/pages/SettingsTheme';
 import Login from '@/pages/Login';
 import Players from '@/pages/Players';
 import ChangePassword from '@/pages/ChangePassword';
+import PlayerHome from '@/pages/PlayerHome';
+import { RequireDm } from '@/components/RequireDm';
+import { useRole } from '@/hooks/usePermissions';
 import { RequireAuth } from '@/components/RequireAuth';
+
+/** The DM lands on the campaigns, a player on their characters (story 3.2). */
+function Home() {
+  const { isPlayer } = useRole();
+  return isPlayer ? <PlayerHome /> : <CampaignList />;
+}
 
 export default function App() {
   return (
@@ -24,17 +33,19 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route path="/change-password" element={<ChangePassword />} />
           <Route element={<Layout />}>
-            <Route path="/" element={<CampaignList />} />
-            <Route path="/campaign/:campaignSlug" element={<CampaignDashboard />} />
+            <Route path="/" element={<Home />} />
+            <Route element={<RequireDm />}>
+              <Route path="/campaign/:campaignSlug" element={<CampaignDashboard />} />
+              <Route path="/campaign/:campaignSlug/sessions" element={<SessionList />} />
+              <Route path="/campaign/:campaignSlug/session/:sessionSlug" element={<SessionDetail />} />
+              <Route path="/campaign/:campaignSlug/notes" element={<NotesPage />} />
+              <Route path="/players" element={<Players />} />
+              <Route path="/export" element={<ExportData />} />
+            </Route>
             <Route path="/campaign/:campaignSlug/characters" element={<CharacterList />} />
             <Route path="/campaign/:campaignSlug/character/new" element={<CharacterBuilder />} />
             <Route path="/campaign/:campaignSlug/character/:characterSlug/edit" element={<CharacterBuilder />} />
             <Route path="/campaign/:campaignSlug/character/:characterSlug" element={<CharacterSheet />} />
-            <Route path="/campaign/:campaignSlug/sessions" element={<SessionList />} />
-            <Route path="/campaign/:campaignSlug/session/:sessionSlug" element={<SessionDetail />} />
-            <Route path="/campaign/:campaignSlug/notes" element={<NotesPage />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/export" element={<ExportData />} />
             <Route path="/settings/theme" element={<SettingsTheme />} />
           </Route>
         </Route>

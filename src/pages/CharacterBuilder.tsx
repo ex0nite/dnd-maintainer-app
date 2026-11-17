@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { DND_SPECIES, DND_CLASSES, isBackgroundId } from '@/lib/dnd-helpers';
 import { collectClassBundleKeys } from '@/lib/gold-equipment';
 import type { StepType } from '@/types/character-builder';
+import { useRole } from '@/hooks/usePermissions';
 
 const logger = getLogger('character-builder');
 
@@ -44,11 +45,12 @@ const STEPS: { id: StepType }[] = [
 function renderStep(
   step: StepType,
   goToStep: (s: StepType) => void,
-  equipmentProps: EquipmentStepEquipmentProps
+  equipmentProps: EquipmentStepEquipmentProps,
+  allowNpc: boolean
 ): ReactElement {
   switch (step) {
     case 'basics':
-      return <BasicsStep onRequestAdvance={goToStep} />;
+      return <BasicsStep onRequestAdvance={goToStep} allowNpc={allowNpc} />;
     case 'class':
       return <ClassStep />;
     case 'origin':
@@ -121,6 +123,7 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
   const { t: tg } = useTranslation('gamedata');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const { campaignId } = useCampaignContext();
+  const { isPlayer } = useRole();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<StepType>('basics');
   // Tracks the furthest step the user has reached. We use this to defer "Before you
@@ -385,7 +388,7 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
         <Card className="mb-8">
           <CardContent className="p-8">
             <h2 className="text-2xl font-bold mb-6">{t(`characterBuilder.steps.${STEPS[currentStepIndex].id}`)}</h2>
-            {renderStep(currentStep, goToStep, equipmentProps)}
+            {renderStep(currentStep, goToStep, equipmentProps, !isPlayer)}
           </CardContent>
         </Card>
 
@@ -511,6 +514,7 @@ export default function CharacterBuilder() {
   const { t } = useTranslation('common');
 
   const navigate = useNavigate();
+  const { userId, isPlayer } = useRole();
   const isNew = !characterSlug;
   const {
     data: existingCharacter,
@@ -530,7 +534,8 @@ export default function CharacterBuilder() {
   // never points at the new draft autosave creates for this build. Disabled when not new.
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const { data: campaignDrafts } = useCampaignDrafts(isNew ? (campaignId ?? '') : '');
-  const resumableDraft = isNew ? campaignDrafts?.[0] : undefined;
+  // A player resumes THEIR drafts only (the others' drafts are readable, they are not theirs to continue).
+  const resumableDraft = isNew ? campaignDrafts?.find((d) => !isPlayer || d.owner_user_id === userId) : undefined;
 
   if (!campaignId || !campaignSlug) {
     return (
@@ -569,7 +574,11 @@ export default function CharacterBuilder() {
   // Guard: if the /edit route was reached but the character is no longer a draft (e.g. a stale
   // cached draft list navigated to a now-finalized character), redirect to the character sheet
   // instead of opening the builder and inadvertently autosaving over the finalized row.
-  if (!isNew && existingCharacter && existingCharacter.status !== 'draft') {
+  if (
+    !isNew &&
+    existingCharacter &&
+    (existingCharacter.status !== 'draft' || (isPlayer && existingCharacter.owner_user_id !== userId))
+  ) {
     return <Navigate to={`/campaign/${campaignSlug}/character/${existingCharacter.slug}`} replace />;
   }
 

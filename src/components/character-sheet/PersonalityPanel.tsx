@@ -2,7 +2,7 @@ import { SectionHeader } from '@/components/character-sheet/SectionHeader';
 import type { Character } from '@/types/database';
 import { useTranslation } from 'react-i18next';
 
-export function PersonalityPanel({ character, onEdit }: { character: Character; onEdit: () => void }) {
+export function PersonalityPanel({ character, onEdit }: { character: Character; onEdit?: () => void }) {
   const { t: tc } = useTranslation('common');
 
   return (

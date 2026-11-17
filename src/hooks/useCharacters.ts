@@ -5,6 +5,7 @@ import type { TablesInsert, TablesUpdate } from '@/types/supabase';
 import { CHARACTER_SUMMARY_COLS, CHARACTER_DETAIL_COLS, CHARACTER_PRIVATE_EMBED } from '@/lib/query-columns';
 import { flattenCharacter, splitCharacterPrivate, writeCharacterPrivate, rollbackInsert } from '@/hooks/privateData';
 import { validateSlug } from '@/lib/slug-utils';
+import { useAuth } from '@/hooks/useAuth';
 
 // --- Queries ---
 
@@ -62,6 +63,25 @@ export function useCharacter(slug: string | undefined) {
       return flattenCharacter<Character>(data);
     },
     enabled: !!slug,
+  });
+}
+
+/** The signed-in player's own characters, all campaigns (story 3.2). */
+export function useMyCharacters() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  return useQuery({
+    queryKey: ['my-characters', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('characters')
+        .select(CHARACTER_SUMMARY_COLS)
+        .eq('owner_user_id', userId!)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as CharacterSummary[];
+    },
   });
 }
 

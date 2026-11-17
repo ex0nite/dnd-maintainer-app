@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { rollbackInsert, writeCharacterPrivate } from '@/hooks/privateData';
+import { ownerFieldsForNewCharacter } from '@/hooks/ownership';
 import type { Character } from '@/types/database';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
 import type { ResolvedCharacter } from '@/types/resolved';
@@ -122,7 +123,13 @@ export function useBuilderAutosave(existingCharacterId?: string) {
             characterIdRef.current = existingId;
             savedId = existingId;
           } else {
-            const insertPayload = { ...characterPayload, status: 'draft' as const };
+            // A player creates a PC that is theirs (the database requires it: owner = me, type pc). The DM's new
+            // characters stay unassigned until the DM gives them to a player (story 3.9).
+            const insertPayload = {
+              ...characterPayload,
+              status: 'draft' as const,
+              ...(await ownerFieldsForNewCharacter(queryClient)),
+            };
             const { data, error } = await supabase
               .from('characters')
               .insert(insertPayload as unknown as TablesInsert<'characters'>)

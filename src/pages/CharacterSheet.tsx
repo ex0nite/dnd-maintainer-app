@@ -26,6 +26,7 @@ import { buildRestUpdate } from '@/lib/rest';
 import { exportCharacterPdf, PdfTemplateError } from '@/lib/pdf-export';
 import { collectFeatSources } from '@/lib/pdf-field-map';
 import { useCharacter, useCharacterMutations } from '@/hooks/useCharacters';
+import { useCharacterPermissions } from '@/hooks/usePermissions';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { CharacterProvider, useCharacterContext } from '@/hooks/useCharacterContext';
@@ -63,6 +64,7 @@ function CharacterSheetInner({
   const [cloneName, setCloneName] = useState('');
 
   usePageTitle(character.name);
+  const { canEdit, canManage } = useCharacterPermissions(character);
 
   const { update: updateMutation, remove: removeMutation, clone: cloneMutation } = useCharacterMutations();
   const {
@@ -87,6 +89,7 @@ function CharacterSheetInner({
   });
 
   const doSave = useCallback(async () => {
+    if (!canEdit) return; // a read-only viewer never writes
     setSaveFailed(false);
     try {
       await saveDraft(latestPayloadRef.current);
@@ -96,7 +99,7 @@ function CharacterSheetInner({
       setSaveFailed(true);
       toast.error(tc('characterBuilder.errors.failedToSaveDraft'));
     }
-  }, [saveDraft, markSaved, tc]);
+  }, [saveDraft, markSaved, tc, canEdit]);
 
   const isDirtyRef = useRef(isDirty);
   const doSaveRef = useRef(doSave);
@@ -106,10 +109,10 @@ function CharacterSheetInner({
   });
 
   useEffect(() => {
-    if (!isDirty) return;
+    if (!isDirty || !canEdit) return;
     const timer = setTimeout(doSave, 500);
     return () => clearTimeout(timer);
-  }, [isDirty, doSave]);
+  }, [isDirty, doSave, canEdit]);
 
   // Flush a pending autosave on unmount so the last level-up isn't lost when the user navigates away within the debounce window.
   useEffect(() => {
@@ -121,6 +124,7 @@ function CharacterSheetInner({
   }, []);
 
   const handleUpdate = (updates: Partial<Character>) => {
+    if (!canEdit) return;
     updateMutation.mutate(
       { id: characterId, ...updates },
       {
@@ -267,94 +271,107 @@ function CharacterSheetInner({
           onDelete={() => setConfirmAction('delete')}
           onExportPdf={handleExportPdf}
           exportingPdf={exportingPdf}
+          canEdit={canEdit}
+          canManage={canManage}
         />
 
         {/* Pending Choices Panel */}
-        <div className="mb-6">
-          <PendingChoicesPanel />
-        </div>
-
-        {/* WotC-inspired layout: stats (left) / combat (center) / roleplay & gear (right) */}
-        <div className="sheet-grid mb-6">
-          {/* Left Column: Abilities, Saving Throws, Skills */}
-          <div className="sheet-area-left">
-            <AbilityScoresPanel abilities={abilities} buildError={buildError} />
-            <SavingThrowsPanel savingThrows={savingThrows} buildError={buildError} />
-            {skills ? (
-              <SkillsPanel skills={skills} />
-            ) : (
-              <div className="sheet-panel text-center text-muted-foreground">
-                <h2 className="text-lg font-bold text-foreground mb-4">{tc('characterSheet.sections.skills')}</h2>
-                <p>
-                  {buildError
-                    ? tc('characterSheet.buildError.skills', { message: buildError })
-                    : tc('characterSheet.emptyState.skills')}
-                </p>
-              </div>
-            )}
+        {canEdit && (
+          <div className="mb-6">
+            <PendingChoicesPanel />
           </div>
+        )}
 
-          {/* Center Column: Combat & Features */}
-          <div className="sheet-area-center">
-            <CombatPanel
-              resolved={resolved}
-              abilities={abilities}
-              armorClass={armorClass}
-              speedValue={speedValue}
-              speed={resolved?.speed}
-              maxHP={maxHP}
-              profBonus={profBonus}
-              passivePerception={resolved ? 10 + resolved.skills.perception.bonus : null}
-              isStale={isStale}
-              buildError={buildError}
-            />
-
-            <ConditionsPanel character={character} onUpdate={handleUpdate} />
-
-            {resolved && (
-              <>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={handleShortRest}>
-                    {tc('characterSheet.actions.shortRest')}
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1" onClick={handleLongRest}>
-                    {tc('characterSheet.actions.longRest')}
-                  </Button>
+        {/* A read-only viewer sees the sheet but every control inside is disabled (the database refuses the writes too). */}
+        <fieldset disabled={!canEdit} className="m-0 min-w-0 border-0 p-0">
+          {/* WotC-inspired layout: stats (left) / combat (center) / roleplay & gear (right) */}
+          <div className="sheet-grid mb-6">
+            {/* Left Column: Abilities, Saving Throws, Skills */}
+            <div className="sheet-area-left">
+              <AbilityScoresPanel abilities={abilities} buildError={buildError} />
+              <SavingThrowsPanel savingThrows={savingThrows} buildError={buildError} />
+              {skills ? (
+                <SkillsPanel skills={skills} />
+              ) : (
+                <div className="sheet-panel text-center text-muted-foreground">
+                  <h2 className="text-lg font-bold text-foreground mb-4">{tc('characterSheet.sections.skills')}</h2>
+                  <p>
+                    {buildError
+                      ? tc('characterSheet.buildError.skills', { message: buildError })
+                      : tc('characterSheet.emptyState.skills')}
+                  </p>
                 </div>
-                <HitDicePanel resolved={resolved} character={character} onUpdate={handleUpdate} />
-                <SpellSlotsPanel resolved={resolved} character={character} onUpdate={handleUpdate} />
-              </>
-            )}
+              )}
+            </div>
 
-            {resolved && <AttacksPanel attacks={resolved.attacks} weaponMasteries={resolved.weaponMasteries} />}
-            {resolved && <ProficienciesPanel resolved={resolved} />}
-            {resolved && <ResourcePoolsPanel resolved={resolved} />}
-            {resolved?.features && resolved.features.length > 0 && <FeaturesPanel features={resolved.features} />}
+            {/* Center Column: Combat & Features */}
+            <div className="sheet-area-center">
+              <CombatPanel
+                resolved={resolved}
+                abilities={abilities}
+                armorClass={armorClass}
+                speedValue={speedValue}
+                speed={resolved?.speed}
+                maxHP={maxHP}
+                profBonus={profBonus}
+                passivePerception={resolved ? 10 + resolved.skills.perception.bonus : null}
+                isStale={isStale}
+                buildError={buildError}
+              />
+
+              <ConditionsPanel character={character} onUpdate={handleUpdate} />
+
+              {resolved && (
+                <>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={handleShortRest}>
+                      {tc('characterSheet.actions.shortRest')}
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={handleLongRest}>
+                      {tc('characterSheet.actions.longRest')}
+                    </Button>
+                  </div>
+                  <HitDicePanel resolved={resolved} character={character} onUpdate={handleUpdate} />
+                  <SpellSlotsPanel resolved={resolved} character={character} onUpdate={handleUpdate} />
+                </>
+              )}
+
+              {resolved && <AttacksPanel attacks={resolved.attacks} weaponMasteries={resolved.weaponMasteries} />}
+              {resolved && <ProficienciesPanel resolved={resolved} />}
+              {resolved && <ResourcePoolsPanel resolved={resolved} />}
+              {resolved?.features && resolved.features.length > 0 && <FeaturesPanel features={resolved.features} />}
+            </div>
+
+            {/* Right Column: Equipment, Spells & Personality */}
+            <div className="sheet-area-right">
+              {itemsData.length > 0 && <EquipmentPanel itemsData={itemsData} />}
+              {hasSpells && <SpellcastingPanel spellcasting={resolved.spellcasting!} />}
+              {hasPersonality && (
+                <PersonalityPanel
+                  character={character}
+                  onEdit={canEdit ? () => setEditSection('personality') : undefined}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Right Column: Equipment, Spells & Personality */}
-          <div className="sheet-area-right">
-            {itemsData.length > 0 && <EquipmentPanel itemsData={itemsData} />}
-            {hasSpells && <SpellcastingPanel spellcasting={resolved.spellcasting!} />}
-            {hasPersonality && <PersonalityPanel character={character} onEdit={() => setEditSection('personality')} />}
-          </div>
-        </div>
-
-        {/* Full Width Backstory & Appearance */}
-        <BackstoryPanel
-          character={character}
-          onEditBackstory={() => setEditSection('backstory')}
-          onEditAppearance={() => setEditSection('appearance')}
-        />
+          {/* Full Width Backstory & Appearance */}
+          <BackstoryPanel
+            character={character}
+            onEditBackstory={canEdit ? () => setEditSection('backstory') : undefined}
+            onEditAppearance={canEdit ? () => setEditSection('appearance') : undefined}
+          />
+        </fieldset>
       </div>
 
       {/* Edit Dialogs */}
-      {editSection === 'header' && (
+      {canEdit && editSection === 'header' && (
         <EditHeaderDialog
           character={character}
           onSave={handleUpdate}
           onClose={() => setEditSection(null)}
           saving={updateMutation.isPending}
+          canManage={canManage}
         />
       )}
       {editSection === 'personality' && (

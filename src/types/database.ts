@@ -80,6 +80,8 @@ export interface Character {
   notes: string | null;
   portrait_url: string | null;
   is_active: boolean;
+  /** The player who owns the sheet (null: unassigned, the DM's). Read-only for players. */
+  owner_user_id?: string | null;
   status: 'draft' | 'ready';
   weapon_masteries: readonly { readonly weaponId: string; readonly masteryId: WeaponMasteryId }[] | null;
   heroic_inspiration: boolean;
@@ -178,7 +180,7 @@ export type CharacterSummary = Pick<
   | 'portrait_url'
   | 'status'
   | 'updated_at'
->;
+> & { is_active?: boolean; owner_user_id?: string | null };
 export type SessionSummary = Pick<
   Session,
   | 'id'

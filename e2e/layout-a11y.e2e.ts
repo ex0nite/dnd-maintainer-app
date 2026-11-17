@@ -8,6 +8,7 @@ interface PageUnderTest {
   name: string;
   path: string;
   signedIn: boolean;
+  role?: 'dm' | 'player';
   /** Something that proves the page really rendered (not a blank or error screen). */
   ready: (page: Page) => Promise<void>;
 }
@@ -38,6 +39,15 @@ export const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'player home',
+    path: '/',
+    signedIn: true,
+    role: 'player',
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: 'My characters' })).toBeVisible();
+    },
+  },
+  {
     name: 'players',
     path: '/players',
     signedIn: true,
@@ -51,7 +61,7 @@ for (const pageUnderTest of PAGES) {
   for (const theme of THEMES) {
     for (const mode of MODES) {
       test(`${pageUnderTest.name} · ${theme} · ${mode}`, async ({ page }) => {
-        await stubBackend(page, { signedIn: pageUnderTest.signedIn });
+        await stubBackend(page, { signedIn: pageUnderTest.signedIn, role: pageUnderTest.role });
         await useTheme(page, theme, mode);
         await page.goto(pageUnderTest.path);
         await pageUnderTest.ready(page);

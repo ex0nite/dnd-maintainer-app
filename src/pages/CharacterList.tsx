@@ -2,6 +2,7 @@ import { PortraitImage } from '@/components/PortraitImage';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useRole } from '@/hooks/usePermissions';
 import { isBackgroundId } from '@/lib/dnd-helpers';
 import { getLogger } from '@/lib/logger';
 import { Plus, Search, User, Users } from 'lucide-react';
@@ -26,7 +27,13 @@ export default function CharacterList() {
 
   usePageTitle(t('characterList.title'));
 
-  const { data: characters = [], isLoading, error } = useCharacters(campaignId!);
+  const { userId, isPlayer } = useRole();
+  const { data: allCharacters = [], isLoading, error } = useCharacters(campaignId!);
+  // Another player's draft is not a character of the table yet: a player only sees their own drafts.
+  const characters = useMemo(
+    () => (isPlayer ? allCharacters.filter((c) => c.status !== 'draft' || c.owner_user_id === userId) : allCharacters),
+    [allCharacters, isPlayer, userId]
+  );
 
   const filteredAndSortedCharacters = useMemo(() => {
     let result = characters;
@@ -79,6 +86,8 @@ export default function CharacterList() {
       character.status === 'draft'
         ? `/campaign/${campaignSlug}/character/${character.slug}/edit`
         : `/campaign/${campaignSlug}/character/${character.slug}`;
+    // A player does not open the draft of someone else.
+    if (isPlayer && character.status === 'draft' && character.owner_user_id !== userId) return;
     navigate(path);
   };
 
@@ -106,8 +115,13 @@ export default function CharacterList() {
             <h1 className="hidden md:block text-4xl font-bold text-primary mb-2">{t('characterList.title')}</h1>
             <p className="text-muted-foreground">
               {t('characterList.subtitle', { count: characters.length })} •{' '}
-              <span className="text-blue-400">{t('characterList.pcCount', { count: pcCount })}</span> •{' '}
-              <span className="text-purple-400">{t('characterList.npcCount', { count: npcCount })}</span>
+              <span className="text-blue-400">{t('characterList.pcCount', { count: pcCount })}</span>
+              {!isPlayer && (
+                <>
+                  {' '}
+                  • <span className="text-purple-400">{t('characterList.npcCount', { count: npcCount })}</span>
+                </>
+              )}
             </p>
           </div>
           <button
@@ -153,17 +167,19 @@ export default function CharacterList() {
               <User size={16} />
               {t('characterList.playerCharacters')}
             </button>
-            <button
-              onClick={() => setFilterType('npc')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                filterType === 'npc'
-                  ? 'bg-purple-600 text-primary-foreground'
-                  : 'bg-muted text-foreground hover:bg-muted'
-              }`}
-            >
-              <Users size={16} />
-              <span>{t('characterList.npcs')}</span>
-            </button>
+            {!isPlayer && (
+              <button
+                onClick={() => setFilterType('npc')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  filterType === 'npc'
+                    ? 'bg-purple-600 text-primary-foreground'
+                    : 'bg-muted text-foreground hover:bg-muted'
+                }`}
+              >
+                <Users size={16} />
+                <span>{t('characterList.npcs')}</span>
+              </button>
+            )}
           </div>
 
           <select

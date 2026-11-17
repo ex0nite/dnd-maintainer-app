@@ -14,11 +14,14 @@ export function EditHeaderDialog({
   onSave,
   onClose,
   saving,
+  canManage = true,
 }: {
   character: Character;
   onSave: (updates: Partial<Character>) => void;
   onClose: () => void;
   saving: boolean;
+  /** Type is the DM's to change: a player does not see it. */
+  canManage?: boolean;
 }) {
   const { t: tc } = useTranslation('common');
   const [form, setForm] = useState({
@@ -56,18 +59,23 @@ export function EditHeaderDialog({
               placeholder={tc('characterSheet.hints.leaveEmptyForNpcs')}
             />
           </div>
-          <div className="space-y-2">
-            <Label>{tc('characterSheet.fields.type')}</Label>
-            <Select value={form.character_type} onValueChange={(val) => update('character_type', val as 'pc' | 'npc')}>
-              <SelectTrigger className="w-full">
-                <SelectValue>{tc(`characterType.${form.character_type}`)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pc">{tc('characterType.pc')}</SelectItem>
-                <SelectItem value="npc">{tc('characterType.npc')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {canManage && (
+            <div className="space-y-2">
+              <Label>{tc('characterSheet.fields.type')}</Label>
+              <Select
+                value={form.character_type}
+                onValueChange={(val) => update('character_type', val as 'pc' | 'npc')}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>{tc(`characterType.${form.character_type}`)}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pc">{tc('characterType.pc')}</SelectItem>
+                  <SelectItem value="npc">{tc('characterType.npc')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>{tc('characterSheet.fields.gender')}</Label>
             <GenderToggle value={form.gender} onChange={(g) => update('gender', g)} />
@@ -76,7 +84,7 @@ export function EditHeaderDialog({
         <ModalFooter
           onSave={() =>
             onSave({
-              ...form,
+              ...(canManage ? form : { ...form, character_type: undefined }),
               player_name: form.player_name || null,
               gender: form.gender === 'male' || form.gender === 'female' ? form.gender : null,
             })
