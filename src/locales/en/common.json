@@ -61,6 +61,7 @@
     "notes": "Notes",
     "exportData": "Export Data",
     "players": "Players",
+    "changePassword": "Change password",
     "settings": "Settings",
     "selectCampaign": "Select Campaign",
     "noCampaigns": "No campaigns",
@@ -824,6 +825,21 @@
     "loading": "Loading notes...",
     "errors": {
       "loading": "Error loading notes"
+    }
+  },
+  "password": {
+    "title": "Choose your password",
+    "forced": "You signed in with a temporary password. Choose your own password to continue.",
+    "rule": "At least {{count}} characters. Do not reuse the temporary one.",
+    "new": "New password",
+    "confirm": "Confirm the new password",
+    "submit": "Save the password",
+    "errors": {
+      "tooShort": "The password must have at least {{count}} characters.",
+      "mismatch": "The two passwords are different.",
+      "same": "Choose a password different from the current one.",
+      "weak": "This password is too easy to guess. Choose a longer or less common one.",
+      "unavailable": "The password could not be changed. Try again in a moment."
     }
   },
   "players": {

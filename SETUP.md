@@ -85,6 +85,14 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
   the socket address is used (all traffic then looks like the proxy). Never let the client choose that header.
 - The administration key is read from the environment only: it is not in the repository, not in the front bundle and
   not in the logs (the service logs method, path, status and duration, nothing else).
+- **First sign-in:** the player lands on the password page and can reach nothing else (the front redirects, and the
+  database refuses every data read: `is_active_user()` is false while `must_change_password` is true). The password
+  must have 12 characters at least (the authentication server's minimum, stricter than the 10 planned in AD-11).
+  When the password really changes, a trigger on `auth.users` lowers `must_change_password`; the player cannot touch
+  that flag, and the temporary password stops working at once. Any signed-in user can change their password later
+  from the sidebar.
+- The sign-in address cannot be changed by users: a trigger on `auth.users` refuses it (the authentication server has
+  no switch for this, see `docs/auth-spike.md`). Delete accounts with a hard delete only.
 - Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
 - Deployment: reach the service only over the internal container network (no published port). If it listens on a
   non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would
