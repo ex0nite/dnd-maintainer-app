@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
 import { useCampaigns } from '@/hooks/useCampaigns';
@@ -28,7 +28,8 @@ const ERROR_KEYS = {
   rate_limited: 'players.errors.rateLimited',
   account_archived: 'players.errors.accountArchived',
   account_not_found: 'players.errors.accountNotFound',
-  reset_in_progress: 'players.errors.resetInProgress',
+  action_in_progress: 'players.errors.actionInProgress',
+  not_archived: 'players.errors.notArchived',
   forbidden_target: 'players.errors.forbiddenTarget',
 } as const;
 
@@ -72,9 +73,17 @@ export default function Players() {
       : undefined;
 
   /** Any new action starts from a clean slate: one error at a time, no stale message. */
-  const run = <V,>(mutation: { mutate: (v: V) => void; reset: () => void }, value: V): void => {
+  const running = useRef(false);
+  const run = (start: (options: { onSettled: () => void }) => void): void => {
+    // A fast double click must not start the same action twice (the buttons only disable after a re-render).
+    if (running.current) return;
+    running.current = true;
     [resetPassword, archivePlayer, reactivatePlayer, addMember, removeMember, createPlayer].forEach((m) => m.reset());
-    mutation.mutate(value);
+    start({
+      onSettled: () => {
+        running.current = false;
+      },
+    });
   };
 
   const submit = (e: FormEvent): void => {
@@ -90,12 +99,13 @@ export default function Players() {
     );
   };
 
-  const reset = (player: PlayerRow): void => {
-    createPlayer.reset();
-    resetPassword.mutate(player.userId, {
-      onSuccess: (result) => setShown({ pseudo: player.pseudo, password: result.temporaryPassword, kind: 'reset' }),
-    });
-  };
+  const reset = (player: PlayerRow): void =>
+    run((options) =>
+      resetPassword.mutate(player.userId, {
+        ...options,
+        onSuccess: (result) => setShown({ pseudo: player.pseudo, password: result.temporaryPassword, kind: 'reset' }),
+      })
+    );
 
   const done = (): void => {
     // Nothing of the password may stay in memory once the DM has handed it over.
@@ -189,10 +199,12 @@ export default function Players() {
                     campaigns={campaigns}
                     busy={busy}
                     onReset={reset}
-                    onArchive={(p) => run(archivePlayer, p.userId)}
-                    onReactivate={(p) => run(reactivatePlayer, p.userId)}
-                    onAddToCampaign={(p, id) => run(addMember, { userId: p.userId, campaignId: id })}
-                    onRemoveFromCampaign={(p, id) => run(removeMember, { userId: p.userId, campaignId: id })}
+                    onArchive={(p) => run((o) => archivePlayer.mutate(p.userId, o))}
+                    onReactivate={(p) => run((o) => reactivatePlayer.mutate(p.userId, o))}
+                    onAddToCampaign={(p, id) => run((o) => addMember.mutate({ userId: p.userId, campaignId: id }, o))}
+                    onRemoveFromCampaign={(p, id) =>
+                      run((o) => removeMember.mutate({ userId: p.userId, campaignId: id }, o))
+                    }
                   />
                 ))}
               </ul>

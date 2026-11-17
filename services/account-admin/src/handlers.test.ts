@@ -411,7 +411,7 @@ describe('POST /admin-api/accounts/:id/reset-password', () => {
     });
     const first = handle(reset());
     await vi.waitFor(() => expect(admin.auth.admin.updateUserById).toHaveBeenCalled());
-    expect((await handle(reset())).body).toEqual({ error: 'reset_in_progress' });
+    expect((await handle(reset())).body).toEqual({ error: 'action_in_progress' });
     release();
     expect((await first).status).toBe(200);
     expect((await handle(reset())).status).toBe(200);
@@ -442,11 +442,16 @@ describe('POST /admin-api/accounts/:id/archive and /reactivate', () => {
     expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, { ban_duration: '876000h' });
   });
 
-  it('reactivates in the database first, then lifts the ban', async () => {
-    const { handle, calls, admin } = setup();
+  const ARCHIVED = {
+    [DM_ID]: { role: 'dm', archived_at: null },
+    [PLAYER_ID]: { role: 'player', archived_at: '2026-01-01T00:00:00Z' },
+  };
+
+  it('lifts the ban first, then reactivates in the database', async () => {
+    const { handle, calls, admin } = setup({ profiles: ARCHIVED });
     const res = await handle(act('reactivate'));
     expect(res).toEqual({ status: 200, body: { userId: PLAYER_ID, status: 'active' } });
-    expect(calls.order).toEqual(['rpc:reactivate_player', 'password']);
+    expect(calls.order).toEqual(['password', 'rpc:reactivate_player']);
     expect(admin.auth.admin.updateUserById).toHaveBeenCalledWith(PLAYER_ID, { ban_duration: 'none' });
   });
 
@@ -458,6 +463,12 @@ describe('POST /admin-api/accounts/:id/archive and /reactivate', () => {
       },
     });
     expect((await handle(act('archive'))).status).toBe(200);
+  });
+
+  it('refuses to reactivate an account that is not archived', async () => {
+    const { handle, calls } = setup();
+    expect(await handle(act('reactivate'))).toEqual({ status: 409, body: { error: 'not_archived' } });
+    expect(calls.order).toEqual([]);
   });
 
   it.each(['archive', 'reactivate'])(
@@ -492,8 +503,14 @@ describe('POST /admin-api/accounts/:id/archive and /reactivate', () => {
 
     const banFail = setup({ updatePasswordError: true });
     expect(await banFail.handle(act('archive'))).toEqual({ status: 500, body: { error: 'ban_failed' } });
-    const unbanFail = setup({ updatePasswordError: true });
+    const unbanFail = setup({ updatePasswordError: true, profiles: ARCHIVED });
     expect(await unbanFail.handle(act('reactivate'))).toEqual({ status: 500, body: { error: 'unban_failed' } });
+    expect(unbanFail.calls.order).toEqual(['password']);
+    const dbFailAfterUnban = setup({ revokeError: true, profiles: ARCHIVED });
+    expect(await dbFailAfterUnban.handle(act('reactivate'))).toEqual({
+      status: 500,
+      body: { error: 'reactivate_failed' },
+    });
   });
 
   it('shares the per-account lock with the password reset', async () => {
@@ -506,7 +523,7 @@ describe('POST /admin-api/accounts/:id/archive and /reactivate', () => {
     });
     const first = handle(act('archive'));
     await vi.waitFor(() => expect(admin.auth.admin.updateUserById).toHaveBeenCalled());
-    expect((await handle(act('reactivate'))).body).toEqual({ error: 'reset_in_progress' });
+    expect((await handle(act('archive'))).body).toEqual({ error: 'action_in_progress' });
     release();
     expect((await first).status).toBe(200);
   });

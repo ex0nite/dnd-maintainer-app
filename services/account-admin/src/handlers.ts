@@ -137,7 +137,7 @@ export function createHandler(deps: HandlerDeps) {
    */
   async function resetPassword(targetId: string): Promise<ApiResponse> {
     if ((await loadPlayerTarget(targetId)).archived) throw new HttpError(409, 'account_archived');
-    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'action_in_progress');
     resetsInFlight.add(targetId);
     try {
       const settle = async (): Promise<void> => {
@@ -195,7 +195,7 @@ export function createHandler(deps: HandlerDeps) {
    */
   async function archiveAccount(targetId: string): Promise<ApiResponse> {
     await loadPlayerTarget(targetId);
-    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'action_in_progress');
     resetsInFlight.add(targetId);
     try {
       const { error } = await deps.admin.rpc('archive_player', { p_user_id: targetId });
@@ -212,20 +212,21 @@ export function createHandler(deps: HandlerDeps) {
   }
 
   /**
-   * Reactivate: database first (only the characters archived WITH their owner come back), then lift the ban, so
-   * a sign-in becomes possible only once the account is whole. Retrying after a failed unban is safe.
+   * Reactivate: lift the ban FIRST, then the database. If the database step fails the account is still archived (it
+   * reads nothing and the list still offers "Reactivate"), so the retry is always possible. Only an archived account
+   * can be reactivated.
    */
   async function reactivateAccount(targetId: string): Promise<ApiResponse> {
-    await loadPlayerTarget(targetId);
-    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    if (!(await loadPlayerTarget(targetId)).archived) throw new HttpError(409, 'not_archived');
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'action_in_progress');
     resetsInFlight.add(targetId);
     try {
-      const { error } = await deps.admin.rpc('reactivate_player', { p_user_id: targetId });
-      if (error) throw new HttpError(500, 'reactivate_failed');
       const { error: unbanError } = await deps.admin.auth.admin.updateUserById(targetId, { ban_duration: 'none' });
-      if (unbanError) {
-        process.stderr.write(`reactivation of ${targetId}: ban not lifted, retry the reactivation\n`);
-        throw new HttpError(500, 'unban_failed');
+      if (unbanError) throw new HttpError(500, 'unban_failed');
+      const { error } = await deps.admin.rpc('reactivate_player', { p_user_id: targetId });
+      if (error) {
+        process.stderr.write(`reactivation of ${targetId}: database step failed, retry the reactivation\n`);
+        throw new HttpError(500, 'reactivate_failed');
       }
       return { status: 200, body: { userId: targetId, status: 'active' } };
     } finally {

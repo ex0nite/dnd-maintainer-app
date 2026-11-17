@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { PlayerRow } from '@/hooks/useAccounts';
@@ -34,8 +34,12 @@ export function PlayerItem({
   const { t } = useTranslation('common');
   const [confirming, setConfirming] = useState<Confirming>(null);
   const [toAdd, setToAdd] = useState('');
+  const openers = useRef<Partial<Record<Exclude<Confirming, null>, HTMLButtonElement | null>>>({});
+  const lastOpened = useRef<Exclude<Confirming, null>>('reset');
   const archived = player.status === 'archived';
   const addable = campaigns.filter((c) => !player.campaignIds.includes(c.id));
+  // The chosen campaign may have just been added (and so left the list): fall back to the first one still addable.
+  const selected = addable.some((c) => c.id === toAdd) ? toAdd : (addable[0]?.id ?? '');
   const nameOf = (id: string): string => campaigns.find((c) => c.id === id)?.name ?? id;
 
   const confirmButton = (action: Exclude<Confirming, null>, run: () => void) => (
@@ -53,7 +57,16 @@ export function PlayerItem({
       >
         {t(`players.${action}.confirm`)}
       </Button>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(null)}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          setConfirming(null);
+          // The confirmation disappears: give the focus back to the button that opened it.
+          requestAnimationFrame(() => openers.current[lastOpened.current]?.focus());
+        }}
+      >
         {t('players.cancel')}
       </Button>
     </span>
@@ -94,7 +107,7 @@ export function PlayerItem({
       {!archived && addable.length > 0 && (
         <div className="flex items-center gap-2">
           <select
-            value={toAdd || addable[0].id}
+            value={selected}
             onChange={(e) => setToAdd(e.target.value)}
             aria-label={t('players.addTo', { pseudo: player.pseudo })}
             className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-sm"
@@ -110,7 +123,7 @@ export function PlayerItem({
             size="sm"
             variant="outline"
             disabled={busy}
-            onClick={() => onAddToCampaign(player, toAdd || addable[0].id)}
+            onClick={() => onAddToCampaign(player, selected)}
           >
             {t('players.add')}
           </Button>
@@ -119,16 +132,28 @@ export function PlayerItem({
 
       <div className="flex flex-wrap gap-2">
         {archived ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            aria-label={t('players.reactivate.button', { pseudo: player.pseudo })}
-            onClick={() => onReactivate(player)}
-          >
-            {t('players.reactivate.short')}
-          </Button>
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              aria-label={t('players.reactivate.button', { pseudo: player.pseudo })}
+              onClick={() => onReactivate(player)}
+            >
+              {t('players.reactivate.short')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              aria-label={t('players.archive.retryFor', { pseudo: player.pseudo })}
+              onClick={() => onArchive(player)}
+            >
+              {t('players.archive.retry')}
+            </Button>
+          </>
         ) : confirming === 'reset' ? (
           confirmButton('reset', () => onReset(player))
         ) : confirming === 'archive' ? (
@@ -140,8 +165,14 @@ export function PlayerItem({
               size="sm"
               variant="outline"
               disabled={busy}
+              ref={(el) => {
+                openers.current.reset = el;
+              }}
               aria-label={t('players.reset.button', { pseudo: player.pseudo })}
-              onClick={() => setConfirming('reset')}
+              onClick={() => {
+                lastOpened.current = 'reset';
+                setConfirming('reset');
+              }}
             >
               {t('players.reset.short')}
             </Button>
@@ -150,8 +181,14 @@ export function PlayerItem({
               size="sm"
               variant="outline"
               disabled={busy}
+              ref={(el) => {
+                openers.current.archive = el;
+              }}
               aria-label={t('players.archive.button', { pseudo: player.pseudo })}
-              onClick={() => setConfirming('archive')}
+              onClick={() => {
+                lastOpened.current = 'archive';
+                setConfirming('archive');
+              }}
             >
               {t('players.archive.short')}
             </Button>

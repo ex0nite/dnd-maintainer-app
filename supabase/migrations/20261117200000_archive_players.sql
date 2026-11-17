@@ -67,3 +67,29 @@ $$;
 
 revoke all on function public.archive_player(uuid), public.reactivate_player(uuid) from public, anon, authenticated;
 grant execute on function public.archive_player(uuid), public.reactivate_player(uuid) to service_role;
+
+-- `archived_with_owner` means "disabled BECAUSE its owner was archived". It must not outlive that meaning: when the
+-- DM enables/disables the character by hand, or gives it to someone else, the mark is dropped, so a later
+-- reactivation never switches back something the DM decided otherwise. The archive/reactivate functions change the
+-- mark in the same statement, which this trigger leaves alone. Named to run AFTER guard_character_ownership
+-- (alphabetical order), so the guard still sees the caller's own change only.
+create or replace function public.clear_stale_archive_mark()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.archived_with_owner is not distinct from old.archived_with_owner
+     and (new.is_active is distinct from old.is_active
+          or new.owner_user_id is distinct from old.owner_user_id) then
+    new.archived_with_owner := false;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.clear_stale_archive_mark() from public, anon, authenticated;
+
+create trigger characters_zz_clear_archive_mark
+  before update on public.characters
+  for each row execute function public.clear_stale_archive_mark();

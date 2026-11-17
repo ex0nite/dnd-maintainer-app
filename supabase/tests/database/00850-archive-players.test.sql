@@ -1,7 +1,7 @@
 -- Story 2.5 (D-30): archive_player / reactivate_player, and what an archived player can still see.
 begin;
 
-select plan(21);
+select plan(30);
 
 insert into auth.users (id, email)
 select tests.uid(i), i || '@table.invalid'
@@ -105,6 +105,20 @@ select lives_ok(
   'archiving twice is accepted (retry after a failed authentication-side step)'
 );
 
+-- An archived player's token also writes nothing and sees no membership.
+select tests.set_identity('owner');
+select is((select count(*)::int from public.campaign_members), 0, 'an archived player sees no membership');
+select is(
+  tests.rows_affected($q$update public.characters set name = 'hacked' where owner_user_id = auth.uid()$q$),
+  0::bigint,
+  'an archived player updates no character'
+);
+select throws_ok(
+  $q$insert into public.campaign_members (campaign_id, user_id) values ('bbbbbbbb-0000-4000-8000-00000000000b', auth.uid())$q$,
+  '42501', null, 'an archived player cannot join a campaign'
+);
+select tests.reset_identity();
+
 -- Reactivate ---------------------------------------------------------------------------------------------------------
 select lives_ok(format('select public.reactivate_player(%L)', tests.uid('owner')), 'reactivating works');
 select is(
@@ -119,6 +133,55 @@ select tests.reset_identity();
 select is(
   (select archived_at from public.profiles where user_id = tests.uid('owner')), null,
   'the stamp is cleared'
+);
+
+-- Reactivation does not touch the password flags.
+select is(
+  (select must_change_password::text || '/' || password_reset_pending::text
+     from public.profiles where user_id = tests.uid('owner')),
+  'false/false',
+  'reactivating leaves must_change_password and password_reset_pending as they were'
+);
+
+-- The archive mark does not outlive its meaning --------------------------------------------------------------------
+select public.archive_player(tests.uid('owner'));
+select tests.set_identity('dm');
+update public.characters set is_active = true where id = 'c1000000-0000-4000-8000-000000000001';
+select tests.reset_identity();
+select is(
+  (select archived_with_owner from public.characters where id = 'c1000000-0000-4000-8000-000000000001'),
+  false,
+  'a character the DM re-enables by hand loses the archive mark'
+);
+select public.archive_player(tests.uid('owner'));
+update public.characters set is_active = false, archived_with_owner = true
+ where id = 'c1000000-0000-4000-8000-000000000001';
+select tests.set_identity('dm');
+update public.characters set owner_user_id = tests.uid('other_player') where id = 'c1000000-0000-4000-8000-000000000001';
+select tests.reset_identity();
+select is(
+  (select archived_with_owner from public.characters where id = 'c1000000-0000-4000-8000-000000000001'),
+  false,
+  'a character given to someone else loses the archive mark'
+);
+select public.reactivate_player(tests.uid('owner'));
+select is(
+  (select is_active from public.characters where id = 'c1000000-0000-4000-8000-000000000001'),
+  false,
+  'so reactivating the former owner does not switch it back on'
+);
+select public.archive_player(tests.uid('other_player'));
+select public.reactivate_player(tests.uid('other_player'));
+select is(
+  (select is_active from public.characters where id = 'c1000000-0000-4000-8000-000000000001'),
+  false,
+  'nor does reactivating its new owner (it was disabled by hand)'
+);
+select is(
+  (select array_agg(is_active::text || '/' || archived_with_owner::text order by name)
+     from public.characters where owner_user_id = tests.uid('other_player')),
+  array['false/false', 'true/false'],
+  'the new owner''s own character came back, the re-owned one stays disabled'
 );
 
 select * from finish();
