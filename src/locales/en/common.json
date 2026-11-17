@@ -860,13 +860,29 @@
       "temporary": "Temporary password",
       "archived": "Archived"
     },
+    "cancel": "Cancel",
+    "add": "Add",
+    "addTo": "Add {{pseudo}} to a campaign",
+    "removeFrom": "Remove {{pseudo}} from {{campaign}}",
+    "campaignsOf": "Campaigns of {{pseudo}}",
+    "archive": {
+      "short": "Archive",
+      "button": "Archive the account of {{pseudo}}",
+      "confirm": "Confirm: cut their access",
+      "confirmFor": "Confirm archiving {{pseudo}}: access is cut at once and their characters are disabled",
+      "retry": "Block sign-in again",
+      "retryFor": "Archive {{pseudo}} again to block their sign-in"
+    },
+    "reactivate": {
+      "short": "Reactivate",
+      "button": "Reactivate the account of {{pseudo}}"
+    },
     "reset": {
       "title": "New temporary password for {{pseudo}}",
       "short": "Reset password",
       "button": "Reset the password of {{pseudo}}",
       "confirm": "Confirm: sign them out",
-      "confirmFor": "Confirm the reset for {{pseudo}}: they will be signed out",
-      "cancel": "Cancel"
+      "confirmFor": "Confirm the reset for {{pseudo}}: they will be signed out"
     },
     "noCampaign": "Create a campaign first: a player account is attached to one.",
     "created": {
@@ -883,8 +899,11 @@
       "campaignNotFound": "This campaign no longer exists.",
       "accountArchived": "This account is archived.",
       "accountNotFound": "This account no longer exists.",
-      "resetInProgress": "A reset is already running for this account.",
+      "actionInProgress": "Another action is already running for this account.",
+      "notArchived": "This account is not archived.",
       "resetFailed": "The password could not be reset. Check the list and try again.",
+      "forbiddenTarget": "This account cannot be modified here.",
+      "actionFailed": "The action failed. Check the list and try again.",
       "rateLimited": "Too many attempts. Wait a minute and try again.",
       "generic": "The account could not be created. Try again in a moment."
     }

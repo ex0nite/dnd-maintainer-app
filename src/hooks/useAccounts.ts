@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import {
   AdminApiError,
+  archivePlayer,
   createPlayer,
+  reactivatePlayer,
   resetPlayerPassword,
   type CreatedPlayer,
   type ResetPassword,
@@ -66,5 +68,55 @@ export function useResetPassword() {
     mutationFn: async (userId) => resetPlayerPassword(await accessToken(), userId),
     gcTime: 0,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
+/** Archive a player (FR5): access cut at once, characters disabled. */
+export function useArchivePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, AdminApiError, string>({
+    mutationFn: async (userId) => archivePlayer(await accessToken(), userId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
+/** Reactivate an archived player: only the characters archived with them come back. */
+export function useReactivatePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, AdminApiError, string>({
+    mutationFn: async (userId) => reactivatePlayer(await accessToken(), userId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
+/** Membership is written by the DM straight through the database (RLS: campaign_members_dm_all). */
+export function useAddMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string; campaignId: string }) => {
+      const { error } = await supabase
+        .from('campaign_members')
+        .insert({ user_id: input.userId, campaign_id: input.campaignId });
+      if (error) throw error;
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string; campaignId: string }) => {
+      // A refused delete touches 0 rows without an error: check that the membership really went away.
+      const { data, error } = await supabase
+        .from('campaign_members')
+        .delete()
+        .eq('user_id', input.userId)
+        .eq('campaign_id', input.campaignId)
+        .select('user_id');
+      if (error) throw error;
+      if (data.length !== 1) throw new Error('membership not removed');
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
   });
 }
