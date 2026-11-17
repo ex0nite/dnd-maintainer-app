@@ -67,11 +67,17 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [ ] Portraits : avant l'ouverture, vérifier sur la version de storage-api installée sur le QNAP que le listing (`storage.search`, `prefixes`) respecte la RLS (un joueur ne doit lister que les dossiers de personnages lisibles)
 
+- [ ] Reconstruction d'une fiche : l'équipement de départ n'est pas recalculé si la classe ou l'historique change (la finalisation n'écrit des objets que s'il n'y en a aucun)
+- [ ] Un joueur ne peut pas supprimer : « abandonner » un brouillon dans le constructeur le laisse en place (visible et reprenable dans « Mes personnages »)
+
+- [ ] Reconstruction : l'étape Équipement du constructeur n'enregistre ni les objets équipés ni les achats d'une fiche déjà finalisée (et `armor_class` est calculée depuis l'équipement de départ tant que la fiche est en brouillon) ; à masquer ou à corriger
+- [ ] Un joueur dont la fiche vient d'être réassignée voit la sienne éditable jusqu'à 5 minutes (pas de temps réel) : message dédié si une mise à jour touche 0 ligne
+
 ### Epics 2 à 6
 
 - [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
       2.4 réinitialisation FAIT, 2.5 membres / archivage FAIT, 2.6 limitation des tentatives FAIT)
-- [ ] Epic 3 : fiche de personnage (3.1 FAIT ; 3.6, 3.7, 3.9 : base FAITE, interface à faire avec 3.2 ; 3.8 FAIT (base et hook) ; 3.2 FAIT (accueil joueur, fiche en lecture seule ou éditable, routes MJ protégées) ; 3.3 à 3.5 à faire)
+- [x] Epic 3 : fiche de personnage (3.1 FAIT ; 3.6, 3.7, 3.9 : base FAITE, interface à faire avec 3.2 ; 3.1 à 3.9 FAITES : policies, accueil joueur, fiches, création, niveaux, reconstruction, portraits, réassignation)
 - [ ] Epic 4 : notes de campagne (4.1 à 4.4)
 - [ ] Epic 5 : récapitulatifs de séance (5.1 à 5.4)
 - [ ] Epic 6 : page joueur bilingue et adaptée au téléphone (6.1 à 6.4), dont `src/locales/fr/common.json`

@@ -131,6 +131,16 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
 - Un joueur crée un PJ à lui (`ownerFieldsForNewCharacter` ajoute `owner_user_id` et le type à l'INSERT) ; les brouillons
   des autres joueurs ne sont ni listés ni reprenables.
 
+## Reconstruire une fiche (story 3.5, constaté dans le constructeur)
+
+- Passer une fiche finalisée en brouillon (`status = 'draft'`, permis au propriétaire) ne supprime rien : l'historique de niveaux
+  (`character_build_levels`, qui porte aussi les choix) et l'inventaire (`character_items`) restent ; le constructeur relit les
+  niveaux, les choix reviennent pré-remplis. La finalisation n'écrit des objets que s'il n'y en a aucun (garde d'idempotence) :
+  l'équipement de départ n'est donc PAS recalculé si le joueur change de classe ou de historique pendant la reconstruction
+  (écart connu, voir TO-DO). Le bouton « Rebuild » demande une confirmation et n'existe que pour le propriétaire et le MJ.
+- Réassigner (story 3.9) : le MJ ouvre « Assign to a player » sur la fiche (joueurs actifs de la campagne, ou personne) ; la partie
+  privée de la fiche suit le personnage chez le nouveau propriétaire.
+
 ## Dépôt MCP
 
 - Le MCP importe le moteur de règles de l'app (`@/lib/...`) mais ne la modifie pas. Toute évolution de la façon dont

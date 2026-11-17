@@ -332,8 +332,10 @@ export function useBuilderAutosave(existingCharacterId?: string) {
       }
       const id = characterIdRef.current;
       if (!id) return;
-      const { error } = await supabase.from('characters').delete().eq('id', id);
+      // A refused delete touches 0 rows without an error: check that the draft really went away.
+      const { data, error } = await supabase.from('characters').delete().eq('id', id).select('id');
       if (error) throw error;
+      if (!data || data.length !== 1) throw new Error('Draft not deleted (0 rows affected)');
       characterIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['characters', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['my-characters'] });

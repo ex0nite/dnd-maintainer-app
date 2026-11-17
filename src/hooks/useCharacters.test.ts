@@ -299,7 +299,7 @@ describe('useCharacterMutations', () => {
   });
 
   it('remove deletes character by id', async () => {
-    mockQueryResult.data = null;
+    mockQueryResult.data = [{ id: 'char-1' }];
 
     const { result } = renderHook(() => useCharacterMutations(), { wrapper: createWrapper() });
 
@@ -307,6 +307,16 @@ describe('useCharacterMutations', () => {
 
     await waitFor(() => expect(result.current.remove.isSuccess).toBe(true));
     expect(supabase.eq).toHaveBeenCalledWith('id', 'char-1');
+  });
+
+  it('remove fails when the delete touched 0 rows (refused by the database, no error returned)', async () => {
+    mockQueryResult.data = [];
+
+    const { result } = renderHook(() => useCharacterMutations(), { wrapper: createWrapper() });
+
+    result.current.remove.mutate({ id: 'char-1', campaignId: 'camp-1' });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
   });
 
   describe('clone', () => {

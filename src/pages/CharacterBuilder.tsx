@@ -16,7 +16,7 @@ import { CharacterProvider, useCharacterContext } from '@/hooks/useCharacterCont
 import { useBuilderAutosave } from '@/hooks/useBuilderAutosave';
 import type { AutosavePayload } from '@/hooks/useBuilderAutosave';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
-import { useCharacter, useCampaignDrafts } from '@/hooks/useCharacters';
+import { useCharacter, useCampaignDrafts, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import type { Character } from '@/types/database';
@@ -118,7 +118,14 @@ function buildSeedCharacter(campaignId: string): Character {
   };
 }
 
-function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: string }) {
+function CharacterBuilderInner({
+  existingCharacterId,
+  wasFinalized = false,
+}: {
+  existingCharacterId?: string;
+  /** The sheet was finalized once (it has an inventory): it is being rebuilt, never abandoned. */
+  wasFinalized?: boolean;
+}) {
   const { t } = useTranslation('common');
   const { t: tg } = useTranslation('gamedata');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
@@ -238,6 +245,23 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
   };
   const goPrevStep = () => {
     if (currentStepIndex > 0) goToStep(STEPS[currentStepIndex - 1].id);
+  };
+
+  const { update: updateCharacter } = useCharacterMutations();
+  const [isCancellingRebuild, setIsCancellingRebuild] = useState(false);
+  // Cancel a rebuild: the sheet is simply finalized again as it was saved (nothing is deleted).
+  const handleCancelRebuild = async () => {
+    if (!existingCharacterId) return;
+    setIsCancellingRebuild(true);
+    try {
+      const updated = await updateCharacter.mutateAsync({ id: existingCharacterId, status: 'ready' });
+      navigate(`/campaign/${campaignSlug}/character/${updated.slug}`);
+    } catch (err) {
+      logger.error('Cancel rebuild failed:', err);
+      toast.error(t('characterBuilder.errors.cancelRebuildFailed'));
+    } finally {
+      setIsCancellingRebuild(false);
+    }
   };
 
   const handleAbandon = async () => {
@@ -473,10 +497,26 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
             <Save className="size-4" />
             {isFinalizing ? t('buttons.finalizing') : t('buttons.finalizeCharacter')}
           </Button>
-          <Button variant="destructive" onClick={() => setConfirmAbandon(true)} className="order-2">
-            <Trash2 className="size-4" />
-            {t('buttons.abandonCharacter')}
-          </Button>
+          {wasFinalized ? (
+            // A rebuilt sheet is a played character: it is never deleted from here, the rebuild is cancelled.
+            <Button variant="outline" onClick={handleCancelRebuild} pending={isCancellingRebuild} className="order-2">
+              {t('buttons.cancelRebuild')}
+            </Button>
+          ) : isPlayer ? (
+            // A player cannot delete: the draft stays (listed and resumable in "My characters").
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/campaign/${campaignSlug}/characters`)}
+              className="order-2"
+            >
+              {t('buttons.leaveBuilder')}
+            </Button>
+          ) : (
+            <Button variant="destructive" onClick={() => setConfirmAbandon(true)} className="order-2">
+              <Trash2 className="size-4" />
+              {t('buttons.abandonCharacter')}
+            </Button>
+          )}
         </div>
 
         {confirmAbandon && (
@@ -618,7 +658,10 @@ export default function CharacterBuilder() {
         initialRows={initialRows}
         initialEquippedItems={initialEquippedItems}
       >
-        <CharacterBuilderInner existingCharacterId={initialCharacter.id || undefined} />
+        <CharacterBuilderInner
+          existingCharacterId={initialCharacter.id || undefined}
+          wasFinalized={!isNew && itemsData.length > 0}
+        />
       </CharacterProvider>
     </>
   );

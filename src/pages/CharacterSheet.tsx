@@ -20,6 +20,7 @@ import { SpellcastingPanel } from '@/components/character-sheet/SpellcastingPane
 import { SpellSlotsPanel } from '@/components/character-sheet/SpellSlotsPanel';
 import { ConfirmActionDialog, type ConfirmAction } from '@/components/character-sheet/edit-dialogs/ConfirmActionDialog';
 import { EditHeaderDialog } from '@/components/character-sheet/edit-dialogs/EditHeaderDialog';
+import { AssignOwnerDialog } from '@/components/character-sheet/edit-dialogs/AssignOwnerDialog';
 import { EditPersonalityDialog } from '@/components/character-sheet/edit-dialogs/EditPersonalityDialog';
 import { EditTextDialog } from '@/components/character-sheet/edit-dialogs/EditTextDialog';
 import { buildRestUpdate } from '@/lib/rest';
@@ -62,6 +63,7 @@ function CharacterSheetInner({
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [cloneName, setCloneName] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   usePageTitle(character.name);
   const { canEdit, canManage } = useCharacterPermissions(character);
@@ -154,6 +156,37 @@ function CharacterSheetInner({
           navigate(`/campaign/${campaignSlug}/characters`);
         },
         onError: () => toast.error(tc('characterSheet.errors.archiveFailed')),
+      }
+    );
+  };
+
+  // Rebuild (story 3.5): the sheet goes back to draft and the builder reopens on it. Nothing is erased: the level
+  // history and the inventory stay (finalizing again only materializes items when there are none), the choices come
+  // back pre-filled from the level history.
+  const handleRebuild = async () => {
+    // A pending autosave must land first: the builder reads the level history from the cache.
+    if (isDirtyRef.current) await doSaveRef.current();
+    updateMutation.mutate(
+      { id: characterId, status: 'draft' },
+      {
+        onSuccess: () => {
+          setConfirmAction(null);
+          navigate(`/campaign/${campaignSlug}/character/${character.slug}/edit`);
+        },
+        onError: () => toast.error(tc('characterSheet.errors.rebuildFailed')),
+      }
+    );
+  };
+
+  const handleAssign = (ownerId: string | null) => {
+    updateMutation.mutate(
+      { id: characterId, owner_user_id: ownerId },
+      {
+        onSuccess: () => {
+          setAssigning(false);
+          toast.success(tc('characterSheet.assign.success'));
+        },
+        onError: () => toast.error(tc('characterSheet.assign.failed')),
       }
     );
   };
@@ -268,6 +301,8 @@ function CharacterSheetInner({
             setConfirmAction('clone');
           }}
           onArchive={() => setConfirmAction('archive')}
+          onRebuild={() => setConfirmAction('rebuild')}
+          onAssign={() => setAssigning(true)}
           onDelete={() => setConfirmAction('delete')}
           onExportPdf={handleExportPdf}
           exportingPdf={exportingPdf}
@@ -407,7 +442,17 @@ function CharacterSheetInner({
         />
       )}
 
-      {/* Archive / Delete / Clone Confirmation */}
+      {canManage && assigning && (
+        <AssignOwnerDialog
+          campaignId={character.campaign_id}
+          currentOwnerId={character.owner_user_id}
+          saving={updateMutation.isPending}
+          onSave={handleAssign}
+          onClose={() => setAssigning(false)}
+        />
+      )}
+
+      {/* Archive / Delete / Clone / Rebuild Confirmation */}
       {confirmAction && (
         <ConfirmActionDialog
           action={confirmAction}
@@ -415,7 +460,13 @@ function CharacterSheetInner({
           cloneName={cloneName}
           onCloneNameChange={setCloneName}
           onConfirm={
-            confirmAction === 'archive' ? handleArchive : confirmAction === 'clone' ? handleClone : handleDelete
+            confirmAction === 'archive'
+              ? handleArchive
+              : confirmAction === 'clone'
+                ? handleClone
+                : confirmAction === 'rebuild'
+                  ? handleRebuild
+                  : handleDelete
           }
           onClose={() => setConfirmAction(null)}
           pending={updateMutation.isPending || removeMutation.isPending || cloneMutation.isPending}

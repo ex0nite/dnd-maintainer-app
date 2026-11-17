@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
 
-export type ConfirmAction = 'archive' | 'delete' | 'clone';
+export type ConfirmAction = 'archive' | 'delete' | 'clone' | 'rebuild';
 
 export function ConfirmActionDialog({
   action,
@@ -38,7 +38,9 @@ export function ConfirmActionDialog({
               ? tc('characterSheet.actions.archiveTitle')
               : action === 'clone'
                 ? tc('characterSheet.actions.cloneTitle')
-                : tc('characterSheet.actions.deleteTitle')}
+                : action === 'rebuild'
+                  ? tc('characterSheet.actions.rebuildTitle')
+                  : tc('characterSheet.actions.deleteTitle')}
           </DialogTitle>
         </DialogHeader>
         {action === 'clone' ? (
@@ -59,7 +61,9 @@ export function ConfirmActionDialog({
           <p className="text-sm text-muted-foreground">
             {action === 'archive'
               ? tc('characterSheet.actions.archiveConfirm', { name: characterName })
-              : tc('characterSheet.actions.deleteConfirm', { name: characterName })}
+              : action === 'rebuild'
+                ? tc('characterSheet.actions.rebuildConfirm', { name: characterName })
+                : tc('characterSheet.actions.deleteConfirm', { name: characterName })}
           </p>
         )}
         <DialogFooter>
@@ -76,7 +80,9 @@ export function ConfirmActionDialog({
               ? tc('buttons.archive')
               : action === 'clone'
                 ? tc('buttons.clone')
-                : tc('buttons.delete')}
+                : action === 'rebuild'
+                  ? tc('characterSheet.actions.rebuildButton')
+                  : tc('buttons.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
