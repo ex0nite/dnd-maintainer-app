@@ -13,7 +13,8 @@ const { createPlayerAccount } = await import('../src/accounts.ts');
 const admin = createClient(API, SK, { auth: { persistSession: false } });
 const out = (label, value) => console.log(`${label}: ${value}`);
 const flag = async (pseudo) =>
-  (await admin.from('profiles').select('must_change_password').eq('pseudo', pseudo).single()).data?.must_change_password;
+  (await admin.from('profiles').select('must_change_password').eq('pseudo', pseudo).single()).data
+    ?.must_change_password;
 
 const stamp = Date.now().toString(36);
 const pseudo = `pl${stamp}`.slice(0, 20);
@@ -22,7 +23,10 @@ const { userId } = await createPlayerAccount(admin, { pseudo, password: temp, do
 out('flag after creation', await flag(pseudo));
 
 const client = createClient(API, PK, { auth: { persistSession: false } });
-const { error: signInError } = await client.auth.signInWithPassword({ email: `${pseudo}@table.invalid`, password: temp });
+const { error: signInError } = await client.auth.signInWithPassword({
+  email: `${pseudo}@table.invalid`,
+  password: temp,
+});
 out('sign-in with the temporary password', signInError ? `FAILED ${signInError.status}` : 'OK');
 out('flag after sign-in (GoTrue must not rehash and clear it)', await flag(pseudo));
 
