@@ -1,10 +1,15 @@
 -- Stories 3.6, 3.7, 3.9 (FR14, FR15, D-15): who reads what of a character.
 --
 --   * Every active member of a campaign reads the PCs of that campaign (sheet, inventory, level history), never its
---     NPCs, and never a campaign they are not a member of. An archived PC (disabled with its owner) stays readable.
+--     NPCs, and never a campaign they are not a member of. A PC disabled WITH its archived owner stays readable
+--     (read-only); a PC the DM deactivated by hand is withdrawn from the table: only its owner (frozen) and the DM
+--     still read it.
 --   * The private part of a sheet (`character_private`: backstory, notes) is read and written by the OWNER and the DM
 --     only. Another player gets no row at all, and the two fields are not columns of `characters` any more.
---   * A reassignment by the DM (3.9) is immediate: policies read `owner_user_id` on every statement.
+--   * A reassignment by the DM (3.9) is immediate: policies read `owner_user_id` on every statement. The private part
+--     belongs to the SHEET: it goes with the character to its new owner (a player taking over a character reads what
+--     its previous player wrote). The DM clears it first if that is not wanted.
+--   * Other players read every column of a PC they may read, `owner_user_id` and `player_name` included (accepted).
 --
 -- `can_read_character` is the single definition of "this character is visible to me": its owner (member), or any
 -- member when it is a PC. SECURITY DEFINER so it does not recurse through the policies of `characters`.
@@ -16,11 +21,14 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (
+  select public.is_active_user() and exists (
     select 1 from public.characters c
     where c.id = can_read_character.character_id
       and public.is_member(c.campaign_id)
-      and (c.character_type = 'pc' or c.owner_user_id = (select auth.uid()))
+      and (
+        (c.character_type = 'pc' and (c.is_active or c.archived_with_owner))
+        or c.owner_user_id = (select auth.uid())
+      )
   )
 $$;
 
@@ -30,7 +38,7 @@ grant execute on function public.can_read_character(uuid) to authenticated;
 -- characters: the PCs of my campaigns (the owner policy of story 3.1 still covers an owned NPC, if the DM made one).
 create policy characters_member_select_pcs on public.characters
   for select to authenticated
-  using (character_type = 'pc' and public.is_member(campaign_id));
+  using (character_type = 'pc' and (is_active or archived_with_owner) and public.is_member(campaign_id));
 
 -- Inventory and level history: readable wherever the character is (the owner-only SELECT policies are replaced).
 drop policy character_items_owner_select on public.character_items;
