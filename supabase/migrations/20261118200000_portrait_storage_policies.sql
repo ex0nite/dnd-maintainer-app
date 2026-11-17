@@ -41,13 +41,33 @@ alter table public.characters
     or portrait_url ~ ('^' || id::text || '/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)|portrait\.jpg)$')
   );
 
+-- A player cannot fill the disk: at most 5 objects per character (a replacement briefly holds two).
+create or replace function public.portrait_object_count(p_character_id uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer from storage.objects o
+   where o.bucket_id = 'character-portraits'
+     and split_part(o.name, '/', 1) = p_character_id::text
+$$;
+
+revoke execute on function public.portrait_object_count(uuid) from public, anon;
+grant execute on function public.portrait_object_count(uuid) to authenticated;
+
 create policy portraits_member_select on storage.objects
   for select to authenticated
   using (bucket_id = 'character-portraits' and public.can_read_character(public.portrait_character_id(name)));
 
 create policy portraits_owner_insert on storage.objects
   for insert to authenticated
-  with check (bucket_id = 'character-portraits' and public.owns_active_character(public.portrait_character_id(name)));
+  with check (
+    bucket_id = 'character-portraits'
+    and public.owns_active_character(public.portrait_character_id(name))
+    and public.portrait_object_count(public.portrait_character_id(name)) < 5
+  );
 
 create policy portraits_owner_update on storage.objects
   for update to authenticated

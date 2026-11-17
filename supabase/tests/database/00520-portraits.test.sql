@@ -2,7 +2,7 @@
 begin;
 
 select set_config('storage.allow_delete_query', 'true', true);
-select plan(36);
+select plan(45);
 
 insert into auth.users (id, email)
 select tests.uid(i), i || '@table.invalid'
@@ -62,6 +62,10 @@ select is(
     'c1000000-0000-4000-8000-000000000001/sub/b0000000-0000-4000-8000-0000000000b1.jpg',
     'c1000000-0000-4000-8000-000000000001/../c2000000-0000-4000-8000-000000000002/portrait.jpg',
     'c1000000-0000-4000-8000-000000000001',
+    'C1000000-0000-4000-8000-000000000001/b0000000-0000-4000-8000-0000000000b1.jpg',
+    'c1000000-0000-4000-8000-000000000001/b0000000-0000-4000-8000-0000000000b1.jpg.png',
+    'c1000000-0000-4000-8000-000000000001/b0000000-0000-4000-8000-0000000000b1.jpg' || E'\n',
+    'c1000000-0000-4000-8000-000000000001%2Fportrait.jpg',
     ''
   ]) n where public.portrait_character_id(n) is not null),
   0, 'name parser: anything else gives null'
@@ -80,6 +84,7 @@ select lives_ok($$insert into storage.objects (bucket_id, name, owner_id) values
 select lives_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c1000000-0000-4000-8000-000000000001/b0000000-0000-4000-8000-0000000000b4.webp', auth.uid()::text)$$, 'owner: a second, webp, object (replacement)');
 select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c2000000-0000-4000-8000-000000000002/b0000000-0000-4000-8000-0000000000b6.jpg', auth.uid()::text)$$, '42501', null, 'owner: cannot upload to another player''s character');
 select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c3000000-0000-4000-8000-000000000003/b0000000-0000-4000-8000-0000000000b7.jpg', auth.uid()::text)$$, '42501', null, 'owner: cannot upload to an NPC');
+select throws_ok($$update storage.objects set name = 'c3000000-0000-4000-8000-000000000003/b0000000-0000-4000-8000-0000000000be.jpg' where name like 'c1000000%b1.jpg'$$, '42501', null, 'owner: cannot rename their object into an NPC folder');
 select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'not-a-uuid/b0000000-0000-4000-8000-0000000000b8.jpg', auth.uid()::text)$$, '42501', null, 'owner: a segment that is not a UUID is refused');
 select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c1000000-0000-4000-8000-000000000001/portrait.gif', auth.uid()::text)$$, '42501', null, 'owner: a bad file name is refused');
 select throws_ok($$update storage.objects set name = 'c2000000-0000-4000-8000-000000000002/b0000000-0000-4000-8000-0000000000b9.jpg' where name like 'c1000000%b1.jpg'$$, '42501', null, 'owner: cannot rename their object into another character''s folder');
@@ -111,10 +116,29 @@ select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) value
 select tests.reset_identity();
 update public.characters set is_active = true where id = 'c1000000-0000-4000-8000-000000000001';
 
+-- the cap: at most 5 objects per character, and only the portrait bucket
+select tests.set_identity('owner');
+select lives_ok($$insert into storage.objects (bucket_id, name, owner_id) select 'character-portraits', 'c1000000-0000-4000-8000-000000000001/e000000' || n || '-0000-4000-8000-000000000000.jpg', auth.uid()::text from generate_series(1, 4) n$$, 'owner: fills the folder up to the cap (5 objects)');
+select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c1000000-0000-4000-8000-000000000001/e0000009-0000-4000-8000-000000000000.jpg', auth.uid()::text)$$, '42501', null, 'owner: the 6th object of a character is refused');
+select throws_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('some-other-bucket', 'c1000000-0000-4000-8000-000000000001/b0000000-0000-4000-8000-0000000000bd.jpg', auth.uid()::text)$$, '42501', null, 'owner: a valid name in another bucket is refused');
+select is(tests.rows_affected($$delete from storage.objects where name like 'c1000000%e000000%'$$)::int, 4, 'owner: frees the room by deleting');
+select tests.reset_identity();
+
+-- a deactivated (not archived) PC is withdrawn: its mates no longer read its portrait either
+update public.characters set is_active = false where id = 'c2000000-0000-4000-8000-000000000002';
+select tests.set_identity('owner');
+select is((select count(*)::int from storage.objects where name like 'c2000000%'), 0, 'mates no longer read the portrait of a PC the DM deactivated');
+select tests.set_identity('other_player');
+select is(tests.rows_affected($$delete from storage.objects where name like 'c2000000%'$$)::int, 0, 'its frozen owner cannot delete its portrait');
+select tests.reset_identity();
+update public.characters set is_active = true where id = 'c2000000-0000-4000-8000-000000000002';
+
 -- the DM -------------------------------------------------------------------------------------------------------------------
 select tests.set_identity('dm');
 select is((select count(*)::int from storage.objects), 4, 'dm: reads every object');
 select lives_ok($$insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'c3000000-0000-4000-8000-000000000003/b0000000-0000-4000-8000-0000000000bc.jpg', auth.uid()::text)$$, 'dm: uploads an NPC portrait');
+select is(tests.rows_affected($$update storage.objects set name = name where name like 'c3000000%bc.jpg'$$)::int, 1, 'dm: replaces an object');
+select is(tests.rows_affected($$delete from storage.objects where name like 'c3000000%bc.jpg'$$)::int, 1, 'dm: deletes an object');
 
 -- The path CHECK on characters.portrait_url ------------------------------------------------------------------------------
 select tests.set_identity('owner');

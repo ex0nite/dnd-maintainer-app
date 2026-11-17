@@ -76,15 +76,12 @@ export function usePortraitUpload(): UsePortraitUploadResult {
       // Only an object of this character, whatever the stored value says (a path of another character must never
       // make us delete someone else's portrait; the database refuses such a value as well).
       const path = ownPortraitPath(characterId, currentPortraitUrl);
+      // The sheet stops pointing to the object FIRST: if this fails, nothing was deleted and the sheet stays valid.
+      await update.mutateAsync({ id: characterId, portrait_url: null });
       if (path) {
         const { error: storageError } = await supabase.storage.from(BUCKET).remove([path]);
-        if (storageError) {
-          // Log but don't throw — the DB update (portrait_url → null) should still proceed
-          logger.warn('Failed to remove portrait from storage:', storageError);
-        }
+        if (storageError) logger.warn('Failed to remove portrait from storage:', storageError);
       }
-
-      await update.mutateAsync({ id: characterId, portrait_url: null });
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;

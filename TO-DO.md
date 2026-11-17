@@ -65,6 +65,8 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [ ] Story 3.3 : les rollbacks du front (`useCharacters`, `useBuilderAutosave`) font un DELETE : un joueur n'a pas le droit de supprimer, ils laissent un personnage orphelin ; à remplacer (nettoyage côté MJ ou statut brouillon)
 
+- [ ] Portraits : avant l'ouverture, vérifier sur la version de storage-api installée sur le QNAP que le listing (`storage.search`, `prefixes`) respecte la RLS (un joueur ne doit lister que les dossiers de personnages lisibles)
+
 ### Epics 2 à 6
 
 - [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
