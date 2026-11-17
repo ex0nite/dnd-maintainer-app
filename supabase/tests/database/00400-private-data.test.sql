@@ -132,11 +132,11 @@ select is((select count(*)::int from public.character_private), 6, 'dm reads eve
 
 -- character_private: writes (owner writes arrive with epic 3: today the DM only)
 select tests.set_identity('owner');
-select is(tests.rows_affected($$update public.character_private set backstory = 'pwn'$$)::int, 0, 'owner: private part not writable yet');
+select is(tests.rows_affected($$update public.character_private set backstory = 'pwn'$$)::int, 1, 'owner: writes their own private part (story 3.6)');
 select is(tests.rows_affected($$delete from public.character_private$$)::int, 0, 'owner: private part not deletable');
 select throws_ok($$insert into public.character_private (character_id) values ('c5000000-0000-4000-8000-000000000005')$$, '42501', null, 'owner: cannot insert');
 select tests.set_identity('other_player');
-select is(tests.rows_affected($$update public.character_private set backstory = 'pwn'$$)::int, 0, 'other_player: not writable');
+select is(tests.rows_affected($$update public.character_private set backstory = 'pwn'$$)::int, 1, 'other_player: writes their own private part, and only that row (story 3.6)');
 select tests.set_identity('archived');
 select is(tests.rows_affected($$update public.character_private set backstory = 'pwn'$$)::int, 0, 'archived: not writable');
 select tests.set_identity('temp_password');

@@ -78,7 +78,7 @@ select is(
   (select array_agg(p.proname::text order by p.proname)
      from pg_proc p
     where p.pronamespace = 'public'::regnamespace and p.prosecdef
-      and p.proname not in ('is_dm', 'is_active_user', 'is_member', 'owns_character', 'owns_active_character')
+      and p.proname not in ('is_dm', 'is_active_user', 'is_member', 'owns_character', 'owns_active_character', 'can_read_character')
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   null,
   'no unreviewed SECURITY DEFINER function is executable by authenticated'
