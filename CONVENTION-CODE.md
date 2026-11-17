@@ -105,6 +105,12 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   `security_invoker`, ou un bucket public. Une nouvelle table se crée donc fermée, avec ses policies et sa matrice.
 - Les portraits sont dans un bucket privé : la base garde le chemin (`<id>/portrait.jpg`), le navigateur demande une URL
   signée (`usePortraitSrc`, `PortraitImage`), jamais d'URL publique.
+- Personnages (story 3.1, AD-6) : le propriétaire (`owner_user_id = auth.uid()` et membre de la campagne) lit, crée et
+  modifie ses `characters`, et écrit son inventaire et ses niveaux (`owns_character`) ; jamais de DELETE pour un joueur.
+  Les colonnes qu'un joueur ne doit pas fixer (propriétaire, campagne, type, activation, `archived_with_owner`, slug,
+  `previous_slugs`, id) sont gardées par le trigger `characters_guard_ownership` (INSERT et UPDATE), pas par des policies :
+  il échoue fermé : seuls le MJ, `service_role`, `postgres`/`supabase_admin` (migrations, fonctions `SECURITY DEFINER` comme `archive_player`) et le serveur d'authentification passent. Un joueur ne choisit pas l'`id` d'un nouveau personnage (le serveur le remplace : le slug en dépend). Un personnage désactivé par le MJ est gelé pour son propriétaire (lecture seule, `owns_active_character` pour les écritures sur inventaire et niveaux). L'ordre alphabétique
+  des triggers compte (`guard` avant `manage_slug` avant `zz_clear_archive_mark`) et il est testé.
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
