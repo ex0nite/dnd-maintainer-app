@@ -7,10 +7,22 @@ const API = process.env.SPIKE_API_URL;
 const ANON = process.env.SPIKE_ANON_KEY;
 const SERVICE = process.env.SPIKE_SERVICE_KEY;
 const DB = process.env.SPIKE_DB_CONTAINER;
-if (!API || !ANON || !SERVICE || !DB || !/^supabase_db_/.test(DB) || !/^http:\/\/127\.0\.0\.1:/.test(API)) {
-  console.error('Set SPIKE_API_URL (127.0.0.1), SPIKE_ANON_KEY, SPIKE_SERVICE_KEY, SPIKE_DB_CONTAINER (supabase_db_*)');
+let apiHost = '';
+try { apiHost = new URL(API ?? '').hostname; } catch { /* checked below */ }
+if (!API || !ANON || !SERVICE || !DB || !/^supabase_db_[a-z0-9_-]+$/.test(DB) || apiHost !== '127.0.0.1') {
+  console.error('Set SPIKE_API_URL (host 127.0.0.1), SPIKE_ANON_KEY, SPIKE_SERVICE_KEY, SPIKE_DB_CONTAINER (supabase_db_*)');
   process.exit(1);
 }
+// `docker exec` follows DOCKER_HOST / the docker context: refuse anything but the local engine.
+if (process.env.DOCKER_HOST) {
+  console.error('DOCKER_HOST is set: refusing to run against a possibly remote docker engine');
+  process.exit(1);
+}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const uuid = (v) => {
+  if (!UUID.test(String(v))) throw new Error(`not a uuid: ${v}`);
+  return v;
+};
 
 const sql = (q) => execFileSync('docker', ['exec', '-i', DB, 'psql', '-U', 'postgres', '-At', '-c', q]).toString().trim();
 const call = async (method, path, { key = ANON, token, body } = {}) => {
@@ -40,6 +52,8 @@ begin
   return jsonb_build_object('decision', 'continue');
 end $f$`);
 sql(`grant execute on function public.spike_pw_hook to supabase_auth_admin; grant all on table public.spike_attempts to supabase_auth_admin; revoke execute on function public.spike_pw_hook from authenticated, anon, public`);
+const created_ids = [];
+try {
 const stamp = Date.now().toString(36);
 const email = `spike-${stamp}@table.invalid`;
 const pw1 = 'Temporary-pass-1';
@@ -48,7 +62,8 @@ const pw2 = 'Another-pass-22';
 // (1)+(2) .invalid address, created confirmed through the admin API
 const created = await call('POST', '/auth/v1/admin/users', { key: SERVICE, body: { email, password: pw1, email_confirm: true } });
 out(1, 'admin createUser with .invalid address', `${created.status} ${created.status === 200 ? 'ACCEPTED' : JSON.stringify(created.json)}`);
-const uid = created.json?.id;
+const uid = uuid(created.json?.id);
+created_ids.push(uid);
 out(2, 'user is confirmed without any mail', `email_confirmed_at=${created.json?.email_confirmed_at ? 'set' : 'MISSING'}`);
 const first = await login(email, pw1);
 out(1, 'password login with .invalid address', `${first.status} ${first.json?.access_token ? 'OK' : JSON.stringify(first.json)}`);
@@ -59,16 +74,21 @@ out(3, 'auth.sessions table', `${sql("select to_regclass('auth.sessions')")} ; r
 
 // (4) admin password change, old password dies
 const changed = await call('PUT', `/auth/v1/admin/users/${uid}`, { key: SERVICE, body: { password: pw2 } });
+// Measured BEFORE any new login: does the pre-existing session survive the password change?
+const survivingToken = await call('GET', '/auth/v1/user', { token });
+const survivingRefresh = await call('POST', '/auth/v1/token?grant_type=refresh_token', { body: { refresh_token: first.json?.refresh_token } });
+out(4, 'session opened before the admin password change: access token / refresh token', `${survivingToken.status} / ${survivingRefresh.status}`);
 const oldPw = await login(email, pw1);
 const newPw = await login(email, pw2);
 out(4, 'admin password change', `${changed.status}; old password -> ${oldPw.status}; new password -> ${newPw.status}`);
-const sessionsAfter = sql(`select count(*) from auth.sessions where user_id='${uid}'`);
-out(4, 'sessions kept after admin password change (revocation must be explicit)', sessionsAfter);
 // explicit revocation: delete from auth.sessions, then the old refresh token / access token behaviour
 sql(`delete from auth.sessions where user_id='${uid}'`);
-const stillValid = await call('GET', '/auth/v1/user', { token });
-out(3, 'access token after auth.sessions row deleted (immediate revocation?)', `${stillValid.status}`);
-const refresh = await call('POST', '/auth/v1/token?grant_type=refresh_token', { body: { refresh_token: first.json?.refresh_token } });
+const latestToken = newPw.json?.access_token;
+const stillValid = await call('GET', '/auth/v1/user', { token: latestToken });
+out(3, 'GoTrue /user with an access token after its auth.sessions row was deleted', `${stillValid.status}`);
+const viaRest = await call('GET', '/rest/v1/profiles?select=user_id&limit=1', { token: latestToken });
+out(3, 'PostgREST with that same access token (is data cut off at once?)', `${viaRest.status}`);
+const refresh = await call('POST', '/auth/v1/token?grant_type=refresh_token', { body: { refresh_token: newPw.json?.refresh_token } });
 out(3, 'refresh token after session deleted', `${refresh.status}`);
 
 // (5) user-initiated email change
@@ -89,7 +109,10 @@ sql(`create trigger spike_refuse_email_change before update on auth.users for ea
 const blocked = await call('PUT', '/auth/v1/user', { token: second.json?.access_token, body: { email: `evil2-${stamp}@table.invalid` } });
 out('5b', 'user PUT /user {email} with the refusing trigger', `${blocked.status} ${JSON.stringify(blocked.json)?.slice(0, 140)}`);
 out('5b', 'DB state after the refused attempt', sql(`select 'email=' || email || ' ; email_change=' || coalesce(nullif(email_change,''),'<none>') from auth.users where id='${uid}'`));
-const stillWorks = await call('PUT', `/auth/v1/admin/users/${uid}`, { key: SERVICE, body: { password: pw1 } });
+const loginUnderTrigger = await login(email, 'Own-chosen-pass-9'); // the password the user chose in the step above
+const passUnderTrigger = await call('PUT', '/auth/v1/user', { token: loginUnderTrigger.json?.access_token, body: { password: 'Own-chosen-pass-8' } });
+out('5b', 'login (updates last_sign_in_at) / user own password change with the trigger present', `${loginUnderTrigger.status} / ${passUnderTrigger.status}`);
+const stillWorks = await call('PUT', `/auth/v1/admin/users/${uid}`, { key: SERVICE, body: { password: pw2 } });
 out('5b', 'admin password change with the trigger present', `${stillWorks.status}`);
 sql('drop trigger spike_refuse_email_change on auth.users; drop function public.spike_refuse_email_change()');
 
@@ -102,8 +125,11 @@ out(7, 'user rows created by those attempts', sql(`select count(*) from auth.use
 
 // (6) password verification attempt hook: install a throw-away lockout, check it is called and can reject
 const hookUser = await call('POST', '/auth/v1/admin/users', { key: SERVICE, body: { email: `hook-${stamp}@table.invalid`, password: pw1, email_confirm: true } });
-const hid = hookUser.json?.id;
+const hid = uuid(hookUser.json?.id);
+created_ids.push(hid);
 const other = await call('POST', '/auth/v1/admin/users', { key: SERVICE, body: { email: `other-${stamp}@table.invalid`, password: pw1, email_confirm: true } });
+const oid = uuid(other.json?.id);
+created_ids.push(oid);
 const statuses = [];
 for (let i = 0; i < 7; i++) statuses.push((await login(`hook-${stamp}@table.invalid`, 'wrong-password-xx')).status);
 out(6, '7 wrong passwords on one pseudo (statuses)', statuses.join(','));
@@ -111,12 +137,20 @@ const locked = await login(`hook-${stamp}@table.invalid`, pw1);
 out(6, 'correct password while locked', `${locked.status} ${JSON.stringify(locked.json)?.slice(0, 140)}`);
 const unaffected = await login(`other-${stamp}@table.invalid`, pw1);
 out(6, 'another pseudo during the lock', `${unaffected.status}`);
+const rowsBefore = Number(sql('select count(*) from public.spike_attempts'));
 const ghost = await login(`nobody-${stamp}@table.invalid`, 'wrong-password-xx');
-out(6, 'unknown pseudo (hook called?)', `${ghost.status} ${JSON.stringify(ghost.json)?.slice(0, 100)}; attempts rows=${sql('select count(*) from public.spike_attempts')}`);
+const rowsAfter = Number(sql('select count(*) from public.spike_attempts'));
+out(6, 'unknown pseudo: status, hook rows written by that attempt', `${ghost.status} ${JSON.stringify(ghost.json)?.slice(0, 100)}; delta=${rowsAfter - rowsBefore}`);
 out(6, 'attempt rows recorded for the locked user', sql(`select count(*) from public.spike_attempts where user_id='${hid}'`));
-await call('DELETE', `/auth/v1/admin/users/${hid}`, { key: SERVICE });
-await call('DELETE', `/auth/v1/admin/users/${other.json?.id}`, { key: SERVICE });
-sql('drop table public.spike_attempts cascade; drop function public.spike_pw_hook(jsonb)');
-
-// cleanup
-await call('DELETE', `/auth/v1/admin/users/${uid}`, { key: SERVICE });
+// The hook is still configured, but its function disappears: what happens to a perfectly valid login?
+sql('drop function public.spike_pw_hook(jsonb)');
+const noFunction = await login(`other-${stamp}@table.invalid`, pw1);
+out(6, 'valid login while the configured hook function does not exist', `${noFunction.status} ${JSON.stringify(noFunction.json)?.slice(0, 120)}`);
+} finally {
+  // Always leave the throw-away stack as found, even when a step above threw.
+  for (const id of created_ids) await call('DELETE', `/auth/v1/admin/users/${id}`, { key: SERVICE }).catch(() => {});
+  sql('drop trigger if exists spike_refuse_email_change on auth.users');
+  sql('drop function if exists public.spike_refuse_email_change()');
+  sql('drop table if exists public.spike_attempts cascade');
+  sql('drop function if exists public.spike_pw_hook(jsonb)');
+}
