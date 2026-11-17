@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, Plus, ScrollText } from 'lucide-react';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useMyCharacters } from '@/hooks/useCharacters';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePersonalNotes, useSharedNotes } from '@/hooks/useCampaignNotes';
+import { usePublishedRecaps } from '@/hooks/useRecaps';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { PortraitImage } from '@/components/PortraitImage';
@@ -16,6 +19,7 @@ export default function PlayerHome() {
   const { t } = useTranslation('common');
   usePageTitle(t('playerHome.title'));
   const { data: campaigns = [], isLoading: campaignsLoading, isError: campaignsError } = useCampaigns();
+  const [selectedId, setSelectedId] = useState<string | undefined>();
   const { data: characters = [], isLoading: charactersLoading, isError } = useMyCharacters();
 
   if (campaignsLoading || charactersLoading) {
@@ -47,9 +51,31 @@ export default function PlayerHome() {
     );
   }
 
+  // The campaign shown: the chosen one, or the first (the chosen one may disappear, e.g. the player was removed).
+  const campaign = campaigns.find((c) => c.id === selectedId) ?? campaigns[0];
+
   return (
     <div className="page-container max-w-3xl space-y-8">
       <h1 className="page-title">{t('playerHome.title')}</h1>
+      {campaigns.length > 1 && (
+        <div className="space-y-1">
+          <label htmlFor="home-campaign" className="text-sm font-medium">
+            {t('playerHome.campaign')}
+          </label>
+          <select
+            id="home-campaign"
+            value={campaign.id}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="block h-11 w-full rounded-md border border-input bg-background px-2 text-sm sm:w-auto"
+          >
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {isError && (
         <p role="alert" className="text-sm text-destructive">
           {t('playerHome.loadError')}
@@ -60,7 +86,7 @@ export default function PlayerHome() {
         <h2 id="my-characters" className="text-xl font-semibold">
           {t('playerHome.myCharacters')}
         </h2>
-        {campaigns.map((campaign) => {
+        {[campaign].map((campaign) => {
           const mine = characters.filter((c) => c.campaign_id === campaign.id);
           return (
             <div key={campaign.id} className="space-y-3 rounded-lg border bg-card p-4">
@@ -68,7 +94,7 @@ export default function PlayerHome() {
                 <h3 className="text-lg font-semibold">{campaign.name}</h3>
                 <Link
                   to={`/campaign/${campaign.slug}/character/new`}
-                  className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
                 >
                   <Plus className="size-4" aria-hidden="true" />
                   {t('playerHome.createCharacter')}
@@ -119,7 +145,7 @@ export default function PlayerHome() {
               )}
               <Link
                 to={`/campaign/${campaign.slug}/characters`}
-                className="inline-block text-sm text-primary underline-offset-2 hover:underline"
+                className="inline-flex min-h-11 items-center text-sm text-primary underline-offset-2 hover:underline"
               >
                 {t('playerHome.tableCharacters')}
               </Link>
@@ -128,21 +154,85 @@ export default function PlayerHome() {
         })}
       </section>
 
-      <section aria-labelledby="my-notes" className="space-y-2 rounded-lg border border-dashed p-4">
-        <h2 id="my-notes" className="flex items-center gap-2 text-lg font-semibold">
-          <ScrollText className="size-5" aria-hidden="true" />
-          {t('playerHome.notes')}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t('playerHome.comingSoon')}</p>
-      </section>
-
-      <section aria-labelledby="my-sessions" className="space-y-2 rounded-lg border border-dashed p-4">
-        <h2 id="my-sessions" className="flex items-center gap-2 text-lg font-semibold">
-          <BookOpen className="size-5" aria-hidden="true" />
-          {t('playerHome.sessions')}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t('playerHome.comingSoon')}</p>
-      </section>
+      <PlayerHomeNotes campaignId={campaign.id} campaignSlug={campaign.slug} />
+      <PlayerHomeRecaps campaignId={campaign.id} campaignSlug={campaign.slug} />
     </div>
+  );
+}
+
+/** My notes and the table's shared notes of the campaign: counts and the way in (story 6.1). */
+function PlayerHomeNotes({ campaignId, campaignSlug }: { campaignId: string; campaignSlug: string }) {
+  const { t } = useTranslation('common');
+  const personal = usePersonalNotes(campaignId);
+  const shared = useSharedNotes(campaignId);
+  const loading = personal.isLoading || shared.isLoading;
+  return (
+    <section aria-labelledby="my-notes" className="space-y-2 rounded-lg border p-4">
+      <h2 id="my-notes" className="flex items-center gap-2 text-lg font-semibold">
+        <ScrollText className="size-5" aria-hidden="true" />
+        {t('playerHome.notes')}
+      </h2>
+      {loading ? (
+        <Skeleton className="h-5 w-48" />
+      ) : personal.isError || shared.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {t('playerHome.notesError')}
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {t('playerHome.notesSummary', { personal: personal.data?.length ?? 0, shared: shared.data?.length ?? 0 })}
+        </p>
+      )}
+      <Link
+        to={`/campaign/${campaignSlug}/table-notes`}
+        className="inline-flex min-h-11 items-center text-sm text-primary underline-offset-2 hover:underline"
+      >
+        {t('playerHome.openNotes')}
+      </Link>
+    </section>
+  );
+}
+
+/** The latest published recaps of the campaign (story 6.1). */
+function PlayerHomeRecaps({ campaignId, campaignSlug }: { campaignId: string; campaignSlug: string }) {
+  const { t } = useTranslation('common');
+  const { data: recaps = [], isError, isLoading } = usePublishedRecaps(campaignId);
+  return (
+    <section aria-labelledby="my-sessions" className="space-y-2 rounded-lg border p-4">
+      <h2 id="my-sessions" className="flex items-center gap-2 text-lg font-semibold">
+        <BookOpen className="size-5" aria-hidden="true" />
+        {t('playerHome.sessions')}
+      </h2>
+      {isLoading ? (
+        <Skeleton className="h-5 w-48" />
+      ) : isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {t('playerHome.recapsError')}
+        </p>
+      ) : recaps.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('playerHome.noRecap')}</p>
+      ) : (
+        <ul className="divide-y">
+          {recaps.slice(0, 3).map((r) => (
+            <li key={r.id}>
+              <Link
+                to={`/campaign/${campaignSlug}/recaps/${r.slug}`}
+                className="flex min-h-11 items-center py-2 text-sm hover:underline [overflow-wrap:anywhere]"
+              >
+                {r.name
+                  ? t('recaps.sessionHeading', { number: r.session_number, title: r.name })
+                  : t('recaps.sessionHeadingNoTitle', { number: r.session_number })}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link
+        to={`/campaign/${campaignSlug}/recaps`}
+        className="inline-flex min-h-11 items-center text-sm text-primary underline-offset-2 hover:underline"
+      >
+        {t('playerHome.allRecaps')}
+      </Link>
+    </section>
   );
 }

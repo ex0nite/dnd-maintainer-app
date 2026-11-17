@@ -139,6 +139,19 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
 
+## Langues (story 6.2)
+
+- Deux langues d'interface : français (défaut sur un appareil neuf) et anglais, choix mémorisé dans `localStorage`
+  (`dnd-language`) par `LanguageSwitcher` (page de connexion et menu). `src/lib/language.ts` décide de la langue de
+  départ ; les tests unitaires et le BDD (pas de navigateur, `MODE === 'test'`) restent en anglais, de même que les e2e
+  (qui posent `dnd-language` à `en`, sauf le contrôle de mise en page en français).
+- `src/locales/fr/common.json` suit EXACTEMENT les clés de `en/common.json` (le type `satisfies typeof commonEn` et
+  `src/locales/locales.test.ts` font échouer la CI sur une clé manquante ou en trop, ou des `{{placeholders}}` différents).
+  Toute nouvelle chaîne s'ajoute donc dans les DEUX fichiers.
+- Les données de règles (`gamedata`) restent en anglais dans les deux langues.
+- Les dates des pages joueur s'affichent avec `i18n.language` (`toLocaleDateString(i18n.language)`) ; les pages du MJ
+  (séances, notes du MJ, tableau de bord) suivent encore la langue du navigateur (voir TO-DO).
+
 ## Interface selon le rôle (epic 3)
 
 - L'interface cache ce que la base refuserait de toute façon (`useRole`, `useCharacterPermissions` dans
@@ -149,6 +162,13 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   d'un personnage désactivé est en lecture seule (`<fieldset disabled>`, pas d'autosave, pas de dialogues d'édition).
 - Un joueur crée un PJ à lui (`ownerFieldsForNewCharacter` ajoute `owner_user_id` et le type à l'INSERT) ; les brouillons
   des autres joueurs ne sont ni listés ni reprenables.
+
+- Un joueur qui ouvre à la main une page réservée au MJ voit un refus clair (`RequireDm`, `access.*`) ; la vraie
+  protection reste celle de la base. Les menus du joueur (`Sidebar`) ne contiennent que ses personnages, les notes de
+  campagne et les récapitulatifs (story 6.4). La page d'accueil du joueur (`PlayerHome`) montre, pour la campagne choisie,
+  ses personnages, ses notes (comptes) et les derniers récapitulatifs publiés (story 6.1).
+- Les parcours du joueur à 360 px (connexion, mot de passe, début de fiche, notes, récapitulatif et commentaire) sont
+  parcourus de bout en bout par `e2e/player-journeys.e2e.ts` (backend simulé, `rest` peut être une fonction à état).
 
 ## Reconstruire une fiche (story 3.5, constaté dans le constructeur)
 

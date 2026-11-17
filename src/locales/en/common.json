@@ -255,10 +255,10 @@
       "even": "Even",
       "rollFirst": "Roll first",
       "decreaseScore": "Decrease score, return {{count}} point",
-      "decreaseScore_plural": "Decrease score, return {{count}} points",
+      "decreaseScore_other": "Decrease score, return {{count}} points",
       "minimumScore": "Minimum score",
       "increaseScore": "Increase score, spend {{count}} point",
-      "increaseScore_plural": "Increase score, spend {{count}} points",
+      "increaseScore_other": "Increase score, spend {{count}} points",
       "maximumScore": "Maximum score",
       "notEnoughPoints": "Not enough points",
       "speciesBonus": "{{species}} Species Bonus: {{bonuses}}",
@@ -268,7 +268,7 @@
       "anyAbility": "any ability",
       "backgroundAsiHint": "{{background}} provides {{points}} points to distribute across {{abilities}}.",
       "backgroundAsiRemaining": "({{count}} point remaining)",
-      "backgroundAsiRemaining_plural": "({{count}} points remaining)",
+      "backgroundAsiRemaining_other": "({{count}} points remaining)",
       "backgroundAsiLabel": "Background ASI",
       "backgroundAsiHelp": "Distribute 3 points across your eligible abilities (maximum +2 per ability).",
       "totalLabel": "Total",
@@ -277,7 +277,7 @@
     "skills": {
       "selectClassFirst": "Please select a class in the Basics step before choosing skills.",
       "chooseSkills": "Choose {{count}} skill from your class list.",
-      "chooseSkills_plural": "Choose {{count}} skills from your class list.",
+      "chooseSkills_other": "Choose {{count}} skills from your class list.",
       "selected": "{{count}} / {{max}} selected",
       "expertiseEmptyPool": "Pick your skill proficiencies first — expertise requires an already-proficient skill.",
       "expertiseAlreadyChosen": "already has expertise",
@@ -297,10 +297,10 @@
       "script": "Script",
       "grantedBySpecies": "Granted",
       "chooseTools": "Choose {{count}} tool proficiency from the list below.",
-      "chooseTools_plural": "Choose {{count}} tool proficiencies from the list below.",
+      "chooseTools_other": "Choose {{count}} tool proficiencies from the list below.",
       "randomizeLanguage": "Roll random language (d12)",
       "chooseLanguages": "Choose {{count}} additional language.",
-      "chooseLanguages_plural": "Choose {{count}} additional languages.",
+      "chooseLanguages_other": "Choose {{count}} additional languages.",
       "selected": "{{count}} / {{max}} selected",
       "noProficiencies": "None",
       "fromClass": "From class",
@@ -688,7 +688,7 @@
   "sessions": {
     "title": "Sessions",
     "subtitle": "{{count}} session • {{xp}} XP awarded",
-    "subtitle_plural": "{{count}} sessions • {{xp}} XP awarded",
+    "subtitle_other": "{{count}} sessions • {{xp}} XP awarded",
     "xpAmount": "{{amount}} XP",
     "searchPlaceholder": "Search sessions by title...",
     "logNewSession": "Log New Session",
@@ -747,7 +747,7 @@
     "backToCampaigns": "Back to Campaigns",
     "searchPlaceholder": "Search campaigns by name or setting...",
     "campaignCount": "{{count}} campaign total",
-    "campaignCount_plural": "{{count}} campaigns total",
+    "campaignCount_other": "{{count}} campaigns total",
     "createNew": "Create New Campaign",
     "createNewDescription": "Set up a new campaign to begin your adventure.",
     "campaignName": "Campaign Name",
@@ -855,7 +855,7 @@
   "notes": {
     "title": "DM Notes",
     "noteCount": "{{count}} note total",
-    "noteCount_plural": "{{count}} notes total",
+    "noteCount_other": "{{count}} notes total",
     "searchPlaceholder": "Search notes...",
     "all": "All",
     "categories": {
@@ -898,6 +898,14 @@
       "loading": "Error loading notes"
     }
   },
+  "language": {
+    "label": "Language"
+  },
+  "access": {
+    "deniedTitle": "This page is reserved for the DM",
+    "deniedText": "You cannot open this page with your account. Everything you can do is in the menu.",
+    "backHome": "Back to my table"
+  },
   "playerHome": {
     "title": "My table",
     "noCampaign": "You are not part of any campaign yet. Your DM will add you to one.",
@@ -910,7 +918,13 @@
     "tableCharacters": "See the characters of the table",
     "notes": "Notes",
     "sessions": "Sessions",
-    "comingSoon": "Coming soon."
+    "campaign": "Campaign",
+    "notesSummary": "{{personal}} personal note(s), {{shared}} shared note(s) in this campaign.",
+    "openNotes": "Open the notes",
+    "notesError": "Your notes could not be loaded.",
+    "noRecap": "No session recap has been published yet.",
+    "allRecaps": "All session recaps",
+    "recapsError": "The session recaps could not be loaded."
   },
   "password": {
     "title": "Choose your password",

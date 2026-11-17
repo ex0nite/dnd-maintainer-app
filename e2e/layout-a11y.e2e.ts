@@ -143,6 +143,7 @@ export const PAGES: PageUnderTest[] = [
     name: 'players',
     path: '/players',
     signedIn: true,
+    role: 'dm',
     ready: async (page) => {
       await expect(page.getByLabel('Pseudo')).toBeVisible();
     },
@@ -178,6 +179,29 @@ for (const pageUnderTest of PAGES) {
 
 // Story 1.3, criterion 1: a visitor without a session is sent to the sign-in page and no
 // campaign data is requested.
+// French is longer than English: every page must still fit 360 px (story 6.2). The page is not read by its English
+// texts here, only given time to render.
+for (const pageUnderTest of PAGES) {
+  test(`${pageUnderTest.name} · French · no horizontal scroll`, async ({ page }) => {
+    await stubBackend(page, {
+      signedIn: pageUnderTest.signedIn,
+      role: pageUnderTest.role,
+      rest: pageUnderTest.rest,
+      language: 'fr',
+    });
+    await page.goto(pageUnderTest.path);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('body')).not.toContainText('Missing translation');
+    await expect(page.locator('main, [role="main"], form').first()).toBeVisible();
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  });
+}
+
 test('a visitor is redirected to sign-in and nothing is fetched', async ({ page }) => {
   await stubBackend(page, { signedIn: false });
   const dataRequests: string[] = [];
