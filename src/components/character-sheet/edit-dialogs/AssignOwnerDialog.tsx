@@ -31,8 +31,11 @@ export function AssignOwnerDialog({
 }) {
   const { t } = useTranslation('common');
   const { data: players = [], isError } = usePlayers();
-  const [value, setValue] = useState(currentOwnerId ?? '');
   const candidates = players.filter((p) => p.status !== 'archived' && p.campaignIds.includes(campaignId));
+  // The current owner may be archived or no longer in the campaign: keep them as a (disabled) choice so "nobody" can
+  // still be picked and saved.
+  const currentIsListed = !currentOwnerId || candidates.some((p) => p.userId === currentOwnerId);
+  const [value, setValue] = useState(currentOwnerId ?? '');
 
   return (
     <Dialog
@@ -55,6 +58,11 @@ export function AssignOwnerDialog({
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">{t('characterSheet.assign.nobody')}</option>
+            {!currentIsListed && (
+              <option value={currentOwnerId ?? ''} disabled>
+                {t('characterSheet.assign.currentOwner')}
+              </option>
+            )}
             {candidates.map((p) => (
               <option key={p.userId} value={p.userId}>
                 {p.pseudo}

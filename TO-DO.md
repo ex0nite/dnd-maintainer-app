@@ -70,6 +70,9 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [ ] Reconstruction d'une fiche : l'équipement de départ n'est pas recalculé si la classe ou l'historique change (la finalisation n'écrit des objets que s'il n'y en a aucun)
 - [ ] Un joueur ne peut pas supprimer : « abandonner » un brouillon dans le constructeur le laisse en place (visible et reprenable dans « Mes personnages »)
 
+- [ ] Reconstruction : l'étape Équipement du constructeur n'enregistre ni les objets équipés ni les achats d'une fiche déjà finalisée (et `armor_class` est calculée depuis l'équipement de départ tant que la fiche est en brouillon) ; à masquer ou à corriger
+- [ ] Un joueur dont la fiche vient d'être réassignée voit la sienne éditable jusqu'à 5 minutes (pas de temps réel) : message dédié si une mise à jour touche 0 ligne
+
 ### Epics 2 à 6
 
 - [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,

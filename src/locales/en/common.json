@@ -17,6 +17,8 @@
     "finalizeCharacter": "Finalize Character",
     "finalizing": "Finalizing...",
     "abandonCharacter": "Abandon Character",
+    "cancelRebuild": "Cancel the rebuild",
+    "leaveBuilder": "Leave (the draft is kept)",
     "generateName": "Generate Name",
     "logNewSession": "Log New Session",
     "logFirstSession": "Log Your First Session",
@@ -383,6 +385,7 @@
     },
     "errors": {
       "noCampaignId": "Campaign ID is required to create a character.",
+      "cancelRebuildFailed": "The rebuild could not be cancelled. Please try again.",
       "failedToFinalize": "Failed to finalize character: {{message}}",
       "failedToSaveDraft": "Failed to save draft. Your recent changes may not have been saved.",
       "unknownStep": "Unknown step: {{step}}"
@@ -612,6 +615,7 @@
       "description": "The player gets the sheet at once, the previous owner loses the right to edit it. Its private notes go with the sheet.",
       "label": "Player",
       "nobody": "Nobody (the DM's)",
+      "currentOwner": "Current owner (not available)",
       "noPlayer": "No active player in this campaign.",
       "loadError": "The players could not be loaded.",
       "save": "Assign",

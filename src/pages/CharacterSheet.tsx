@@ -163,7 +163,9 @@ function CharacterSheetInner({
   // Rebuild (story 3.5): the sheet goes back to draft and the builder reopens on it. Nothing is erased: the level
   // history and the inventory stay (finalizing again only materializes items when there are none), the choices come
   // back pre-filled from the level history.
-  const handleRebuild = () => {
+  const handleRebuild = async () => {
+    // A pending autosave must land first: the builder reads the level history from the cache.
+    if (isDirtyRef.current) await doSaveRef.current();
     updateMutation.mutate(
       { id: characterId, status: 'draft' },
       {

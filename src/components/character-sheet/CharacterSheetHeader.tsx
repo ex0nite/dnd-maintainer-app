@@ -103,6 +103,7 @@ export function CharacterSheetHeader({
               size="icon-sm"
               onClick={onEdit}
               title={tc('characterSheet.dialogs.editCharacterInfo')}
+              aria-label={tc('characterSheet.dialogs.editCharacterInfo')}
             >
               <Edit2 size={16} />
             </Button>
@@ -114,6 +115,7 @@ export function CharacterSheetHeader({
               onClick={onExportPdf}
               pending={exportingPdf}
               title={tc('characterSheet.export.button')}
+              aria-label={tc('characterSheet.export.button')}
             >
               <FileDown size={16} />
             </Button>
@@ -124,21 +126,40 @@ export function CharacterSheetHeader({
               size="icon-sm"
               onClick={onRebuild}
               title={tc('characterSheet.actions.rebuildButton')}
+              aria-label={tc('characterSheet.actions.rebuildButton')}
             >
               <Hammer size={16} />
             </Button>
           )}
           {canManage && onAssign && (
-            <Button variant="ghost" size="icon-sm" onClick={onAssign} title={tc('characterSheet.assign.title')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onAssign}
+              title={tc('characterSheet.assign.title')}
+              aria-label={tc('characterSheet.assign.title')}
+            >
               <UserCog size={16} />
             </Button>
           )}
           {canManage && (
             <>
-              <Button variant="ghost" size="icon-sm" onClick={onClone} title={tc('buttons.clone')}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onClone}
+                title={tc('buttons.clone')}
+                aria-label={tc('buttons.clone')}
+              >
                 <Copy size={16} />
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={onArchive} title={tc('buttons.archive')}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onArchive}
+                title={tc('buttons.archive')}
+                aria-label={tc('buttons.archive')}
+              >
                 <Archive size={16} />
               </Button>
               <Button
@@ -146,6 +167,7 @@ export function CharacterSheetHeader({
                 size="icon-sm"
                 onClick={onDelete}
                 title={tc('buttons.delete')}
+                aria-label={tc('buttons.delete')}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 size={16} />
