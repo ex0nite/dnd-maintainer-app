@@ -1,4 +1,5 @@
 import { CampaignSummary } from '@/types/database';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   BookOpen,
   ChevronDown,
@@ -245,6 +246,7 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="px-2 py-4 border-t border-sidebar-border">
+          {!isCollapsed && <LanguageSwitcher className="px-3 pb-3" />}
           <NavLink
             to="/settings/theme"
             onClick={() => {

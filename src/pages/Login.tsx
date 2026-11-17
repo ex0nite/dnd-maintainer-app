@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Login() {
   const { t } = useTranslation('common');
@@ -86,6 +87,8 @@ export default function Login() {
         <Button type="submit" className="w-full" disabled={submitting || !pseudo || !password}>
           {submitting ? t('auth.signingIn') : t('auth.signInButton')}
         </Button>
+
+        <LanguageSwitcher />
       </form>
     </main>
   );
