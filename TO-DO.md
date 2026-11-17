@@ -63,6 +63,8 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [ ] Story 7.2 : activer le hook `password_verification_attempt` côté QNAP APRÈS la migration (voir SETUP)
 - [ ] Copier le mot de passe temporaire : effacer le presse-papiers après un délai (confort)
 
+- [ ] Story 3.3 : les rollbacks du front (`useCharacters`, `useBuilderAutosave`) font un DELETE : un joueur n'a pas le droit de supprimer, ils laissent un personnage orphelin ; à remplacer (nettoyage côté MJ ou statut brouillon)
+
 ### Epics 2 à 6
 
 - [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
