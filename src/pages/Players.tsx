@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Check, Copy } from 'lucide-react';
 import { useCampaigns } from '@/hooks/useCampaigns';
@@ -24,12 +24,18 @@ export default function Players() {
   const [pseudo, setPseudo] = useState('');
   const [campaignId, setCampaignId] = useState('');
   const [copied, setCopied] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const effectiveCampaignId = campaignId || campaigns[0]?.id || '';
   const pseudoValid = PSEUDO_PATTERN.test(pseudo);
   const created = createPlayer.data;
   const errorCode = createPlayer.error?.code;
   const errorKey = errorCode && errorCode in ERROR_KEYS ? ERROR_KEYS[errorCode as keyof typeof ERROR_KEYS] : undefined;
+
+  // The form is replaced by the result: move focus there (and do not announce the password aloud).
+  useEffect(() => {
+    if (created) headingRef.current?.focus();
+  }, [created]);
 
   const submit = (e: FormEvent): void => {
     e.preventDefault();
@@ -59,8 +65,10 @@ export default function Players() {
       <h1 className="page-title">{t('players.title')}</h1>
 
       {created ? (
-        <section aria-live="polite" className="space-y-4 rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">{t('players.created.title', { pseudo: created.pseudo })}</h2>
+        <section className="space-y-4 rounded-lg border bg-card p-4">
+          <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none">
+            {t('players.created.title', { pseudo: created.pseudo })}
+          </h2>
           <p className="text-sm text-muted-foreground">{t('players.created.once')}</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 select-all break-all rounded bg-muted px-3 py-2 font-mono text-base">
@@ -110,6 +118,7 @@ export default function Players() {
               ))}
             </select>
           </div>
+          {campaigns.length === 0 && <p className="text-sm text-muted-foreground">{t('players.noCampaign')}</p>}
           {createPlayer.isError && (
             <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="size-4 shrink-0" />

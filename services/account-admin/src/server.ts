@@ -10,6 +10,7 @@
 //   TRUSTED_IP_HEADER            header the proxy OVERWRITES with the real client address (e.g. x-real-ip);
 //                                unset = the socket address is used
 
+import { isIP } from 'node:net';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createClient } from '@supabase/supabase-js';
 import { createHandler } from './handlers.ts';
@@ -85,6 +86,12 @@ function main(): void {
   const trustedIpHeader = process.env.TRUSTED_IP_HEADER?.toLowerCase();
   const port = Number(process.env.PORT ?? 8787);
   const host = process.env.HOST ?? '127.0.0.1';
+  // Behind the proxy every client shares the proxy's socket address: without a header the proxy OVERWRITES, 30
+  // anonymous requests a minute would lock the DM out. A non-loopback bind therefore requires the header.
+  if (!['127.0.0.1', '::1', 'localhost'].includes(host) && !trustedIpHeader) {
+    process.stderr.write('HOST is not loopback: TRUSTED_IP_HEADER is required (see SETUP.md)\n');
+    process.exit(2);
+  }
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const handle = createHandler({ admin, supabaseUrl, publishableKey, domain });
@@ -96,7 +103,10 @@ function main(): void {
       let status = 500;
       try {
         const headerIp = trustedIpHeader ? req.headers[trustedIpHeader] : undefined;
-        const ip = (Array.isArray(headerIp) ? headerIp[0] : headerIp) ?? req.socket.remoteAddress ?? 'unknown';
+        const headerValue = (Array.isArray(headerIp) ? headerIp[0] : headerIp)?.trim();
+        // Only a well-formed address is accepted as a limiter key; anything else falls back to the socket.
+        const ip =
+          (headerValue && isIP(headerValue) ? headerValue : undefined) ?? req.socket.remoteAddress ?? 'unknown';
         const body = await readBody(req);
         const result = await handle({
           method: req.method ?? 'GET',
@@ -119,11 +129,16 @@ function main(): void {
       } finally {
         process.stdout.write(`${JSON.stringify({ method: req.method, path, status, ms: Date.now() - started })}\n`);
       }
-    })();
+    })().catch(() => res.destroy());
   });
   server.requestTimeout = 10_000;
   server.headersTimeout = 5_000;
   server.listen(port, host, () => process.stdout.write(`account-admin listening on ${host}:${port}\n`));
 }
+
+// A stray rejection must never take the only account service down (and must never print request data).
+process.on('unhandledRejection', (reason) => {
+  process.stderr.write(`unhandled rejection: ${reason instanceof Error ? reason.message : 'unknown'}\n`);
+});
 
 main();

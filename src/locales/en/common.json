@@ -833,6 +833,7 @@
     "pseudoHelp": "3 to 20 characters: lower-case letters, digits, hyphen or underscore.",
     "campaign": "Campaign",
     "create": "Create the account",
+    "noCampaign": "Create a campaign first: a player account is attached to one.",
     "created": {
       "title": "Account created for {{pseudo}}",
       "once": "Give this temporary password to the player now. It is shown only once and cannot be read again.",

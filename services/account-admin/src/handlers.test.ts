@@ -162,6 +162,16 @@ describe('POST /admin-api/accounts', () => {
     expect(res).toEqual({ status: 503, body: { error: 'auth_unavailable' } });
   });
 
+  it.each([
+    ['GoTrue says service_role', { id: DM_ID, role: 'service_role' }],
+    ['GoTrue returns a non-UUID id', { id: 'not-a-uuid', role: 'authenticated' }],
+    ['GoTrue returns no id', { role: 'authenticated' }],
+  ])('refuses a token that claims authenticated when %s', async (_label, authUser) => {
+    const { handle, calls } = setup({ authUser });
+    expect((await handle(create())).status).toBe(401);
+    expect(calls.memberInsert).not.toHaveBeenCalled();
+  });
+
   it('refuses a player (role read from profiles, not from the token)', async () => {
     const { handle } = setup({ authUser: { id: PLAYER_ID, role: 'authenticated' } });
     expect((await handle(create())).status).toBe(403);
@@ -214,6 +224,16 @@ describe('POST /admin-api/accounts', () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: 'account_creation_failed' });
     expect(calls.deleteUser).toHaveBeenCalledWith(NEW_ID);
+  });
+
+  it('reports a failed rollback on stderr without leaking a secret and still answers 500', async () => {
+    const { handle, calls } = setup({ memberError: true });
+    calls.deleteUser.mockResolvedValue({ error: { message: 'cannot delete' } });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const res = await handle(create());
+    expect(res.status).toBe(500);
+    expect(write).toHaveBeenCalledWith(expect.stringContaining(NEW_ID));
+    expect(String(write.mock.calls[0][0])).not.toMatch(/password/i);
   });
 
   it('never puts the administration key or a password in an error answer', async () => {

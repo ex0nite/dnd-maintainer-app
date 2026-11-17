@@ -96,7 +96,9 @@ export function createHandler(deps: HandlerDeps) {
       .insert({ campaign_id: campaignId, user_id: created.userId });
     if (memberError) {
       // No half-created account: removing the authentication user cascades to `profiles`.
-      await deps.admin.auth.admin.deleteUser(created.userId);
+      const { error: cleanupError } = await deps.admin.auth.admin.deleteUser(created.userId);
+      // A failed cleanup leaves an account the owner must remove by hand: say which one (no secret in it).
+      if (cleanupError) process.stderr.write(`rollback failed, remove auth user ${created.userId} by hand\n`);
       throw new HttpError(500, 'account_creation_failed');
     }
 

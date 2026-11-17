@@ -13,6 +13,8 @@ export class FixedWindowLimiter {
   allow(key: string): boolean {
     const t = this.now();
     if (this.hits.size > 10_000) this.prune(t);
+    // Hard cap: evict the oldest keys (insertion order) so a flood of distinct keys cannot grow the map.
+    while (this.hits.size >= 50_000) this.hits.delete(this.hits.keys().next().value as string);
     const entry = this.hits.get(key);
     if (!entry || entry.resetAt <= t) {
       this.hits.set(key, { count: 1, resetAt: t + this.windowMs });

@@ -86,6 +86,11 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
 - The administration key is read from the environment only: it is not in the repository, not in the front bundle and
   not in the logs (the service logs method, path, status and duration, nothing else).
 - Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
+- Deployment: reach the service only over the internal container network (no published port). If it listens on a
+  non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would
+  share the proxy's address and 30 junk requests a minute would lock the DM out of the screen.
+- If a creation fails half-way and the automatic cleanup also fails, the service logs the id of the leftover
+  authentication user (stderr): delete it by hand before retrying the pseudo.
 - Health check without authentication: `GET /admin-api/health`.
 
 ## Signing in
