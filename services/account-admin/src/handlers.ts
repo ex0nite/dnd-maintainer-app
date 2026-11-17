@@ -37,6 +37,7 @@ export interface HandlerDeps {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROUTE_PREFIX = '/admin-api';
+const RESET_ROUTE = /^\/accounts\/([0-9a-f-]{36})\/reset-password$/;
 
 function asObject(body: unknown): Record<string, unknown> {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'invalid_body');
@@ -105,6 +106,86 @@ export function createHandler(deps: HandlerDeps) {
     return { status: 201, body: { userId: created.userId, pseudo, temporaryPassword } };
   }
 
+  /** A player target only: the DM account (and anything unknown) is never touched (D-31). */
+  async function loadPlayerTarget(targetId: string): Promise<void> {
+    if (!UUID.test(targetId)) throw new HttpError(400, 'invalid_target');
+    const { data, error } = await deps.admin
+      .from('profiles')
+      .select('role, archived_at')
+      .eq('user_id', targetId)
+      .maybeSingle();
+    if (error) throw new HttpError(503, 'database_unavailable');
+    if (!data) throw new HttpError(404, 'account_not_found');
+    if (data.role !== 'player') throw new HttpError(403, 'forbidden_target');
+    if (data.archived_at !== null) throw new HttpError(409, 'account_archived');
+  }
+
+  const resetsInFlight = new Set<string>();
+
+  /**
+   * DM-initiated reset (FR4). The account must never be readable while the DM knows (or is about to know) its
+   * password, whatever fails or interleaves (docs: password_reset_pending, story 2.3 migration):
+   *  1. raise must_change_password + password_reset_pending, only on a live player row (nothing is readable from now on);
+   *  2. end every session first, so nobody holding one can change the password behind the DM's back; abort if it fails;
+   *  3. change the password (the trigger keeps the flag up and consumes the marker);
+   *  4. write the final state explicitly (flag up, marker down): it does not depend on the marker having survived;
+   *  5. end the sessions again (a sign-in with the old password between steps 2 and 3 would have opened one).
+   * The flag is never lowered by a failure: at worst the player has to choose a new password again.
+   * One reset per account at a time (this service is a single process).
+   */
+  async function resetPassword(targetId: string): Promise<ApiResponse> {
+    await loadPlayerTarget(targetId);
+    if (resetsInFlight.has(targetId)) throw new HttpError(409, 'reset_in_progress');
+    resetsInFlight.add(targetId);
+    try {
+      const settle = async (): Promise<void> => {
+        const { error } = await deps.admin
+          .from('profiles')
+          .update({ must_change_password: true, password_reset_pending: false })
+          .eq('user_id', targetId);
+        if (error) process.stderr.write(`reset of ${targetId}: marker not cleared, retry the reset\n`);
+      };
+      const revoke = async (): Promise<boolean> => {
+        const { error } = await deps.admin.rpc('revoke_user_sessions', { p_user_id: targetId });
+        return !error;
+      };
+
+      const { data: raised, error: raiseError } = await deps.admin
+        .from('profiles')
+        .update({ must_change_password: true, password_reset_pending: true })
+        .eq('user_id', targetId)
+        .eq('role', 'player')
+        .is('archived_at', null)
+        .select('user_id');
+      if (raiseError) throw new HttpError(503, 'database_unavailable');
+      if (!raised || raised.length !== 1) throw new HttpError(404, 'account_not_found');
+
+      if (!(await revoke())) {
+        await settle();
+        process.stderr.write(`sessions of ${targetId} not revoked, reset aborted\n`);
+        throw new HttpError(500, 'session_revocation_failed');
+      }
+
+      const temporaryPassword = generateTemporaryPassword();
+      const { error: passwordError } = await deps.admin.auth.admin.updateUserById(targetId, {
+        password: temporaryPassword,
+      });
+      if (passwordError) {
+        await settle();
+        throw new HttpError(500, 'password_reset_failed');
+      }
+
+      await settle();
+      if (!(await revoke())) {
+        process.stderr.write(`sessions of ${targetId} not revoked after the reset, retry it\n`);
+        throw new HttpError(500, 'session_revocation_failed');
+      }
+      return { status: 200, body: { userId: targetId, temporaryPassword } };
+    } finally {
+      resetsInFlight.delete(targetId);
+    }
+  }
+
   return async function handle(req: ApiRequest): Promise<ApiResponse> {
     try {
       if (!req.path.startsWith(`${ROUTE_PREFIX}/`)) throw new HttpError(404, 'not_found');
@@ -123,6 +204,13 @@ export function createHandler(deps: HandlerDeps) {
         const actor = await authenticateDm(authDeps, req.authorization);
         if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
         return await createPlayer(req.body);
+      }
+      const reset = RESET_ROUTE.exec(route);
+      if (reset) {
+        if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed');
+        const actor = await authenticateDm(authDeps, req.authorization);
+        if (!perActor.allow(actor.userId)) throw new HttpError(429, 'rate_limited');
+        return await resetPassword(reset[1]);
       }
       throw new HttpError(404, 'not_found');
     } catch (e) {

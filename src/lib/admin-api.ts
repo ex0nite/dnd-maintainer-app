@@ -40,6 +40,16 @@ async function post<T>(path: string, token: string, body: unknown): Promise<T> {
   return json as T;
 }
 
+export interface ResetPassword {
+  userId: string;
+  /** Shown once to the DM; never stored by the app. */
+  temporaryPassword: string;
+}
+
+export function resetPlayerPassword(token: string, userId: string): Promise<ResetPassword> {
+  return post<ResetPassword>(`/accounts/${encodeURIComponent(userId)}/reset-password`, token, {});
+}
+
 export function createPlayer(token: string, input: { pseudo: string; campaignId: string }): Promise<CreatedPlayer> {
   return post<CreatedPlayer>('/accounts', token, input);
 }

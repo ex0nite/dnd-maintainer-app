@@ -96,6 +96,13 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
 - If a future authentication-server upgrade ever needs to rewrite `auth.users.email`, disable the guard for that
   maintenance only (`alter table auth.users disable trigger refuse_address_change;`, as the database owner) and enable
   it again right after.
+- **Password reset (FR4):** the Players screen lists the accounts (status: active, temporary password, archived) and
+  gives each non-archived player a "Reset password" action. The service raises `must_change_password` and
+  `password_reset_pending` first (so the account reads nothing from that moment), changes the password (the trigger
+  keeps the flag up and consumes the marker), then ends every session of the player through
+  `public.revoke_user_sessions` (callable by `service_role` only). The DM account is never a valid target. An access
+  token issued before the reset still passes the authentication server's signature check for up to an hour, but the
+  database refuses its data reads at once (the flag).
 - Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
 - Deployment: reach the service only over the internal container network (no published port). If it listens on a
   non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would
