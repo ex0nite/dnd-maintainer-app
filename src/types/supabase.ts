@@ -139,6 +139,7 @@ export type Database = {
           archived_at: string | null
           created_at: string
           must_change_password: boolean
+          password_reset_pending: boolean
           pseudo: string
           role: string
           user_id: string
@@ -147,6 +148,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           must_change_password?: boolean
+          password_reset_pending?: boolean
           pseudo: string
           role: string
           user_id: string
@@ -155,6 +157,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           must_change_password?: boolean
+          password_reset_pending?: boolean
           pseudo?: string
           role?: string
           user_id?: string

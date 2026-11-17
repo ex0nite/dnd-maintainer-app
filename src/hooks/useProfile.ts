@@ -51,7 +51,13 @@ export function useChangePassword() {
       return 'unavailable';
     },
     onSuccess: async (result) => {
-      if (result === 'ok') await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      if (result !== 'ok') return;
+      // The database lowered the flag: say so locally at once (a failing refetch must not bounce the user back to
+      // the form), then confirm with the server.
+      queryClient.setQueriesData<Profile>({ queryKey: ['profile'] }, (old) =>
+        old ? { ...old, must_change_password: false } : old
+      );
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
   const change = useCallback((password: string) => mutation.mutateAsync(password), [mutation]);

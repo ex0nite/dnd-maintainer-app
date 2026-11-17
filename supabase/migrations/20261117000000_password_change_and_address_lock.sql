@@ -2,10 +2,19 @@
 --
 -- 1. `must_change_password` goes back to false by itself when the password really changes
 --    (trigger on auth.users): the player cannot clear the flag, and nothing in the front is trusted.
---    A password reset by the DM (story 2.4) changes the password FIRST, then the service raises the flag again.
+--    A password reset by the DM (story 2.4) must never leave a window where the flag is down while the DM knows the
+--    password: the service first raises `must_change_password` AND `password_reset_pending` (one statement), then
+--    changes the password; the trigger sees the marker, keeps the flag up and clears the marker. A crash between
+--    the two steps leaves the account locked on its OLD password (safe); the service clears the marker on failure.
 -- 2. A trigger refuses any change of `auth.users.email` / `email_change`: the sign-in address is derived from
 --    the pseudo and GoTrue cannot be configured to forbid a user changing it (spike 2.1, docs/auth-spike.md).
 --    Consequence: account removal must be a hard delete (GoTrue soft delete rewrites the email).
+
+alter table public.profiles
+  add column password_reset_pending boolean not null default false;
+
+comment on column public.profiles.password_reset_pending is
+  'Set by account-admin just before a DM-initiated password reset: the next password change keeps must_change_password up.';
 
 create or replace function public.clear_must_change_password()
 returns trigger
@@ -15,9 +24,10 @@ set search_path = ''
 as $$
 begin
   update public.profiles
-     set must_change_password = false
+     set must_change_password = password_reset_pending,
+         password_reset_pending = false
    where user_id = new.id
-     and must_change_password;
+     and (must_change_password or password_reset_pending);
   return null;
 end;
 $$;

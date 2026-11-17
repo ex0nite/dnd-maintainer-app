@@ -93,6 +93,9 @@ SUPABASE_URL=<internal api url> SUPABASE_PUBLISHABLE_KEY=<publishable key> ACCOU
   from the sidebar.
 - The sign-in address cannot be changed by users: a trigger on `auth.users` refuses it (the authentication server has
   no switch for this, see `docs/auth-spike.md`). Delete accounts with a hard delete only.
+- If a future authentication-server upgrade ever needs to rewrite `auth.users.email`, disable the guard for that
+  maintenance only (`alter table auth.users disable trigger refuse_address_change;`, as the database owner) and enable
+  it again right after.
 - Free sign-up stays closed (`enable_signup = false`): calling the sign-up API with the public key is refused.
 - Deployment: reach the service only over the internal container network (no published port). If it listens on a
   non-loopback `HOST`, the service refuses to start without `TRUSTED_IP_HEADER`, because otherwise every visitor would

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,15 +22,12 @@ export default function ChangePassword() {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<Exclude<ChangePasswordResult, 'ok'> | 'mismatch' | null>(null);
-  const [done, setDone] = useState(false);
 
   useEffect(() => {
     document.title = t('password.title');
   }, [t]);
 
-  // Once the profile says the flag is down, a player who was forced here moves on.
   const forced = profile?.must_change_password === true;
-  if (done && profile && !forced) return <Navigate to="/" replace />;
 
   const errorMessage = (e: Exclude<typeof error, null>): string => {
     switch (e) {
@@ -58,7 +55,6 @@ export default function ChangePassword() {
     setPassword('');
     setConfirmation('');
     if (result === 'ok') {
-      setDone(true);
       navigate('/', { replace: true });
     } else {
       setError(result);
@@ -77,7 +73,9 @@ export default function ChangePassword() {
           <h1 className="text-2xl font-bold text-primary">{t('password.title')}</h1>
         </div>
         {forced && <p className="text-sm text-muted-foreground">{t('password.forced')}</p>}
-        <p className="text-sm text-muted-foreground">{t('password.rule', { count: MIN_PASSWORD_LENGTH })}</p>
+        <p id="password-rule" className="text-sm text-muted-foreground">
+          {t('password.rule', { count: MIN_PASSWORD_LENGTH })}
+        </p>
 
         <div className="space-y-2">
           <Label htmlFor="new-password">{t('password.new')}</Label>
@@ -88,7 +86,7 @@ export default function ChangePassword() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             aria-invalid={error !== null}
-            aria-describedby={error ? 'password-error' : undefined}
+            aria-describedby={error ? 'password-rule password-error' : 'password-rule'}
           />
         </div>
         <div className="space-y-2">
@@ -99,6 +97,8 @@ export default function ChangePassword() {
             autoComplete="new-password"
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
+            aria-invalid={error === 'mismatch'}
+            aria-describedby={error ? 'password-error' : undefined}
           />
         </div>
 

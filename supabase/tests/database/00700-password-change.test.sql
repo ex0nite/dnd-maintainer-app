@@ -1,7 +1,7 @@
 -- Story 2.3 (AD-3, AD-11): the temporary password serves once; the sign-in address is immutable.
 begin;
 
-select plan(17);
+select plan(19);
 
 insert into auth.users (id, email, encrypted_password)
 values (tests.uid('temp_password'), 'dave@table.invalid', 'hash-temporary'),
@@ -78,13 +78,21 @@ select lives_ok(
   'a password change for a user without profile does not fail'
 );
 
--- the DM reset sequence of story 2.4: password first, flag raised again afterwards
-update auth.users set encrypted_password = 'hash-temporary-2' where id = tests.uid('temp_password');
-update public.profiles set must_change_password = true where user_id = tests.uid('temp_password');
+-- the DM reset sequence of story 2.4: flag and marker raised FIRST, then the password changes
+update public.profiles set must_change_password = true, password_reset_pending = true
+ where user_id = tests.uid('temp_password');
 select is(
   (select must_change_password from public.profiles where user_id = tests.uid('temp_password')),
   true,
-  'a reset (password change, then flag raised again) leaves the flag up'
+  'a reset raises the flag before the password changes (no window with the flag down)'
+);
+-- (the real GoTrue role, supabase_auth_admin, cannot be assumed from pgTAP: services/account-admin/spike/integration-2-3.mjs proves it end to end)
+update auth.users set encrypted_password = 'hash-temporary-2' where id = tests.uid('temp_password');
+select is(
+  (select must_change_password::text || '/' || password_reset_pending::text
+     from public.profiles where user_id = tests.uid('temp_password')),
+  'true/false',
+  'the reset password change keeps the flag up and consumes the marker'
 );
 
 -- data access follows the flag (the restrictive policy reads it)
@@ -95,6 +103,12 @@ select is(
 );
 select tests.reset_identity();
 update auth.users set encrypted_password = 'hash-chosen-again' where id = tests.uid('temp_password');
+select is(
+  (select must_change_password::text || '/' || password_reset_pending::text
+     from public.profiles where user_id = tests.uid('temp_password')),
+  'false/false',
+  'the player''s own password change lowers the flag'
+);
 select tests.set_identity('temp_password');
 select is(
   (select count(*)::int from public.campaigns), 1,
@@ -114,8 +128,8 @@ select throws_ok(
   '42501', null, 'a pending address change cannot be recorded'
 );
 select lives_ok(
-  $$update auth.users set last_sign_in_at = now(), encrypted_password = 'hash-alice-2' where id = tests.uid('owner')$$,
-  'other updates (sign-in time, password) still work (positive control)'
+  $$update auth.users set email_change = '' where id = tests.uid('owner')$$,
+  'resetting email_change from NULL to empty is not a change'
 );
 select is(
   (select email from auth.users where id = tests.uid('owner')),
