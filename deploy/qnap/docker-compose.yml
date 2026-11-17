@@ -166,7 +166,7 @@ services:
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./gateway/security-headers.conf.template:/etc/nginx/templates/security-headers.conf.template:ro
-      - ${SITE_DIR:-./site}:/usr/share/nginx/html:ro
+      - site:/usr/share/nginx/html:ro # filled by deploy/qnap/publish-site.sh
     ports:
       - '${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-8080}:8080'
     mem_limit: 48m
@@ -207,6 +207,7 @@ configs:
 volumes:
   db-data:
   storage-data:
+  site:
 
 networks:
   # Containers talk to each other here: no published port and no route to the Internet (`internal`).
