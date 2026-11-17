@@ -103,7 +103,7 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   RLS ou la policy `access_active` (hors `profiles`), s'il existe une policy `true` ou applicable à `anon`/`public` (schémas
   `public` et `storage`), un droit de `anon` sur une table, une séquence ou une fonction de `public`, une vue qui n'est pas
   `security_invoker`, ou un bucket public. Une nouvelle table se crée donc fermée, avec ses policies et sa matrice.
-- Les portraits sont dans un bucket privé : la base garde le chemin (`<id>/portrait.jpg`), le navigateur demande une URL
+- Les portraits sont dans un bucket privé (1 Mo, images) : la base garde le chemin (`<id-personnage>/<uuid-aléatoire>.<ext>`, l'ancien `<id>/portrait.jpg` reste valide ; CHECK sur le format et sur l'id du personnage ; un remplacement crée un nouvel objet puis supprime l'ancien). Écriture : propriétaire d'un personnage actif ou MJ ; lecture : qui lit le personnage (`can_read_character`), donc jamais le portrait d'un PNJ pour un joueur, le navigateur demande une URL
   signée (`usePortraitSrc`, `PortraitImage`), jamais d'URL publique.
 - Personnages (story 3.1, AD-6) : le propriétaire (`owner_user_id = auth.uid()` et membre de la campagne) lit, crée et
   modifie ses `characters`, et écrit son inventaire et ses niveaux (`owns_character`) ; jamais de DELETE pour un joueur.

@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { PORTRAIT_BUCKET, portraitStoragePath } from '@/lib/portrait-path';
 
-const SIGNED_URL_SECONDS = 3600;
+// Short-lived: an URL cannot be revoked, so keep its life short (copied links, history, logs).
+const SIGNED_URL_SECONDS = 600;
 
 export const portraitQueryKey = (path: string | null) => ['portrait-src', path] as const;
 
@@ -13,8 +14,8 @@ export function usePortraitSrc(stored: string | null | undefined): { src: string
     queryKey: portraitQueryKey(path),
     enabled: !!path,
     // Refresh well before the URL expires, even for a component that stays mounted.
-    staleTime: (SIGNED_URL_SECONDS - 600) * 1000,
-    refetchInterval: (SIGNED_URL_SECONDS - 600) * 1000,
+    staleTime: SIGNED_URL_SECONDS * 0.8 * 1000,
+    refetchInterval: SIGNED_URL_SECONDS * 0.8 * 1000,
     retry: false,
     queryFn: async () => {
       const { data: signed, error } = await supabase.storage
