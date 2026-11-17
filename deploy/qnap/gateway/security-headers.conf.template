@@ -1,0 +1,21 @@
+# Security headers of the gateway (stories 7.3 and 7.4, AD-9, AD-21). Rendered by the nginx image at start
+# (envsubst) into /etc/nginx/conf.d/security-headers.conf, included wherever a location sets its own `add_header`
+# (nginx drops inherited headers as soon as a location defines one).
+#
+# CSP_HEADER_NAME is `Content-Security-Policy` (blocking) or `Content-Security-Policy-Report-Only` (first deployment
+# on the test environment: watch the browser console on the player journeys, then switch).
+#
+# The sha256 is the <style> element that `sonner` injects at import time (`node scripts/sonner-csp-hash.mjs`). The
+# unit test `deploy/qnap/csp.test.ts` fails when it no longer matches the installed sonner.
+#
+# `connect-src 'self'`: the API is served from the same origin (/auth/v1, /rest/v1, /storage/v1, /admin-api/).
+# `img-src 'self' blob:`: portraits come through signed URLs of the same origin.
+# HSTS has no `includeSubDomains`: the host name belongs to a wildcard DynDNS domain that serves other things.
+
+add_header ${CSP_HEADER_NAME} "default-src 'self'; script-src 'self'; style-src 'self' 'sha256-CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY='; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" always;
+add_header Strict-Transport-Security "max-age=31536000" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header Referrer-Policy "no-referrer" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()" always;
+add_header Cross-Origin-Opener-Policy "same-origin" always;

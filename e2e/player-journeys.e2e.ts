@@ -1,6 +1,7 @@
 // Story 6.3 (FR24, NFR8): the player's journeys are walked to their end at 360 px, with no horizontal scroll at any
 // step. The backend is stubbed (see support.ts): these checks cover what the screens do, not the database.
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { stubBackend } from './support';
 
 const CAMPAIGN_ID = '11111111-1111-4111-8111-111111111111';

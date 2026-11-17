@@ -1,0 +1,222 @@
+# Lightweight Supabase stack for the QNAP (AD-9, AD-10, D-20).
+#
+# Services started: db (Postgres 17), auth (GoTrue), rest (PostgREST), storage, gateway (nginx: static site + routes).
+# `account-admin` is behind the `admin` profile (story 7.1 measures the stack with and without it).
+# NOT started, by design: Studio, realtime, pg-meta, analytics, vector, edge functions, imgproxy, kong.
+#
+# Every image is pinned by digest. No secret lives here: everything comes from the env file produced by
+# `node deploy/qnap/gen-secrets.mjs` (outside the repository), checked by `node deploy/qnap/check-secrets.mjs`.
+#
+#   docker compose --env-file ~/dnd-stack/.env -f deploy/qnap/docker-compose.yml up -d
+#
+# Nothing is published on the host except the gateway, bound to GATEWAY_BIND (default loopback). The reverse proxy
+# reaches the gateway over the Docker network `dnd-edge` (story 7.3), never through a published port.
+
+name: ${COMPOSE_PROJECT_NAME:-dnd}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '5m'
+    max-file: '2'
+
+services:
+  db:
+    image: public.ecr.aws/supabase/postgres@sha256:c141fd17ac6a76c4323e90b3aee8ff1a23d2e89e547c2b963cfadc309c079cc2 # 17.11.0.006
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run gen-secrets.mjs}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET:?run gen-secrets.mjs}
+      JWT_EXP: ${JWT_EXPIRY:-3600}
+    # Small instance: 5 players. Memory is the scarce resource of the QNAP (NFR4).
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=256MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=40
+      - -c
+      - log_min_messages=warning
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    configs:
+      # Inline (not a bind mount): a file on a QNAP share can be unreadable for the postgres user because of share ACLs.
+      - source: db_roles_passwords
+        target: /docker-entrypoint-initdb.d/init-scripts/99-roles-passwords.sql
+        mode: 0444
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s # first start runs the image's init scripts, slow on a Celeron
+    mem_limit: 512m
+    networks: [internal]
+
+  auth:
+    image: public.ecr.aws/supabase/gotrue@sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b # v2.197.0
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: '9999'
+      API_EXTERNAL_URL: ${PUBLIC_URL:?set PUBLIC_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${PUBLIC_URL}
+      GOTRUE_URI_ALLOW_LIST: ${PUBLIC_URL}
+      # Closed app: accounts are created by the DM through account-admin (AD-2, AD-11).
+      GOTRUE_DISABLE_SIGNUP: 'true'
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'false'
+      GOTRUE_SECURITY_MANUAL_LINKING_ENABLED: 'false'
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
+      GOTRUE_MAILER_AUTOCONFIRM: 'true' # no mail server; the sign-in address is a fake one (D-31)
+      GOTRUE_PASSWORD_MIN_LENGTH: '12'
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: 'true'
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: '10'
+      # Per-address limits (story 7.3): the gateway overwrites X-Real-IP, GoTrue trusts only that header.
+      GOTRUE_RATE_LIMIT_HEADER: X-Real-IP
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: '2'
+      GOTRUE_RATE_LIMIT_TOKEN_REFRESH: '150'
+      GOTRUE_RATE_LIMIT_SIGN_IN_SIGN_UPS: '30'
+      GOTRUE_RATE_LIMIT_VERIFY: '30'
+      # Sign-in attempt lock per pseudo (FR2). The migration must be applied first, otherwise every sign-in fails.
+      GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_ENABLED: 'true'
+      GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_URI: pg-functions://postgres/internal/password_verification_hook
+      GOTRUE_LOG_LEVEL: warn
+    mem_limit: 128m
+    networks: [internal]
+
+  rest:
+    image: public.ecr.aws/supabase/postgrest@sha256:4173b72e0be29cf15349dc827798c3e464c5f2cc7f9c1697022f9cd1874b4c36 # v14.8
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_EXTRA_SEARCH_PATH: public,extensions
+      PGRST_DB_MAX_ROWS: '1000'
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_POOL: '5'
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: 'false'
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY:-3600}
+      PGRST_SERVER_HOST: 0.0.0.0
+      PGRST_OPENAPI_MODE: disabled # no schema description for anyone
+      PGRST_LOG_LEVEL: warn
+    mem_limit: 128m
+    networks: [internal]
+
+  storage:
+    image: public.ecr.aws/supabase/storage-api@sha256:a0420573837ee08c0afdc9cd01f90b4b8027579da99e0b9a159fe912ef756c99 # v1.84.19
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db: { condition: service_healthy }
+      rest: { condition: service_started }
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      DB_INSTALL_ROLES: 'false'
+      FILE_SIZE_LIMIT: '1048576' # 1 MB: portraits only
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: dnd
+      REGION: local
+      GLOBAL_S3_BUCKET: dnd
+      ENABLE_IMAGE_TRANSFORMATION: 'false'
+      LOG_LEVEL: warn
+    volumes:
+      - storage-data:/var/lib/storage
+    mem_limit: 192m
+    networks: [internal]
+
+  # nginx: serves the built front and routes the API paths. The reverse proxy (nginx-proxy-manager) is the only way in.
+  gateway:
+    image: nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 # 1.27-alpine
+    restart: unless-stopped
+    logging: *logging
+    depends_on: [auth, rest, storage]
+    environment:
+      # Content-Security-Policy-Report-Only for the first run on the test environment (story 7.4), then the default.
+      CSP_HEADER_NAME: ${CSP_HEADER_NAME:-Content-Security-Policy}
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./gateway/security-headers.conf.template:/etc/nginx/templates/security-headers.conf.template:ro
+      - ${SITE_DIR:-./site}:/usr/share/nginx/html:ro
+    ports:
+      - '${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-8080}:8080'
+    mem_limit: 48m
+    networks: [internal, edge]
+
+  account-admin:
+    profiles: [admin]
+    build:
+      context: ./account-admin
+    image: dnd-account-admin:local
+    restart: unless-stopped
+    logging: *logging
+    depends_on: [gateway]
+    environment:
+      SUPABASE_URL: http://gateway:8080
+      SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      ACCOUNT_DOMAIN: ${ACCOUNT_DOMAIN:-table}
+      HOST: 0.0.0.0
+      PORT: '8787'
+      TRUSTED_IP_HEADER: x-real-ip
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 96m
+    networks: [internal]
+
+configs:
+  # Runs once, when the database volume is created: gives the service roles the generated database password
+  # (the image creates them with a well-known default).
+  db_roles_passwords:
+    content: |
+      \set pgpass `echo "$$POSTGRES_PASSWORD"`
+      ALTER ROLE authenticator WITH PASSWORD :'pgpass';
+      ALTER ROLE supabase_auth_admin WITH PASSWORD :'pgpass';
+      ALTER ROLE supabase_storage_admin WITH PASSWORD :'pgpass';
+
+volumes:
+  db-data:
+  storage-data:
+
+networks:
+  # Containers talk to each other here: no published port and no route to the Internet (`internal`).
+  internal:
+    internal: true
+  # The gateway is on it, and so is the reverse proxy once connected (`docker network connect`, story 7.3).
+  edge:
+    name: ${EDGE_NETWORK:-dnd-edge}
+    # Fixed subnet: the gateway trusts X-Real-IP only from here (gateway/nginx.conf). If it clashes with another
+    # Docker network on the host, change it in BOTH files.
+    ipam:
+      config:
+        - subnet: 172.29.77.0/24

@@ -52,8 +52,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Epic 7, première partie (à lancer tôt, en parallèle de l'epic 1)
 
-- [ ] 7.1 Essai de charge de la pile allégée sur le QNAP (sans `account-admin`, puis avec après la 2.2) : décision
-      auto-hébergement ou repli cloud (D-20)
+- [x] 7.1 Essai de charge de la pile allégée sur le QNAP : FAIT le 2026-11-17, auto-hébergement retenu (D-33, `docs/qnap-load-test.md`)
 
 ### Reste de la story 2.2 (revue)
 
@@ -84,9 +83,11 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 ### Epic 7, suite : mise en ligne
 
-- [ ] 7.2 Installation reproductible et secrets régénérés
-- [ ] 7.3 Exposition HTTPS et vérification réseau
-- [ ] 7.4 CSP stricte
+- [x] 7.2 Installation reproductible et secrets régénérés (FAIT : `deploy/qnap/`, `docs/deploy-qnap.md`, job CI `stack` ; reste l'installation réelle sur le QNAP, avec le propriétaire)
+- [ ] 7.3 Exposition HTTPS et vérification réseau : passerelle, en-têtes et vérifications prêts ; RESTE, avec l'accord du propriétaire :
+      connecter NPM au réseau `dnd-edge`, créer l'hôte du proxy, ses ranges CDN (NPM 2.14.0 fait confiance à `X-Real-IP` venant des CDN :
+      les vider ou accepter le risque), test à deux clients, scan depuis l'extérieur
+- [x] 7.4 CSP stricte (FAIT en mode bloquant sous Playwright ; RESTE : passage `Report-Only` puis bloquant sur l'environnement d'essai du QNAP, voir doc)
 - [ ] 7.5 Bascule vers la production (rappel : pas de sauvegarde, D-23)
 - [ ] 7.6 Recette avec les cinq joueurs
 

@@ -15,6 +15,8 @@ export default defineConfig(
       'node_modules/',
       '.claude/',
       'services/account-admin/spike/',
+      'deploy/qnap/account-admin/server.mjs', // generated bundle
+      '.localtest-stack/',
     ],
   },
   {
@@ -120,6 +122,34 @@ export default defineConfig(
           message: 'Seul src/hooks/ appelle Supabase (AD-1)',
         },
       ],
+    },
+  },
+  {
+    // Plain Node scripts of the deployment (stack secrets, load test, CSP hash): no bundler, no types.
+    files: ['deploy/**/*.mjs', 'scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        performance: 'readonly',
+        setTimeout: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    // Static browser script loaded by index.html before React (theme without flash, no inline script: AD-21).
+    files: ['public/**/*.js'],
+    languageOptions: {
+      globals: { window: 'readonly', document: 'readonly', localStorage: 'readonly', console: 'readonly' },
+    },
+    rules: {
+      'no-console': 'off',
     },
   },
   {
