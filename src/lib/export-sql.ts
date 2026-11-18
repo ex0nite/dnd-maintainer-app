@@ -30,6 +30,7 @@ const TABLE_COLUMNS = {
     { name: 'status', type: 'text' },
     { name: 'image_url', type: 'text' },
     { name: 'allowed_source_books', type: 'text[]' },
+    { name: 'ruleset', type: 'text' },
     { name: 'created_at', type: 'timestamptz' },
     { name: 'updated_at', type: 'timestamptz' },
   ],

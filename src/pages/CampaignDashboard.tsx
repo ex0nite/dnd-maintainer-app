@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { RulesetPicker } from '@/components/RulesetPicker';
+import { canBuildCharacters } from '@/lib/ruleset';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +20,7 @@ import {
   Clock,
   Edit2,
   Palette,
+  Scale,
   Save,
   Scroll,
   Swords,
@@ -47,7 +50,7 @@ export default function CampaignDashboard() {
   const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignSlug);
   const { update: updateMutation } = useCampaignMutations();
 
-  const { data: charactersRaw = [], error: charactersError } = useCharacters(campaignId!);
+  const { data: charactersRaw = [], error: charactersError, isLoading: charactersLoading } = useCharacters(campaignId!);
   const characters = useMemo(
     () => [...charactersRaw].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
     [charactersRaw]
@@ -96,6 +99,10 @@ export default function CampaignDashboard() {
     handleUpdate({ setting: editedSetting });
   };
 
+  // The edition can change until a character is finalized (the database enforces it too).
+  const rulesetLocked = characters.some((c) => c.status === 'ready');
+  // The database is the real lock: a change made from a stale screen is refused with this code.
+  const rulesetRefusedByDb = (updateMutation.error as { code?: string } | null | undefined)?.code === '23514';
   const pcCount = characters.filter((c) => c.character_type === 'pc').length;
   const npcCount = characters.filter((c) => c.character_type === 'npc').length;
   const lastSession = sessions[0];
@@ -564,6 +571,42 @@ export default function CampaignDashboard() {
                 {updateMutation.isError && updateMutation.variables && 'theme' in updateMutation.variables && (
                   <p className="text-sm text-destructive mt-1">{t('errors.saveFailed')}</p>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4">
+            <Card className="hover-lift">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Scale className="size-5 text-muted-foreground" />
+                  <h3 className="font-semibold" id="ruleset-heading">
+                    {t('campaign.ruleset.title')}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{t('campaign.ruleset.description')}</p>
+                <RulesetPicker
+                  idPrefix="ruleset"
+                  labelledBy="ruleset-heading"
+                  value={campaign.ruleset}
+                  describedBy="ruleset-notes"
+                  disabled={updateMutation.isPending || rulesetLocked || Boolean(charactersLoading)}
+                  onChange={(ruleset) => updateMutation.mutate({ id: campaign.id, ruleset })}
+                />
+                <div id="ruleset-notes">
+                  {(rulesetLocked || rulesetRefusedByDb) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.locked')}</p>
+                  )}
+                  {!canBuildCharacters(campaign.ruleset) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
+                  )}
+                </div>
+                {updateMutation.isError &&
+                  !rulesetRefusedByDb &&
+                  updateMutation.variables &&
+                  'ruleset' in updateMutation.variables && (
+                    <p className="text-sm text-destructive mt-1">{t('campaign.ruleset.saveFailed')}</p>
+                  )}
               </CardContent>
             </Card>
           </div>

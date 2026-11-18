@@ -25,6 +25,7 @@ export const SAMPLE_CAMPAIGN = {
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
   archived_at: null,
+  ruleset: '2024',
 };
 
 /** Pick the colour theme / mode the way the ThemeProvider stores them. */
@@ -88,7 +89,9 @@ export async function stubBackend(
       });
     }
     if (url.pathname.startsWith('/rest/v1/campaigns')) {
-      return route.fulfill({ json: [SAMPLE_CAMPAIGN] });
+      // .single() asks for one object (PostgREST answers with the object, not a one-row list).
+      const wantsObject = (route.request().headers()['accept'] ?? '').includes('application/vnd.pgrst.object');
+      return route.fulfill({ json: wantsObject ? SAMPLE_CAMPAIGN : [SAMPLE_CAMPAIGN] });
     }
     const table = url.pathname.replace('/rest/v1/', '').split('/')[0];
     if (opts.rest && url.pathname.startsWith('/rest/v1/') && table in opts.rest) {

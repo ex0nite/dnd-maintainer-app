@@ -44,6 +44,7 @@ export type Database = {
           image_url: string | null
           name: string
           previous_slugs: string[]
+          ruleset: string
           setting: string | null
           slug: string
           status: string | null
@@ -59,6 +60,7 @@ export type Database = {
           image_url?: string | null
           name: string
           previous_slugs?: string[]
+          ruleset?: string
           setting?: string | null
           slug?: string
           status?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           previous_slugs?: string[]
+          ruleset?: string
           setting?: string | null
           slug?: string
           status?: string | null

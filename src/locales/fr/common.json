@@ -387,6 +387,7 @@
     },
     "errors": {
       "noCampaignId": "L'identifiant de campagne est nécessaire pour créer un personnage.",
+      "rulesetNotReady": "Les fiches de personnage des règles {{ruleset}} ne sont pas encore disponibles dans cette campagne.",
       "cancelRebuildFailed": "Impossible d'annuler la reconstruction. Veuillez réessayer.",
       "failedToFinalize": "Impossible de finaliser le personnage : {{message}}",
       "failedToSaveDraft": "Impossible d'enregistrer le brouillon. Vos dernières modifications n'ont peut-être pas été enregistrées.",
@@ -792,6 +793,18 @@
     },
     "theme": "Thème de la campagne",
     "themeDescription": "Personnalisez le thème de couleurs de cette campagne",
+    "ruleset": {
+      "title": "Édition des règles",
+      "description": "L'édition des règles que suit cette campagne. Elle peut être changée jusqu'à la finalisation du premier personnage.",
+      "createHint": "Vous pourrez la changer plus tard, tant qu'aucun personnage n'est finalisé.",
+      "options": {
+        "2014": "D&D 5e (2014)",
+        "2024": "D&D 5.5e (2024)"
+      },
+      "locked": "Un personnage est déjà finalisé : l'édition des règles ne peut plus changer.",
+      "notReady": "Les fiches de personnage des règles 2014 ne sont pas encore disponibles.",
+      "saveFailed": "L'édition des règles n'a pas pu être changée."
+    },
     "sourceBooks": {
       "title": "Ouvrages de référence",
       "description": "Choisissez les livres de règles disponibles pour la création de personnages dans cette campagne.",

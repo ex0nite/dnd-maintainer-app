@@ -134,6 +134,9 @@ corruption or the loss of the QNAP. The owner confirms this again before the ope
 
 - Memory: `docs/qnap-load-test.md` holds the measure. The stack is capped per container, so a leak cannot take the QNAP down.
 - Logs rotate (5 MB x 2 per container). `account-admin` logs method, path, status and duration, nothing else.
+- Update the app: **apply the new migrations first** (`deploy/qnap/apply-migrations.sh`), then publish the front (`publish-site.sh`),
+  then rebuild the MCP (`npm run build` in `dnd-maintainer-mcp`). The front and the MCP read columns the migration adds (for example
+  `campaigns.ruleset`, story 9.1): published or built before the migration, they fail on almost every request.
 - Update an image: change the digest in the compose file after reading its release notes, rebuild nothing else.
 - Orphan authentication users (a creation that failed half-way): `account-admin` logs the id on stderr; delete by hand.
 - Local rehearsal on a development machine, without touching `supabase start`: `deploy/qnap/localtest.sh up|down|ps|logs`
