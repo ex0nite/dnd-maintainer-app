@@ -1,4 +1,7 @@
-import { isBackgroundId, type SpeciesId, type ClassId, type BackgroundId, type FeatId } from '@/lib/dnd-helpers';
+import type { SpeciesId, ClassId, BackgroundId, FeatId } from '@/lib/dnd-helpers';
+import { builtin2024RuleSet, missingReason, spellsForList } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
+import type { RuleEntryKind } from '@/lib/rules/schemas';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('sources');
@@ -23,14 +26,13 @@ import type {
   SpellChoiceGrant,
 } from '@/types/grants';
 import type { CharacterBuild } from '@/types/choices';
-import { SPECIES_SOURCES, LINEAGE_GRANTS_REGISTRY } from '@/lib/sources/species';
+import { SPECIES_SOURCES } from '@/lib/sources/species';
 import { CLASS_SOURCES } from '@/lib/sources/classes';
 import { SUBCLASS_SOURCES, SUBCLASS_IDS, SUBCLASS_IDS_BY_CLASS, isSubclassId } from '@/lib/sources/subclasses';
 import { BACKGROUND_SOURCES } from '@/lib/sources/backgrounds';
 import { FEAT_SOURCES } from '@/lib/sources/feats';
 import { ITEM_SOURCES } from '@/lib/sources/items';
 import { FIGHTING_STYLE_SOURCES, getFightingStyleSource } from '@/lib/sources/fighting-styles';
-import { getSpellsForList } from '@/lib/sources/spells';
 import type { FightingStyleId } from '@/lib/dnd-helpers';
 
 export type {
@@ -131,20 +133,29 @@ export function gateGrantsByMinClassLevel(
 export interface CollectBundlesResult {
   readonly bundles: readonly GrantBundle[];
   readonly warnings: readonly string[];
-  readonly expandedFeats: ReadonlySet<FeatId>;
+  readonly expandedFeats: ReadonlySet<string>;
 }
 
-export function collectBundles(build: CharacterBuild): CollectBundlesResult {
+/**
+ * Assembles the grant bundles of a build from a rule set (story 9.3). `rules` defaults to the built-in 2024 rules, so
+ * callers that predate the rules library behave exactly as before.
+ */
+export function collectBundles(build: CharacterBuild, rules: RuleSet = builtin2024RuleSet()): CollectBundlesResult {
   const bundles: GrantBundle[] = [];
   const warnings: string[] = [];
+  // Extra context when an id is known to the library but not usable (needs review, invalid).
+  const why = (kind: RuleEntryKind, id: string): string => {
+    const reason = missingReason(rules, kind, id);
+    return reason.startsWith('no ') ? '' : ` (${reason})`;
+  };
 
   // Species
-  const speciesSource = getSpeciesSource(build.speciesId);
+  const speciesSource = rules.species.get(build.speciesId);
   if (speciesSource) {
     const tag: SourceTag = { origin: 'species', id: build.speciesId };
     bundles.push({ source: tag, grants: speciesSource.grants });
   } else {
-    const msg = `No source data found for species "${build.speciesId}" — species grants will be empty`;
+    const msg = `No source data found for species "${build.speciesId}" — species grants will be empty${why('species', build.speciesId)}`;
     warnings.push(msg);
     logger.warn(msg);
   }
@@ -157,7 +168,7 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
   }
 
   for (const [classId, levelCount] of classCounts) {
-    const classSource = getClassSource(classId);
+    const classSource = rules.classes.get(classId);
     if (!classSource) {
       const msg = `No source data found for class "${classId}" — class grants will be empty`;
       warnings.push(msg);
@@ -173,7 +184,7 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
 
   // Subclass features
   for (const [classId, levelCount] of classCounts) {
-    const classSource = getClassSource(classId);
+    const classSource = rules.classes.get(classId);
     if (!classSource) continue;
 
     // Collect subclass grants from class levels up to levelCount
@@ -189,7 +200,7 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
     for (const subclassGrant of subclassGrants) {
       const subclassDecision = build.choices[subclassGrant.key];
       if (subclassDecision?.type === 'subclass') {
-        const subclassSource = getSubclassSource(subclassDecision.subclassId);
+        const subclassSource = rules.subclasses.get(subclassDecision.subclassId);
         if (subclassSource) {
           for (const feature of subclassSource.features) {
             if (feature.classLevel <= levelCount) {
@@ -203,7 +214,7 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
             }
           }
         } else {
-          const msg = `No source data found for subclass "${subclassDecision.subclassId}" — subclass features will be empty`;
+          const msg = `No source data found for subclass "${subclassDecision.subclassId}" — subclass features will be empty${why('subclass', subclassDecision.subclassId)}`;
           warnings.push(msg);
           logger.warn(msg);
         }
@@ -251,7 +262,7 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
   for (const { grant, source } of allSpellChoiceGrants) {
     const decision = build.choices[grant.key];
     if (decision?.type === 'spell-choice') {
-      const pool = getSpellsForList(grant.spellList, grant.spellLevel);
+      const pool = spellsForList(rules, grant.spellList, grant.spellLevel);
       for (const spellId of decision.spellIds) {
         if (!pool.some((s) => s.id === spellId)) {
           const msg = `spell-choice "${grant.key}" decision references spell "${spellId}" not in ${grant.spellList} list at level ${grant.spellLevel}`;
@@ -304,10 +315,15 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
   for (const { grant, source } of allLineageChoiceGrants) {
     const decision = build.choices[grant.key];
     if (decision?.type === 'lineage-choice') {
-      const speciesId = grant.speciesId as keyof typeof LINEAGE_GRANTS_REGISTRY;
-      const speciesRegistry = LINEAGE_GRANTS_REGISTRY[speciesId];
-      const lineageGrants = speciesRegistry?.[decision.lineageId];
-      if (lineageGrants) {
+      // Own keys only (a stored lineageId such as "constructor" must not reach Object.prototype), and only a lineage
+      // the grant offers.
+      const lineages = rules.lineages.get(grant.speciesId);
+      const lineageId = decision.lineageId;
+      const lineageGrants =
+        lineages && grant.from.includes(lineageId) && Object.prototype.hasOwnProperty.call(lineages, lineageId)
+          ? lineages[lineageId]
+          : undefined;
+      if (Array.isArray(lineageGrants)) {
         bundles.push({ source, grants: lineageGrants });
       } else {
         const msg = `No grants for lineage "${decision.lineageId}" of species "${grant.speciesId}"`;
@@ -317,9 +333,9 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
     }
   }
 
-  // Background (only predefined backgrounds have grant sources)
-  if (build.backgroundId && isBackgroundId(build.backgroundId)) {
-    const backgroundSource = getBackgroundSource(build.backgroundId);
+  // Background (a free-text background with no entry in the rule set has no grants, silently)
+  if (build.backgroundId) {
+    const backgroundSource = rules.backgrounds.get(build.backgroundId);
     if (backgroundSource) {
       const tag: SourceTag = { origin: 'background', id: build.backgroundId };
       bundles.push({ source: tag, grants: backgroundSource.grants });
@@ -328,19 +344,19 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
 
   // Expand FeatGrant grants embedded in already-collected bundles (e.g. background origin feats).
   // Snapshot current length to avoid iterating bundles we add in this pass.
-  const expandedFeats = new Set<FeatId>();
+  const expandedFeats = new Set<string>();
   const preFeatExpansionLength = bundles.length;
   for (let i = 0; i < preFeatExpansionLength; i++) {
     const bundle = bundles[i];
     for (const grant of bundle.grants) {
       if (grant.type === 'feat') {
-        const featSource = getFeatSource(grant.featId);
+        const featSource = rules.feats.get(grant.featId);
         if (featSource) {
           const tag: SourceTag = { origin: 'feat', id: grant.featId };
           bundles.push({ source: tag, grants: featSource.grants });
           expandedFeats.add(grant.featId);
         } else {
-          const msg = `No source data found for feat "${grant.featId}" — feat grants will be empty`;
+          const msg = `No source data found for feat "${grant.featId}" — feat grants will be empty${why('feat', grant.featId)}`;
           warnings.push(msg);
           logger.warn(msg);
         }
@@ -351,13 +367,13 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
   // Feats explicitly listed in the build (manually chosen at level-up)
   for (const featId of build.feats) {
     if (expandedFeats.has(featId)) continue; // already expanded by background or a prior pass
-    const featSource = getFeatSource(featId);
+    const featSource = rules.feats.get(featId);
     if (featSource) {
       const tag: SourceTag = { origin: 'feat', id: featId };
       bundles.push({ source: tag, grants: featSource.grants });
       expandedFeats.add(featId);
     } else {
-      const msg = `No source data found for feat "${featId}" — feat grants will be empty`;
+      const msg = `No source data found for feat "${featId}" — feat grants will be empty${why('feat', featId)}`;
       warnings.push(msg);
       logger.warn(msg);
     }
@@ -379,13 +395,13 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
     const decision = build.choices[grant.key];
     if (decision?.type === 'feat-choice') {
       if (expandedFeats.has(decision.featId)) continue; // already expanded by background or build.feats pass
-      const featSource = getFeatSource(decision.featId);
+      const featSource = rules.feats.get(decision.featId);
       if (featSource) {
         const tag: SourceTag = { origin: 'feat', id: decision.featId };
         bundles.push({ source: tag, grants: featSource.grants });
         expandedFeats.add(decision.featId);
       } else {
-        const msg = `No source data found for feat-choice decision "${decision.featId}" — feat grants will be empty`;
+        const msg = `No source data found for feat-choice decision "${decision.featId}" — feat grants will be empty${why('feat', decision.featId)}`;
         warnings.push(msg);
         logger.warn(msg);
       }
@@ -394,12 +410,12 @@ export function collectBundles(build: CharacterBuild): CollectBundlesResult {
 
   // Items
   for (const itemId of build.activeItems) {
-    const itemSource = getItemSource(itemId);
+    const itemSource = rules.items.get(itemId);
     if (itemSource) {
       const tag: SourceTag = { origin: 'item', id: itemId };
       bundles.push({ source: tag, grants: itemSource.grants });
     } else {
-      const msg = `No source data found for item "${itemId}" — item grants will be empty`;
+      const msg = `No source data found for item "${itemId}" — item grants will be empty${why('item', itemId)}`;
       warnings.push(msg);
       logger.warn(msg);
     }

@@ -1,17 +1,16 @@
 import type { SpeciesId, ClassId, BackgroundId, SizeId, AbilityKey, FeatId } from '@/lib/dnd-helpers';
 import type { Grant } from '@/types/grants';
-import type { SubclassId } from '@/lib/sources/subclasses';
 import type { SourceBookId } from '@/lib/source-books';
 
 export type { SubclassId } from '@/lib/sources/subclasses';
 export { isSubclassId } from '@/lib/sources/subclasses';
 
 export type SourceTag =
-  | { readonly origin: 'species'; readonly id: SpeciesId }
+  | { readonly origin: 'species'; readonly id: string }
   | { readonly origin: 'class'; readonly id: ClassId; readonly level: number }
-  | { readonly origin: 'subclass'; readonly id: SubclassId; readonly classId: ClassId; readonly level: number }
-  | { readonly origin: 'background'; readonly id: BackgroundId }
-  | { readonly origin: 'feat'; readonly id: FeatId }
+  | { readonly origin: 'subclass'; readonly id: string; readonly classId: ClassId; readonly level: number }
+  | { readonly origin: 'background'; readonly id: string }
+  | { readonly origin: 'feat'; readonly id: string }
   | { readonly origin: 'item'; readonly id: string }
   | { readonly origin: 'bundle'; readonly id: string }
   | { readonly origin: 'pack'; readonly id: string }

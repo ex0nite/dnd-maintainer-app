@@ -19,6 +19,7 @@ import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacter
 import { useCharacter, useCampaignDrafts, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { useCampaign } from '@/hooks/useCampaigns';
+import { RuleSetProvider, useActiveRuleSet, useRuleAwareT } from '@/hooks/useRuleSet';
 import { canBuildCharacters, isRulesetId } from '@/lib/ruleset';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import type { Character } from '@/types/database';
@@ -27,7 +28,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactElement } from 
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DND_SPECIES, DND_CLASSES, isBackgroundId } from '@/lib/dnd-helpers';
+import { DND_CLASSES } from '@/lib/dnd-helpers';
 import { collectClassBundleKeys } from '@/lib/gold-equipment';
 import type { StepType } from '@/types/character-builder';
 import { useRole } from '@/hooks/usePermissions';
@@ -130,6 +131,8 @@ function CharacterBuilderInner({
 }) {
   const { t } = useTranslation('common');
   const { t: tg } = useTranslation('gamedata');
+  const rules = useActiveRuleSet();
+  const rt = useRuleAwareT();
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const { campaignId } = useCampaignContext();
   const { isPlayer } = useRole();
@@ -204,7 +207,7 @@ function CharacterBuilderInner({
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
-  const selectedRace = character.species ? DND_SPECIES.find((s) => s.id === character.species) : null;
+  const selectedRace = character.species && rules.species.has(character.species) ? { id: character.species } : null;
   const selectedClass = character.class ? DND_CLASSES.find((c) => c.id === character.class) : null;
 
   const isReadyToFinalize = hasRequiredFields && (resolved?.pendingChoices.length ?? 0) === 0;
@@ -400,11 +403,18 @@ function CharacterBuilderInner({
             <>
               <span className="font-semibold text-foreground">{character.name}</span>
               {' · '}
-              {tg(`species.${selectedRace.id}`)}
+              {rt(`species.${selectedRace.id}` as `species.${string}`, { defaultValue: selectedRace.id })}
               {' · '}
               {tg(`classes.${selectedClass.id}`)}
-              {character.background && isBackgroundId(character.background) && (
-                <> ({tg(`backgrounds.${character.background}`)})</>
+              {character.background && rules.backgrounds.has(character.background) && (
+                <>
+                  {' '}
+                  (
+                  {rt(`backgrounds.${character.background}` as `backgrounds.${string}`, {
+                    defaultValue: character.background,
+                  })}
+                  )
+                </>
               )}
             </>
           )}
@@ -665,17 +675,22 @@ export default function CharacterBuilder() {
           </div>
         </div>
       )}
-      <CharacterProvider
-        key={characterSlug ?? 'new'}
-        initialCharacter={initialCharacter}
-        initialRows={initialRows}
-        initialEquippedItems={initialEquippedItems}
+      <RuleSetProvider
+        ruleset={campaign && isRulesetId(campaign.ruleset) ? campaign.ruleset : undefined}
+        campaignLoading={campaignLoading}
       >
-        <CharacterBuilderInner
-          existingCharacterId={initialCharacter.id || undefined}
-          wasFinalized={!isNew && itemsData.length > 0}
-        />
-      </CharacterProvider>
+        <CharacterProvider
+          key={characterSlug ?? 'new'}
+          initialCharacter={initialCharacter}
+          initialRows={initialRows}
+          initialEquippedItems={initialEquippedItems}
+        >
+          <CharacterBuilderInner
+            existingCharacterId={initialCharacter.id || undefined}
+            wasFinalized={!isNew && itemsData.length > 0}
+          />
+        </CharacterProvider>
+      </RuleSetProvider>
     </>
   );
 }

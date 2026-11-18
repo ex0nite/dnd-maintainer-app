@@ -1,4 +1,4 @@
-import { isSpellId } from '@/lib/sources/spells';
+import { useActiveRuleSet, useRuleName } from '@/hooks/useRuleSet';
 import { getSpellDisplayMeta } from '@/lib/spell-display';
 import type { ResolvedCharacter } from '@/types/resolved';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,8 @@ type Spellcasting = NonNullable<ResolvedCharacter['spellcasting']>;
 export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting }) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
 
   // Group knownSpells by level, ascending
   const spellsByLevel = spellcasting.knownSpells.reduce<Record<number, string[]>>((acc, { spellId, spellLevel }) => {
@@ -64,10 +66,10 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
             <div className="text-xs font-bold text-muted-foreground mb-2">{cantripsHeader}</div>
             <div className="space-y-1">
               {spellcasting.cantrips.map((cantrip, i) => {
-                const meta = getSpellDisplayMeta(cantrip);
+                const meta = getSpellDisplayMeta(cantrip, rules);
                 return (
                   <div key={i} className="text-sm text-foreground">
-                    &bull; {isSpellId(cantrip) ? t(`spells.${cantrip}.name`) : cantrip}
+                    &bull; {ruleName('spell', cantrip)}
                     {meta && <span className="text-xs text-muted-foreground ml-2">{`(${meta.school})`}</span>}
                   </div>
                 );
@@ -99,10 +101,10 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                     <div className="text-xs text-muted-foreground mb-1">{levelHeader}</div>
                     <div className="space-y-1">
                       {spellsByLevel[level].map((id, i) => {
-                        const meta = getSpellDisplayMeta(id);
+                        const meta = getSpellDisplayMeta(id, rules);
                         return (
                           <div key={i} className="text-sm text-foreground">
-                            &bull; {isSpellId(id) ? t(`spells.${id}.name`) : id}
+                            &bull; {ruleName('spell', id)}
                             {meta && (
                               <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
                             )}
@@ -124,10 +126,10 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
             </div>
             <div className="space-y-1">
               {spellcasting.alwaysPreparedSpells.map((id, i) => {
-                const meta = getSpellDisplayMeta(id);
+                const meta = getSpellDisplayMeta(id, rules);
                 return (
                   <div key={i} className="text-sm text-foreground">
-                    &bull; {isSpellId(id) ? t(`spells.${id}.name`) : id}
+                    &bull; {ruleName('spell', id)}
                     {meta && (
                       <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
                     )}

@@ -3116,6 +3116,9 @@
     }
   },
   "sourceBooks": {
-    "phb-2024": "Player's Handbook 2024"
+    "phb-2024": "Player's Handbook 2024",
+    "phb-2014": "Player's Handbook 2014",
+    "xgte": "Xanathar's Guide to Everything",
+    "tcoe": "Tasha's Cauldron of Everything"
   }
 }

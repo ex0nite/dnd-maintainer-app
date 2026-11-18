@@ -7,7 +7,6 @@ import type {
   ToolProficiencyId,
   LanguageId,
   ClassId,
-  FeatId,
 } from '@/lib/dnd-helpers';
 import type {
   FeatureDef,
@@ -29,7 +28,6 @@ import type {
   WeaponRange,
   BundleCategory,
 } from '@/types/items';
-import type { SpeciesId } from '@/lib/dnd-helpers';
 
 export interface Sourced<T> {
   readonly value: T;
@@ -243,14 +241,14 @@ export type PendingChoice =
       readonly type: 'lineage-choice';
       readonly choiceKey: ChoiceKey;
       readonly source: SourceTag;
-      readonly speciesId: SpeciesId;
+      readonly speciesId: string;
       readonly from: readonly string[];
     }
   | {
       readonly type: 'feat-choice';
       readonly choiceKey: ChoiceKey;
       readonly source: SourceTag;
-      readonly from: readonly FeatId[] | null;
+      readonly from: readonly string[] | null;
       readonly category: FeatCategory;
     }
   | {

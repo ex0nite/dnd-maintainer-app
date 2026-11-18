@@ -1,18 +1,6 @@
-import type {
-  AbilityKey,
-  FeatId,
-  FightingStyleId,
-  SkillId,
-  ToolProficiencyId,
-  LanguageId,
-  ClassId,
-  SpeciesId,
-  BackgroundId,
-} from '@/lib/dnd-helpers';
-import type { SubclassId } from '@/types/sources';
+import type { AbilityKey, FightingStyleId, SkillId, ToolProficiencyId, LanguageId, ClassId } from '@/lib/dnd-helpers';
 import type { AbilityScores } from '@/types/database';
 import type { DamageTypeId } from '@/types/grants';
-import type { SpellId } from '@/types/spells';
 
 /**
  * Choice key format: `category:origin:id:index`
@@ -96,7 +84,7 @@ export type ChoiceDecision =
       readonly tools: readonly ToolProficiencyId[];
     }
   | { readonly type: 'asi'; readonly allocation: Partial<Record<AbilityKey, number>> }
-  | { readonly type: 'subclass'; readonly subclassId: SubclassId }
+  | { readonly type: 'subclass'; readonly subclassId: string }
   | { readonly type: 'fighting-style-choice'; readonly styles: readonly FightingStyleId[] }
   | { readonly type: 'weapon-mastery-choice'; readonly weaponIds: readonly string[] }
   | { readonly type: 'damage-choice'; readonly damageTypes: readonly DamageTypeId[] }
@@ -107,9 +95,9 @@ export type ChoiceDecision =
       readonly slotPicks: Readonly<Record<string, string>>;
     }
   | { readonly type: 'lineage-choice'; readonly lineageId: string }
-  | { readonly type: 'feat-choice'; readonly featId: FeatId }
+  | { readonly type: 'feat-choice'; readonly featId: string }
   | { readonly type: 'feature-choice'; readonly optionId: string }
-  | { readonly type: 'spell-choice'; readonly spellIds: readonly SpellId[] };
+  | { readonly type: 'spell-choice'; readonly spellIds: readonly string[] };
 
 export interface BuildLevel {
   readonly classId: ClassId;
@@ -118,12 +106,12 @@ export interface BuildLevel {
 }
 
 export interface CharacterBuild {
-  readonly speciesId: SpeciesId;
-  readonly backgroundId: BackgroundId | null;
+  readonly speciesId: string;
+  readonly backgroundId: string | null;
   readonly baseAbilities: AbilityScores;
   readonly abilityMethod: 'standard-array' | 'point-buy' | 'rolling';
   readonly levels: readonly BuildLevel[];
   readonly choices: Readonly<Record<ChoiceKey, ChoiceDecision>>;
-  readonly feats: readonly FeatId[];
+  readonly feats: readonly string[];
   readonly activeItems: readonly string[];
 }

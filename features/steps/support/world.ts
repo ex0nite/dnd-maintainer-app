@@ -222,6 +222,23 @@ class DndWorldImpl extends World implements DndWorld {
         }),
       });
     }
+    // Story 9.3: the builder and the sheet wait for the campaign and its rules library (RuleSetProvider). Give pages the
+    // stateful client for both, unless the step mocks them itself. (The esmocked useRuleSet has its own context: screens
+    // below it fall back to the built-in rules, which is what these scenarios use.)
+    if (modulePath.startsWith('@/pages/')) {
+      if (!('@/hooks/useRuleSet' in extraDefs)) {
+        defs[resolveAlias('@/hooks/useRuleSet')] = await esmock(resolveAlias('@/hooks/useRuleSet'), {
+          [resolveAlias('@/hooks/useRuleEntries')]: await esmock(resolveAlias('@/hooks/useRuleEntries'), {
+            [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
+          }),
+        });
+      }
+      if (!('@/hooks/useCampaigns' in extraDefs)) {
+        defs[resolveAlias('@/hooks/useCampaigns')] = await esmock(resolveAlias('@/hooks/useCampaigns'), {
+          [resolveAlias('@/lib/supabase')]: { supabase: this.statefulSupabase },
+        });
+      }
+    }
     for (const [key, value] of Object.entries(extraDefs)) {
       defs[resolveAlias(key)] = value;
     }

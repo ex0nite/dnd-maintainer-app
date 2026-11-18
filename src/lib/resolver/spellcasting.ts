@@ -3,7 +3,8 @@ import type { AbilityKey, ClassId } from '@/lib/dnd-helpers';
 import type { ResolvedAbility, ResolvedSpellcasting, SpellLevel } from '@/types/resolved';
 import { getPactMagicSlots, getPreparedSpellCount, getSpellSlots } from '@/lib/dnd-helpers';
 import { collectGrantsByType } from '@/lib/resolver/helpers';
-import { getSpellDef } from '@/lib/sources/spells';
+import { builtin2024RuleSet } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('resolver');
@@ -18,8 +19,11 @@ export function resolveSpellcasting(
   bundles: readonly GrantBundle[],
   abilities: Readonly<Record<AbilityKey, ResolvedAbility>>,
   proficiencyBonus: number,
-  level: number
+  level: number,
+  /** Spells come from the rule set (story 9.3): a library spell, or one replacing a built-in spell, is honoured. */
+  rules: RuleSet = builtin2024RuleSet()
 ): ResolvedSpellcasting | null {
+  const getSpellDef = (id: string) => rules.spells.get(id);
   const spellcastingGrants = collectGrantsByType(bundles, 'spellcasting');
   const spellGrants = collectGrantsByType(bundles, 'spell');
   const spellChoiceGrants = collectGrantsByType(bundles, 'spell-choice');

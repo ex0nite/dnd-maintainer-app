@@ -186,6 +186,11 @@ Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
   une règle qui en exige un nouveau est un changement de code. Langues et outils s'ouvrent (les livres de 2014 en ajoutent).
 - **Sécurité.** Donnée seule : aucun code, balise ni lien ; texte affiché brut ; taille et nombre bornés ; validation Zod à l'écriture
   (MCP et app) et **à la lecture** (une entrée invalide est ignorée et signalée, jamais résolue) ; garde structurelle en SQL.
+  Précision du 2026-11-18 (revue de la 9.3) : le SQL (`validate_rule_entry`) est un **plancher structurel** (enveloppe, clés du
+  corps, type de chaque `grant` parmi les 29, bornes, texte dangereux), pas la validation complète ; **Zod fait le contrôle
+  complet** à l'écriture (app, MCP) et à la lecture. Un joueur peut inscrire n'importe quel identifiant kebab-case dans l'espèce ou
+  l'historique de sa fiche (sans effet hors de sa fiche, qui se calcule sans lui), mais peut ainsi bloquer la suppression d'une
+  entrée de même identifiant jusqu'à ce que le MJ corrige la fiche.
 - **Licence.** Le dépôt public ne contient que le SRD 5.1 (CC-BY 4.0, 9 espèces, 4 sous-espèces, 12 classes, 12 sous-classes dont le
   Fiélon, 1 historique, 1 don, 319 sorts, 237 objets) avec son attribution. Hors SRD (Nain des montagnes, Cercle des Spores, Chevalier
   runique, Âme acérée, Traqueur des ténèbres, artificier, historiques et dons non SRD) : saisi par le MJ dans sa base privée.

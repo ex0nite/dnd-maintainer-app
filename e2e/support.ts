@@ -26,6 +26,7 @@ export const SAMPLE_CAMPAIGN = {
   updated_at: '2026-01-01T00:00:00Z',
   archived_at: null,
   ruleset: '2024',
+  allowed_source_books: ['phb-2024'],
 };
 
 /** Pick the colour theme / mode the way the ThemeProvider stores them. */

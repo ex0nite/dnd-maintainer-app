@@ -1,5 +1,5 @@
 import { getProficiencyBonus } from '@/lib/dnd-helpers';
-import type { AbilityKey, ToolProficiencyId, SkillId, FeatId, ClassId } from '@/lib/dnd-helpers';
+import type { AbilityKey, ToolProficiencyId, SkillId, ClassId } from '@/lib/dnd-helpers';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('resolver');
@@ -21,8 +21,8 @@ import { resolveSpellcasting } from '@/lib/resolver/spellcasting';
 import { resolveEquipment, resolveAttacks, resolveEquippedArmorAc } from '@/lib/resolver/equipment';
 import { resolveResourcePools } from '@/lib/resolver/resource-pools';
 import { getItemDef, WEAPON_CATALOG } from '@/lib/sources/items';
-import { getFeatSource } from '@/lib/sources';
-import { getSpellsForList } from '@/lib/sources/spells';
+import { builtin2024RuleSet, spellsForList } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
 
 export interface PersistedItem {
   readonly itemId: string;
@@ -41,7 +41,9 @@ export interface ResolverInput {
   readonly equippedItemIds?: readonly string[];
   readonly persistedItems?: readonly PersistedItem[];
   readonly useDBInventory?: boolean;
-  readonly expandedFeats?: ReadonlySet<FeatId>;
+  readonly expandedFeats?: ReadonlySet<string>;
+  /** Rules the bundles were collected from (story 9.3). Defaults to the built-in 2024 rules. */
+  readonly rules?: RuleSet;
 }
 
 function isValidExpertiseSkillPick(
@@ -58,7 +60,8 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   const { baseAbilities, level, bundles, choices } = input;
   const hpRolls = input.hpRolls ?? input.levels?.map((l) => l.hpRoll) ?? [];
   const equippedItemIds = input.equippedItemIds ?? [];
-  const expandedFeats = input.expandedFeats ?? new Set<FeatId>();
+  const expandedFeats = input.expandedFeats ?? new Set<string>();
+  const rules = input.rules ?? builtin2024RuleSet();
 
   const proficiencyBonus = getProficiencyBonus(level);
   const abilities = resolveAbilities(baseAbilities, bundles, choices);
@@ -71,7 +74,7 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   const features = resolveFeatures(bundles, abilities, proficiencyBonus);
   const hitPoints = resolveHp(bundles, hpRolls, conModifier, level);
   const speed = resolveSpeed(bundles);
-  const spellcasting = resolveSpellcasting(bundles, abilities, proficiencyBonus, level);
+  const spellcasting = resolveSpellcasting(bundles, abilities, proficiencyBonus, level, rules);
 
   // Equipment resolution — finalized characters read from DB inventory directly
   const equipmentResult =
@@ -352,7 +355,7 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   // Unresolved feat-choice grants (or decided with an unresolvable featId — invalid/corrupted decision)
   for (const { grant, source } of collectGrantsByType(bundles, 'feat-choice')) {
     const decision = choices[grant.key];
-    const resolvedFeat = decision?.type === 'feat-choice' ? getFeatSource(decision.featId) : undefined;
+    const resolvedFeat = decision?.type === 'feat-choice' ? rules.feats.get(decision.featId) : undefined;
     if (!decision || decision.type !== 'feat-choice' || !resolvedFeat) {
       // Either-or suppression: if the companion ASI is satisfied, skip feat-choice pending
       const parsed = parseChoiceKey(grant.key);
@@ -377,7 +380,7 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   for (const { grant, source } of collectGrantsByType(bundles, 'spell-choice')) {
     const decision = choices[grant.key];
     const chosenIds = decision?.type === 'spell-choice' ? decision.spellIds : [];
-    const inPool = getSpellsForList(grant.spellList, grant.spellLevel);
+    const inPool = spellsForList(rules, grant.spellList, grant.spellLevel);
     const validDistinct = new Set(chosenIds.filter((id) => inPool.some((s) => s.id === id)));
     if (!decision || decision.type !== 'spell-choice' || validDistinct.size < grant.count) {
       pendingChoices.push({

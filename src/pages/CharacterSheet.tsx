@@ -38,6 +38,9 @@ import type { Character } from '@/types/database';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { RuleSetProvider, useActiveRuleSet, useRuleAwareT } from '@/hooks/useRuleSet';
+import { useCampaign } from '@/hooks/useCampaigns';
+import { isRulesetId } from '@/lib/ruleset';
 import { toast } from 'sonner';
 import { useBuilderAutosave } from '@/hooks/useBuilderAutosave';
 import type { AutosavePayload } from '@/hooks/useBuilderAutosave';
@@ -56,7 +59,9 @@ function CharacterSheetInner({
   characterId: string;
 }) {
   const { t: tc } = useTranslation('common');
-  const { t: tg } = useTranslation('gamedata');
+  // Inside RuleSetProvider: names and spells of the campaign's rules library (story 9.3).
+  const rules = useActiveRuleSet();
+  const rt = useRuleAwareT();
   const [editSection, setEditSection] = useState<EditSection>(null);
 
   const navigate = useNavigate();
@@ -228,7 +233,7 @@ function CharacterSheetInner({
     setExportingPdf(true);
     try {
       const featSources = collectFeatSources(bundles, build?.choices ?? {});
-      const { missingFields } = await exportCharacterPdf(resolved, character, tg, featSources);
+      const { missingFields } = await exportCharacterPdf(resolved, character, rt, featSources, { rules });
       if (missingFields.length > 0) {
         toast.warning(tc('characterSheet.export.successWithMissing', { count: missingFields.length }));
         logger.warn('PDF template missing mapped fields:', missingFields);
@@ -478,7 +483,10 @@ function CharacterSheetInner({
 
 export default function CharacterSheet() {
   const { t: tc } = useTranslation('common');
-  const { characterSlug } = useParams<{ campaignSlug: string; characterSlug: string }>();
+  const { campaignSlug, characterSlug } = useParams<{ campaignSlug: string; characterSlug: string }>();
+  // Rules of the campaign's edition, DM library included (story 9.3).
+  const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignSlug);
+  const ruleset = campaign && isRulesetId(campaign.ruleset) ? campaign.ruleset : undefined;
 
   const { data: character, isLoading: characterLoading, error } = useCharacter(characterSlug);
   const { data: buildRows = [], isLoading: rowsLoading, error: rowsError } = useCharacterBuildLevels(character?.id);
@@ -529,15 +537,17 @@ export default function CharacterSheet() {
   }
 
   return (
-    <CharacterProvider
-      key={character.id}
-      initialCharacter={character}
-      initialRows={buildRows}
-      initialEquippedItems={equippedItems}
-      initialPersistedItems={isFinalized ? persistedItems : undefined}
-      useDBInventory={isFinalized}
-    >
-      <CharacterSheetInner character={character} itemsData={itemsData} characterId={character.id} />
-    </CharacterProvider>
+    <RuleSetProvider ruleset={ruleset} campaignLoading={campaignLoading}>
+      <CharacterProvider
+        key={character.id}
+        initialCharacter={character}
+        initialRows={buildRows}
+        initialEquippedItems={equippedItems}
+        initialPersistedItems={isFinalized ? persistedItems : undefined}
+        useDBInventory={isFinalized}
+      >
+        <CharacterSheetInner character={character} itemsData={itemsData} characterId={character.id} />
+      </CharacterProvider>
+    </RuleSetProvider>
   );
 }

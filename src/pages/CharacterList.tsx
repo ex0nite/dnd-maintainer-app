@@ -8,6 +8,9 @@ import { getLogger } from '@/lib/logger';
 import { Plus, Search, User, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCampaign } from '@/hooks/useCampaigns';
+import { useRuleAwareT, useRuleSet } from '@/hooks/useRuleSet';
+import { isRulesetId } from '@/lib/ruleset';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const logger = getLogger('CharacterList');
@@ -17,8 +20,10 @@ type SortType = 'name' | 'level' | 'class' | 'updated';
 
 export default function CharacterList() {
   const { t } = useTranslation('common');
-  const { t: tg } = useTranslation('gamedata');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
+  const { data: campaign } = useCampaign(campaignSlug);
+  const { rules } = useRuleSet(campaign && isRulesetId(campaign.ruleset) ? campaign.ruleset : undefined);
+  const tg = useRuleAwareT(rules);
   const { campaignId } = useCampaignContext();
   const navigate = useNavigate();
   const [filterType, setFilterType] = useState<FilterType>('all');

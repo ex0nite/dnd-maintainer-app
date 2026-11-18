@@ -14,12 +14,12 @@ import {
   type SkillId,
   type ToolProficiencyId,
 } from '@/lib/dnd-helpers';
-import type { FeatId } from '@/lib/dnd-helpers';
 import { getItemDef, getItemNameKey, WEAPON_CATALOG } from '@/lib/sources/items';
 import { getBundleDef, getBundleNameKey, getItemsForSlot, resolveBundleRef } from '@/lib/sources/bundles';
-import { FEAT_SOURCES } from '@/lib/sources';
-import type { FeatSource } from '@/lib/sources';
-import { getSpellsForList } from '@/lib/sources/spells';
+import { spellsForList } from '@/lib/rules/ruleset';
+import { ruleKey, type FeatRule } from '@/lib/rules/types';
+import { localizedName } from '@/lib/rules/display';
+import { useActiveRuleSet, useRuleName, useRuleSummary } from '@/hooks/useRuleSet';
 import type { SpellId } from '@/types/spells';
 import type { ChoiceDecision, ChoiceKey } from '@/types/choices';
 import type { BundleSlot, ItemDef, SlotFilter } from '@/types/items';
@@ -41,15 +41,15 @@ interface ChoicePickerProps {
   /**
    * Optional filtered feat list from useGameData. When provided, only feats in
    * this list are shown for feat-choice prompts, PLUS the currently chosen feat
-   * (no-data-loss union). Falls back to the full FEAT_SOURCES when undefined.
+   * (no-data-loss union). Falls back to every feat of the active rule set when undefined.
    */
-  readonly allowedFeats?: readonly FeatSource[];
+  readonly allowedFeats?: readonly FeatRule[];
   /**
    * Feat ids the character already has from another source and that cannot be
    * taken again (non-repeatable). For feat-choice prompts these are shown but
    * disabled, so e.g. a Human can't pick a feat their background already granted.
    */
-  readonly unavailableFeats?: ReadonlySet<FeatId>;
+  readonly unavailableFeats?: ReadonlySet<string>;
 }
 
 const ALL_SKILL_IDS: readonly SkillId[] = DND_SKILLS.map((s) => s.id);
@@ -76,8 +76,11 @@ export function ChoicePicker({
   allowedFeats,
   unavailableFeats,
 }: ChoicePickerProps) {
-  const { t } = useTranslation('gamedata');
+  const { t, i18n } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
+  const ruleSummary = useRuleSummary();
 
   if (choice.type === 'skill-choice') {
     const rawPool = choice.from ?? ALL_SKILL_IDS;
@@ -287,7 +290,10 @@ export function ChoicePicker({
           {from.map((lineageId) => {
             const radioId = `choice-lineage-${choice.choiceKey}-${lineageId}`;
             const labelKey = `lineages.${speciesId}.${lineageId}` as `lineages.${typeof speciesId}.${string}`;
-            const label = t(labelKey, { defaultValue: lineageId });
+            const ownName = rules.lineageNames.get(speciesId)?.get(lineageId);
+            const label = ownName
+              ? localizedName(ownName, i18n?.language ?? 'en')
+              : t(labelKey, { defaultValue: lineageId });
             return (
               <div
                 key={lineageId}
@@ -320,13 +326,13 @@ export function ChoicePicker({
   if (choice.type === 'feat-choice') {
     const { from, category } = choice;
     const currentFeatId = currentDecision?.type === 'feat-choice' ? currentDecision.featId : undefined;
-    // Base feat source list: use allowedFeats when provided, else full FEAT_SOURCES.
-    const featSource = allowedFeats ?? FEAT_SOURCES;
+    // Base feat source list: use allowedFeats when provided, else every feat of the rule set.
+    const featSource = allowedFeats ?? [...rules.feats.values()];
     // Compute the pool: explicit `from` list takes priority; otherwise filter by category.
     // Union with currentFeatId for no-data-loss (keep current selection visible even if its
     // book is now disabled).
-    const basePool: readonly FeatId[] = from ?? featSource.filter((f) => f.category === category).map((f) => f.id);
-    const pool: readonly FeatId[] =
+    const basePool: readonly string[] = from ?? featSource.filter((f) => f.category === category).map((f) => f.id);
+    const pool: readonly string[] =
       currentFeatId && !basePool.includes(currentFeatId) ? [...basePool, currentFeatId] : basePool;
 
     return (
@@ -337,8 +343,11 @@ export function ChoicePicker({
             const radioId = `choice-feat-${choice.choiceKey}-${featId}`;
             const nameKey = `feats.${featId}.name` as `feats.${string}.name`;
             const descKey = `feats.${featId}.description` as `feats.${string}.description`;
-            const label = t(nameKey, { defaultValue: featId });
-            const description = t(descKey, { defaultValue: '' });
+            // An entry of the rules library shows its own name and summary (story 9.3).
+            const ownEntry = rules.entries.has(ruleKey('feat', featId));
+            const label = ownEntry ? ruleName('feat', featId) : t(nameKey, { defaultValue: featId });
+            const description =
+              (ownEntry ? ruleSummary('feat', featId) : undefined) ?? t(descKey, { defaultValue: '' });
             const isDisabledBook = featId === currentFeatId && !basePool.includes(featId);
             // Already granted elsewhere and non-repeatable → show but block re-selection
             // (never blocks the current pick, so a valid selection stays changeable).
@@ -574,7 +583,7 @@ export function ChoicePicker({
   }
 
   if (choice.type === 'spell-choice') {
-    const pool = getSpellsForList(choice.spellList, choice.spellLevel);
+    const pool = spellsForList(rules, choice.spellList, choice.spellLevel);
     const current = currentDecision?.type === 'spell-choice' ? currentDecision.spellIds : [];
     const atMax = current.length >= choice.count;
 

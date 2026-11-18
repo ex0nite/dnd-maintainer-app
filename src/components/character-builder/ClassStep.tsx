@@ -12,7 +12,7 @@ import { FIGHTING_STYLE_SOURCES } from '@/lib/sources/fighting-styles';
 import type { PendingChoice } from '@/types/resolved';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isSpellId } from '@/lib/sources/spells';
+import { useRuleAwareT, useRuleName } from '@/hooks/useRuleSet';
 import { useParams } from 'react-router-dom';
 
 interface FightingStyleChoiceInfo {
@@ -24,6 +24,8 @@ interface FightingStyleChoiceInfo {
 export function ClassStep() {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rt = useRuleAwareT();
+  const ruleName = useRuleName();
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const gameData = useGameData(campaignSlug);
   const context = useCharacterContext();
@@ -109,7 +111,7 @@ export function ClassStep() {
                     {tc('characterBuilder.pendingChoices.fightingStyleChoice', { count: fsc.count })}{' '}
                     <span className="text-xs">
                       {tc('characterBuilder.pendingChoices.fromSource', {
-                        source: getChoiceSourceName(fsc.choiceKey, t),
+                        source: getChoiceSourceName(fsc.choiceKey, rt),
                       })}
                     </span>
                   </p>
@@ -168,18 +170,14 @@ export function ClassStep() {
           {spellcasting.cantrips.length > 0 && (
             <div>
               <span className="text-sm font-semibold">{tc('characterBuilder.classFeatures.cantrips')}: </span>
-              <span className="text-sm">
-                {spellcasting.cantrips.map((id) => (isSpellId(id) ? t(`spells.${id}.name`) : id)).join(', ')}
-              </span>
+              <span className="text-sm">{spellcasting.cantrips.map((id) => ruleName('spell', id)).join(', ')}</span>
             </div>
           )}
           {spellcasting.alwaysPreparedSpells.length > 0 && (
             <div>
               <span className="text-sm font-semibold">{tc('characterSheet.sections.alwaysPrepared')}: </span>
               <span className="text-sm">
-                {spellcasting.alwaysPreparedSpells
-                  .map((id) => (isSpellId(id) ? t(`spells.${id}.name`) : id))
-                  .join(', ')}
+                {spellcasting.alwaysPreparedSpells.map((id) => ruleName('spell', id)).join(', ')}
               </span>
             </div>
           )}
@@ -193,10 +191,10 @@ export function ClassStep() {
             {levelOneClassFeatures.map(({ feature }) => (
               <li key={feature.id} className="rounded-md border border-border p-3">
                 <div className="text-sm font-semibold">
-                  {t(`features.${feature.id}.name`, { defaultValue: feature.name ?? feature.id })}
+                  {feature.name ?? t(`features.${feature.id}.name`, { defaultValue: feature.id })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t(`features.${feature.id}.description`, { defaultValue: feature.description ?? '' })}
+                  {feature.description ?? t(`features.${feature.id}.description`, { defaultValue: '' })}
                 </p>
               </li>
             ))}
@@ -226,7 +224,7 @@ export function ClassStep() {
             <div key={choice.choiceKey}>
               <p className="text-xs text-muted-foreground mb-1">
                 {tc('characterBuilder.pendingChoices.fromSource', {
-                  source: getChoiceSourceName(choice.choiceKey, t),
+                  source: getChoiceSourceName(choice.choiceKey, rt),
                 })}
               </p>
               <ChoicePicker
@@ -246,7 +244,7 @@ export function ClassStep() {
             <div key={choice.choiceKey}>
               <p className="text-xs text-muted-foreground mb-1">
                 {tc('characterBuilder.pendingChoices.fromSource', {
-                  source: getChoiceSourceName(choice.choiceKey, t),
+                  source: getChoiceSourceName(choice.choiceKey, rt),
                 })}
               </p>
               <ChoicePicker

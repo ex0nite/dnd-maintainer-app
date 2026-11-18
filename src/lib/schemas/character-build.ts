@@ -29,40 +29,53 @@ export const BuildLevelSchema = z.object({
   hpRoll: z.number().int().min(1).nullable(),
 });
 
-export const ChoiceDecisionSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('ability-choice'), abilities: z.array(z.string()).readonly() }),
-  z.object({ type: z.literal('skill-choice'), skills: z.array(z.string()).readonly() }),
-  z.object({ type: z.literal('tool-choice'), tools: z.array(z.string()).readonly() }),
-  z.object({ type: z.literal('language-choice'), languages: z.array(z.string()).readonly() }),
-  z.object({ type: z.literal('saving-throw-choice'), savingThrows: z.array(z.enum(ABILITY_KEYS)).readonly() }),
-  z.object({
-    type: z.literal('expertise-choice'),
-    skills: z.array(z.enum(SKILL_IDS)).readonly(),
-    tools: z.array(z.enum(TOOL_IDS)).readonly(),
-  }),
-  z.object({ type: z.literal('asi'), allocation: z.record(z.string(), z.number()) }),
-  z.object({ type: z.literal('subclass'), subclassId: z.string().min(1) }),
-  z.object({ type: z.literal('fighting-style-choice'), styles: z.array(z.string()).readonly() }),
-  z.object({
-    type: z.literal('weapon-mastery-choice'),
-    weaponIds: z.array(z.string()).readonly(),
-  }),
-  z.object({ type: z.literal('damage-choice'), damageTypes: z.array(z.string()).readonly() }),
-  z.object({
-    type: z.literal('bundle-choice'),
-    bundleId: z.string().min(1),
-    // Records persisted before the slot system default to {}; slotted bundles
-    // will re-prompt the user via pendingChoices when they load the character.
-    slotPicks: z.record(z.string(), z.string()).default({}),
-  }),
-  z.object({ type: z.literal('lineage-choice'), lineageId: z.string().min(1) }),
-  z.object({ type: z.literal('feature-choice'), optionId: z.string().min(1) }),
-  z.object({ type: z.literal('feat-choice'), featId: z.string().refine(isFeatId, { message: 'Unknown feat ID' }) }),
-  z.object({
-    type: z.literal('spell-choice'),
-    spellIds: z.array(z.string().refine(isSpellId, { message: 'Unknown spell ID' })).readonly(),
-  }),
-]);
+export interface ChoiceDecisionIdChecks {
+  readonly isFeat: (id: string) => boolean;
+  readonly isSpell: (id: string) => boolean;
+}
+
+/**
+ * Schema of a stored choice decision. Feat and spell ids are checked by the given predicates: the built-in lists by
+ * default (`ChoiceDecisionSchema`), a rule set's feats and spells when the build reads the rules library (story 9.3).
+ */
+export function makeChoiceDecisionSchema({ isFeat, isSpell }: ChoiceDecisionIdChecks) {
+  return z.discriminatedUnion('type', [
+    z.object({ type: z.literal('ability-choice'), abilities: z.array(z.string()).readonly() }),
+    z.object({ type: z.literal('skill-choice'), skills: z.array(z.string()).readonly() }),
+    z.object({ type: z.literal('tool-choice'), tools: z.array(z.string()).readonly() }),
+    z.object({ type: z.literal('language-choice'), languages: z.array(z.string()).readonly() }),
+    z.object({ type: z.literal('saving-throw-choice'), savingThrows: z.array(z.enum(ABILITY_KEYS)).readonly() }),
+    z.object({
+      type: z.literal('expertise-choice'),
+      skills: z.array(z.enum(SKILL_IDS)).readonly(),
+      tools: z.array(z.enum(TOOL_IDS)).readonly(),
+    }),
+    z.object({ type: z.literal('asi'), allocation: z.record(z.string(), z.number()) }),
+    z.object({ type: z.literal('subclass'), subclassId: z.string().min(1) }),
+    z.object({ type: z.literal('fighting-style-choice'), styles: z.array(z.string()).readonly() }),
+    z.object({
+      type: z.literal('weapon-mastery-choice'),
+      weaponIds: z.array(z.string()).readonly(),
+    }),
+    z.object({ type: z.literal('damage-choice'), damageTypes: z.array(z.string()).readonly() }),
+    z.object({
+      type: z.literal('bundle-choice'),
+      bundleId: z.string().min(1),
+      // Records persisted before the slot system default to {}; slotted bundles
+      // will re-prompt the user via pendingChoices when they load the character.
+      slotPicks: z.record(z.string(), z.string()).default({}),
+    }),
+    z.object({ type: z.literal('lineage-choice'), lineageId: z.string().min(1) }),
+    z.object({ type: z.literal('feature-choice'), optionId: z.string().min(1) }),
+    z.object({ type: z.literal('feat-choice'), featId: z.string().refine(isFeat, { message: 'Unknown feat ID' }) }),
+    z.object({
+      type: z.literal('spell-choice'),
+      spellIds: z.array(z.string().refine(isSpell, { message: 'Unknown spell ID' })).readonly(),
+    }),
+  ]);
+}
+
+export const ChoiceDecisionSchema = makeChoiceDecisionSchema({ isFeat: isFeatId, isSpell: isSpellId });
 
 // Compile-time parity: every ChoiceDecision discriminant must have a schema arm.
 // If a new ChoiceDecision variant is added to @/types/choices without a matching arm here,

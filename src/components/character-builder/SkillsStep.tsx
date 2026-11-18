@@ -10,6 +10,7 @@ import type { SourceTag } from '@/types/sources';
 import { ABILITY_ABBREVIATIONS, DND_SKILLS, type SkillId, type ToolProficiencyId } from '@/lib/dnd-helpers';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRuleAwareT } from '@/hooks/useRuleSet';
 
 /** Stable identity for a grant source, so multiple grants from the same source dedupe to one icon. */
 function sourceKey(source: SourceTag): string {
@@ -33,6 +34,7 @@ interface ExpertiseChoiceInfo {
 
 export function SkillsStep() {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
   const context = useCharacterContext();
   const { resolved, build, bundles } = context;
@@ -118,7 +120,7 @@ export function SkillsStep() {
             <p className="text-sm text-muted-foreground">
               {tc('characterBuilder.pendingChoices.skillChoice', { count: sc.count })}{' '}
               <span className="text-xs">
-                {tc('characterBuilder.pendingChoices.fromSource', { source: getChoiceSourceName(sc.choiceKey, t) })}
+                {tc('characterBuilder.pendingChoices.fromSource', { source: getChoiceSourceName(sc.choiceKey, rt) })}
               </span>
             </p>
             <Badge variant={remaining === 0 ? 'default' : 'outline'} className="text-xs">
@@ -240,7 +242,7 @@ export function SkillsStep() {
                 <div className="flex items-center gap-1 shrink-0">
                   {Array.from(new Map(iconSources.map((source) => [sourceKey(source), source])).values()).map(
                     (source) => {
-                      const sourceName = getSourceDisplayName(source, t);
+                      const sourceName = getSourceDisplayName(source, rt);
                       return (
                         <span
                           key={sourceKey(source)}

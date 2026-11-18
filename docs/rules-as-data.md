@@ -157,9 +157,12 @@ Guards in the database (the DM is trusted but the MCP writes on their behalf, so
   `data:`, `http`);
 - `revision` increments on every update; deletion is refused while a character uses the entry (checked by the same function).
 
-The database cannot run the full Zod schema. The structural guard above is the floor; the app and the MCP both run the Zod
-schema before writing, and **the app runs it again when reading**: an entry that fails is ignored and reported to the DM, never
-resolved.
+The database cannot run the full Zod schema. **The SQL guard is a structural floor, not the validation**: it checks the
+envelope, the body keys per kind, that every element of a `grants` list (at any depth) is an object whose `type` is one of the
+29 grant types, that names and summaries are strings, bounds, and dangerous text (markup, links, scripts, control and invisible
+formatting characters). It does not check the inside of a grant (an unknown key in a grant passes the SQL). **Zod is the
+complete check**: the app and the MCP run it before writing, and **the app runs it again when reading**: an entry that fails is
+ignored and reported to the DM, never resolved.
 
 ### 3.6 Characters keep their stored values
 
@@ -180,7 +183,7 @@ recomputed when its owner or the DM rebuilds it.
 
 | Area                                                                                                                           | Change                                                          | Story |
 | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- | ----- |
-| `src/lib/sources/index.ts`                                                                                                     | `getXSource` and `collectBundles` take a `RuleSet`              | 9.3   |
+| `src/lib/sources/index.ts`                                                                                                     | `collectBundles` takes a `RuleSet` (done, section 9)            | 9.3   |
 | 45 call sites (`BasicsStep`, `OriginStep`, `SubclassPicker`, `useCharacterContext`, `build-reconstruction`, `random-npc`, ...) | read the `RuleSet` from context                                 | 9.3   |
 | `src/types/*`                                                                                                                  | open entity ids, JSON entry types, Zod schemas                  | 9.3   |
 | `supabase/migrations`                                                                                                          | `rule_entries`, `validate_rule_entry`, policies, pgTAP matrix   | 9.3   |
@@ -247,3 +250,79 @@ name must be confirmed in the book it comes from, and the entry keeps the book i
 Limits of the extractions made so far (private files): the books are OCR scans, with systematic errors on dice, columns mixed in
 tables (the Rune Knight rune table is the most fragile) and lost lines (one row of the Fiend expanded list). Every entry coming
 from a scan carries a `needsReview` list and is not usable until a human has checked it; the schema reserves that field.
+
+## 9. As implemented in story 9.3
+
+Story 9.3 built sections 3.1 to 3.5. Where the implementation had to decide something this document left open, or chose a
+simpler shape, it is listed here (the data shapes are in `docs/dnd-2024.md`, section "Rule entries").
+
+- **Code.** `src/lib/rules/` (pure, importable by the MCP): `schemas.ts` (Zod: envelope, eight bodies, the 29 `Grant` variants
+  against the closed vocabularies of `vocab.ts`), `types.ts` (`RuleSet`), `ruleset.ts` (`buildRuleSet`, `builtin2024RuleSet`,
+  `spellsForList`, `classOfSubclass`), `display.ts` (names, `ruleAwareT`), `srd-2014.ts` (empty SRD layer). React:
+  `useRuleEntries`, `useRuleSet` (`{ rules, status }`), `RuleSetProvider`, `useActiveRuleSet`, `useRuleName`, `useRuleAwareT`
+  (`src/hooks/`).
+- **Validation, two levels.** Zod (`parseRuleEntry`) is the complete check, on write (app, MCP) and on read. The SQL
+  `validate_rule_entry` is a structural floor (section 3.5): grant types yes, grant contents no. Text rules are the same on both
+  sides: no `<`, `>`, `javascript:`, `vbscript:`, `data:`, `http` (any case), no value starting with `www.` or `//`, no control or
+  invisible formatting character (Unicode Cc, Cf; line breaks allowed in summaries and descriptions only). Zod bounds the JSON to
+  60000 bytes of `JSON.stringify` and 12 levels of nesting, under the 65536 bytes of `octet_length(content::text)` in SQL (jsonb
+  normalizes the text a little longer).
+- **Loading.** `useRuleSet` returns `{ rules, status: loading | error | ready }`. `RuleSetProvider` (builder, sheet) waits for
+  the campaign and the library (skeleton), and shows an error with a retry button instead of the sheet when the library can not be
+  read: a sheet is never computed without the entries it may depend on. `rule_entries` is cached 30 seconds.
+- **Names.** Every place that turns a species, class, subclass, background, feat or spell id into a name goes through the rule
+  set (`useRuleName`, or `useRuleAwareT`, a `gamedata` translator whose entity keys answer with the entry's own text, used by the
+  choice sources, the sheet, the character list, the dashboard and the PDF). Text written by the DM is never passed to i18next
+  (`defaultValue` is interpolated): a feature's own `name` and `description` are shown first, as is.
+- **The built-in layer keeps its objects.** The 2024 `RuleSet` holds the very objects of `src/lib/sources/*` (same references, same
+  order), so `useGameData` and every test that compares sources are unchanged. `builtin2024RuleSet()` is the default of
+  `collectBundles`, `resolveCharacter`, `reconstructBuild` and the builder helpers: callers that pass nothing behave as before.
+- **Editions.** 2024 = built-in code + library. 2014 = SRD layer + library, with no built-in 2024 rules underneath (the 2014 engine
+  stays disabled until 9.5 to 9.8).
+- **Feature text.** The descriptive text of a feature is carried by its `feature` grant (`feature.name`, `feature.description`, which
+  `FeatureDef` already had and the sheet already displays), in one language. Section 3.3 suggested `features[].name` and
+  `features[].text` on the subclass: not added, to keep one place for the text. Entry names and summaries are bilingual.
+- **Classes stay closed.** Spell lists, slot tables, class icons and resource pools are keyed on `ClassId` everywhere, so a `class`
+  entry can only replace a built-in class (its id must be a `ClassId`). Opening class ids (artificer) is a later story.
+- **Languages and tools stay closed** until 9.5, as section 3.4 planned.
+- **Unverified entries.** An entry with `needsReview` notes is not applied at all: it is listed in `RuleSet.unverified` (and on the
+  DM's dashboard), and when it has the id of a lower-layer rule, that rule stays in force (and keeps its name) until the notes
+  are cleared. The database refuses (23503) to add review notes to an entry a character uses.
+- **Invalid entries** are listed in `RuleSet.invalid` with the path and message of the first issue, logged, and never resolved.
+- **Source books.** `allowed_source_books` filters the built-in layer only; SRD and library entries are always offered (the DM put
+  them in the library on purpose). `SourceBookId` gains `phb-2014`, `xgte`, `tcoe` (default unchanged: `{phb-2024}`); the dashboard
+  lists the books of the campaign's edition only.
+- **Reads.** Policy `rule_entries_member_select`: a member reads the library of an edition when one of their campaigns follows it
+  (subquery on `campaigns` with `is_member`, no new SECURITY DEFINER function); `access_active` as everywhere; the DM reads and
+  writes all (`rule_entries_dm_all`). The API writes only `ruleset`, `kind`, `id`, `content` (insert) and `content` (update).
+- **Deletion guard.** `rule_entry_users(ruleset, kind, id)` (SQL, not SECURITY DEFINER) lists the characters that use an id,
+  **whatever the current edition of their campaign** (a campaign can change edition while it holds drafts): `characters.species/background/class/subclass`, `character_build_levels.class_id/subclass_id/feat_id`,
+  feat, spell and lineage decisions in `choices`, `character_items.item_id`. The delete trigger refuses (23503) while it returns
+  rows. It is a separate function from `validate_rule_entry`, so the MCP can show who uses an entry before an update (section 3.6).
+  It also blocks deleting a library entry that only overrides a built-in rule while characters use that id: safest default.
+  `rule_entry_references(ruleset, kind, id)` lists the other entries of the edition whose content mentions the id (any string
+  value equal to it): the delete is refused while there are some. Limit for 9.5: a `subspecies` is matched through the
+  `lineage-choice` decisions (`lineageId`), the only place a sub-choice of a species is stored today; lineage ids are not unique
+  across species, so the match can be over-cautious. 9.5 decides how a subspecies is stored on a character.
+- **Characters.** `characters.species` and `characters.background` were closed lists of the 2024 ids; they become kebab-case
+  checks, so a character can carry a library species or background. Engine types follow: `CharacterBuild.speciesId`,
+  `backgroundId`, `feats`, the `subclass` and `feat-choice` decisions, `SourceTag` ids of species, subclass, background and feat,
+  `FeatGrant.featId`, `FeatChoiceGrant.from` and `LineageChoiceGrant.speciesId` are `string`. The closed unions remain for the
+  built-in data (`SpeciesId`, `FeatId`, ...), narrowed with `isSpeciesId`, `isFeatId`, `isBackgroundId`, `isSubclassId` where a
+  `gamedata` key is built.
+- **Lineage names** of a library species are kept in `RuleSet.lineageNames` and shown by the lineage picker and the sheet. A
+  lineage is taken only from the entry's own keys and only when the grant offers it (a stored `constructor` resolves to nothing).
+- **Degraded reading.** `reconstructBuild` no longer throws on a well-formed but unknown species: a warning, and the sheet
+  resolves without its grants. Feat and spell decisions with a well-formed id are kept even when the rules do not know the id
+  (they were dropped silently before); `collectBundles` warns about the missing entry. `collectBundles` runs inside the error
+  boundary of the character context.
+- **Replacing a class** keeps the quick-build hints and the book of the built-in class. Its `asi` and `subclass` grants are indexed
+  like the built-in ones (the n-th `asi` grant is `asi:class:<id>:n`, stored on the row of the class level that carries it):
+  keep them at the same levels, or stored builds move.
+- **Immutability.** A `RuleSet` and its lists are frozen; its maps are typed `ReadonlyMap` and must never be mutated (the
+  built-in values are the shared objects of `src/lib/sources/*`).
+- **Ids a player can write.** `characters.species` and `characters.background` accept any kebab-case id, and a player writes
+  their own sheet: a player can store an id that is no rule (it only affects their sheet, which resolves without it), and can
+  thereby block the deletion of a library entry with that id until the DM edits the sheet.
+- **Not done in 9.3** (left to the stories that need them): the MCP tools (9.4), consuming `subspecies` (9.5), the SRD 2014 converter
+  and data (9.5 to 9.8), library entries in the random NPC generator and in the class quick-build (they draw from the built-in rules).

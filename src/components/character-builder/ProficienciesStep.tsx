@@ -15,6 +15,7 @@ import { getChoiceSourceName } from '@/lib/character-builder/choice-source-name'
 import { pickMostRestrictiveChoiceWithRoom } from '@/lib/character-builder/route-choice';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRuleAwareT } from '@/hooks/useRuleSet';
 
 interface ChoiceInfo<T> {
   readonly choiceKey: ChoiceKey;
@@ -24,6 +25,7 @@ interface ChoiceInfo<T> {
 
 export function ProficienciesStep() {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
   const context = useCharacterContext();
   const { resolved, build, bundles } = context;
@@ -256,7 +258,7 @@ export function ProficienciesStep() {
                     {tc('characterBuilder.pendingChoices.toolChoice', { count: tc_choice.count })}{' '}
                     <span className="text-xs">
                       {tc('characterBuilder.pendingChoices.fromSource', {
-                        source: getChoiceSourceName(tc_choice.choiceKey, t),
+                        source: getChoiceSourceName(tc_choice.choiceKey, rt),
                       })}
                     </span>
                   </p>
@@ -312,7 +314,7 @@ export function ProficienciesStep() {
               <p className="text-sm text-muted-foreground">
                 {tc('characterBuilder.pendingChoices.languageChoice', { count: lc.count })}{' '}
                 <span className="text-xs">
-                  {tc('characterBuilder.pendingChoices.fromSource', { source: getChoiceSourceName(lc.choiceKey, t) })}
+                  {tc('characterBuilder.pendingChoices.fromSource', { source: getChoiceSourceName(lc.choiceKey, rt) })}
                 </span>
               </p>
               <Badge variant={remaining === 0 ? 'default' : 'outline'} className="text-xs">
