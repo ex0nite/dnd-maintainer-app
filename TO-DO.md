@@ -58,7 +58,6 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [ ] Masquer le lien et la route « Joueurs » pour un non-MJ (le service refuse déjà ; à faire avec le hook de profil, story 2.3)
 - [ ] Nettoyage des comptes d'authentification sans profil (crash entre création et profil) : tâche manuelle ou job
-- [ ] Story 7.3 : limite par adresse de GoTrue (`GOTRUE_RATE_LIMIT_HEADER` = en-tête que le proxy écrase) et test à deux adresses (AC 2.6)
 - [ ] Story 7.2 : activer le hook `password_verification_attempt` côté QNAP APRÈS la migration (voir SETUP)
 - [ ] Copier le mot de passe temporaire : effacer le presse-papiers après un délai (confort)
 
@@ -84,9 +83,9 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 ### Epic 7, suite : mise en ligne
 
 - [x] 7.2 Installation reproductible et secrets régénérés (FAIT : `deploy/qnap/`, `docs/deploy-qnap.md`, job CI `stack` ; reste l'installation réelle sur le QNAP, avec le propriétaire)
-- [ ] 7.3 Exposition HTTPS et vérification réseau : passerelle, en-têtes et vérifications prêts ; RESTE, avec l'accord du propriétaire :
-      connecter NPM au réseau `dnd-edge`, créer l'hôte du proxy, ses ranges CDN (NPM 2.14.0 fait confiance à `X-Real-IP` venant des CDN :
-      les vider ou accepter le risque), test à deux clients, scan depuis l'extérieur
+- [x] 7.3 Exposition HTTPS et vérification réseau (FAIT le 2026-11-18 : hôte NPM avec certificat joker Let's Encrypt, redirection 80/443 de la box,
+      smoke complet depuis le réseau public, en-têtes, limite par adresse avec `X-Real-IP` forgé (429 au bout de 33 essais), scan : seuls 80 et 443 ouverts ;
+      RESTE : test depuis un second client (téléphone en 5G) pendant que le PC est limité, et décision sur les plages CDN de NPM (risque résiduel accepté ou `ip_ranges.conf` vidé))
 - [x] 7.4 CSP stricte (FAIT en mode bloquant sous Playwright ; RESTE : passage `Report-Only` puis bloquant sur l'environnement d'essai du QNAP, voir doc)
 - [ ] 7.5 Bascule vers la production (rappel : pas de sauvegarde, D-23)
 - [ ] 7.6 Recette avec les cinq joueurs

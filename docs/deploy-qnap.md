@@ -96,6 +96,13 @@ On the QNAP the Docker binaries are not in the default `PATH`:
 - **Scan from outside** (a phone on mobile data, or an external scanner): only 80 and 443 answer; the database port
   (5432), Studio and the metadata port are not reachable (they are neither published nor started).
 
+**Verified on the real install (2026-11-18).** Through the public name: `deploy/qnap/smoke.mjs` passes in full (headers,
+OpenAPI refused, sign-up refused, admin refused, RLS-empty tables, storage); 40 failed sign-ins in a row, each with a
+different forged `X-Real-IP` and `X-Forwarded-For`, give `400` x33 then `429`: the limit follows the real address; a TCP
+scan of the public address shows 80 and 443 open and nothing else (SSH, proxy admin, database, gateway, API ports
+closed). The router must forward TCP 80 and 443 only, to a fixed LAN address of the NAS. Test from mobile data: a client
+on the same LAN may not reach the public address (no hairpin NAT on some boxes).
+
 ## 3. Content-Security-Policy (story 7.4)
 
 `gateway/security-headers.conf.template` carries the policy of AD-21 (no `unsafe-inline`, no `unsafe-eval`):
