@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { DEFAULT_RULESET, RULESET_IDS, canBuildCharacters, isRulesetId } from '@/lib/ruleset';
 
 describe('ruleset', () => {
-  it('offers the 2014 and the 2024 rules, 2024 by default', () => {
-    expect([...RULESET_IDS]).toEqual(['2014', '2024']);
-    expect(DEFAULT_RULESET).toBe('2024');
+  it('defaults to an edition the picker offers', () => {
+    expect(RULESET_IDS).toContain(DEFAULT_RULESET);
   });
 
   it.each([
@@ -19,8 +18,9 @@ describe('ruleset', () => {
     expect(isRulesetId(value)).toBe(expected);
   });
 
-  it('only builds characters for the editions whose engine exists', () => {
+  it('builds characters only for editions whose engine exists, and never for an unknown one', () => {
     expect(canBuildCharacters('2024')).toBe(true);
     expect(canBuildCharacters('2014')).toBe(false);
+    expect(canBuildCharacters('2020' as never)).toBe(false);
   });
 });

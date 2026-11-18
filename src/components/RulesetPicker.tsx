@@ -10,13 +10,22 @@ interface RulesetPickerProps {
   idPrefix: string;
   /** Id of the element that labels the group. */
   labelledBy: string;
+  /** Id of the element that explains why the choice is frozen, or what to expect from it. */
+  describedBy?: string;
 }
 
 /** Two-way choice between the rules editions (story 9.1). */
-export function RulesetPicker({ value, onChange, disabled = false, idPrefix, labelledBy }: RulesetPickerProps) {
+export function RulesetPicker({
+  value,
+  onChange,
+  disabled = false,
+  idPrefix,
+  labelledBy,
+  describedBy,
+}: RulesetPickerProps) {
   const { t } = useTranslation('common');
   return (
-    <div role="group" aria-labelledby={labelledBy} className="flex flex-wrap gap-2">
+    <div role="group" aria-labelledby={labelledBy} aria-describedby={describedBy} className="flex flex-wrap gap-2">
       {RULESET_IDS.map((id) => (
         <Button
           key={id}

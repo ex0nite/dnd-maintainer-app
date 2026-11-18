@@ -94,7 +94,7 @@ All user-facing strings must use `react-i18next` translation keys — never hard
 
 ### Rules edition per campaign (epic 9)
 
-`campaigns.ruleset` is `'2014'` or `'2024'` (default `'2024'`; `src/lib/ruleset.ts`). The DM picks it at creation or on the dashboard (`RulesetPicker`); a database trigger refuses a change once a character is `ready`. The 2024 engine is the only sheet engine that exists: `canBuildCharacters('2014')` is false, so the builder shows a notice and the MCP character tools refuse in a 2014 campaign, until stories 9.5 to 9.8 land. The rules themselves are still TypeScript (`src/lib/sources/`); stories 9.3 and 9.4 move them to validated data editable by the MCP.
+`campaigns.ruleset` is `'2014'` or `'2024'` (default `'2024'`; `src/lib/ruleset.ts`). The DM picks it at creation or on the dashboard (`RulesetPicker`); a database trigger refuses a change once a character is `ready`. The 2024 engine is the only sheet engine that exists: `canBuildCharacters('2014')` is false, so the builder shows a notice and the MCP character tools (create, generate NPC, set choices, level up, finalize) refuse in a 2014 campaign, until stories 9.5 to 9.8 land. The database enforces it too (`characters_check_ruleset`): a character can not be finalized in a campaign whose edition has no engine (`ruleset_has_engine()`, to extend with each engine), and a finalized one only moves between campaigns of the same edition. Drafts stay editable data: switching a campaign from 2024 to 2014 leaves its drafts in place, the builder shows the notice until the engine exists. The rules themselves are still TypeScript (`src/lib/sources/`); stories 9.3 and 9.4 move them to validated data editable by the MCP.
 
 ### Database Schema
 

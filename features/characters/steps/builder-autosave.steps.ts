@@ -107,6 +107,8 @@ When('the player opens the character builder for that draft', async function (th
     '@/hooks/useCharacters': useCharactersMod,
     '@/hooks/useCharacterBuild': useCharacterBuildMod,
     '@/hooks/useBuilderAutosave': useBuilderAutosaveMod,
+    // The builder reads the campaign to know its rules edition (story 9.1); the fake backend has no campaign query.
+    '@/hooks/useCampaigns': { useCampaign: () => ({ data: campaign, isLoading: false }) },
     '@/hooks/useCampaignContext': {
       useCampaignContext: () => ({
         campaignSlug: campaign.slug,

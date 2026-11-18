@@ -50,7 +50,7 @@ export default function CampaignDashboard() {
   const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignSlug);
   const { update: updateMutation } = useCampaignMutations();
 
-  const { data: charactersRaw = [], error: charactersError } = useCharacters(campaignId!);
+  const { data: charactersRaw = [], error: charactersError, isLoading: charactersLoading } = useCharacters(campaignId!);
   const characters = useMemo(
     () => [...charactersRaw].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
     [charactersRaw]
@@ -101,6 +101,8 @@ export default function CampaignDashboard() {
 
   // The edition can change until a character is finalized (the database enforces it too).
   const rulesetLocked = characters.some((c) => c.status === 'ready');
+  // The database is the real lock: a change made from a stale screen is refused with this code.
+  const rulesetRefusedByDb = (updateMutation.error as { code?: string } | null | undefined)?.code === '23514';
   const pcCount = characters.filter((c) => c.character_type === 'pc').length;
   const npcCount = characters.filter((c) => c.character_type === 'npc').length;
   const lastSession = sessions[0];
@@ -587,16 +589,24 @@ export default function CampaignDashboard() {
                   idPrefix="ruleset"
                   labelledBy="ruleset-heading"
                   value={campaign.ruleset}
-                  disabled={updateMutation.isPending || rulesetLocked}
+                  describedBy="ruleset-notes"
+                  disabled={updateMutation.isPending || rulesetLocked || Boolean(charactersLoading)}
                   onChange={(ruleset) => updateMutation.mutate({ id: campaign.id, ruleset })}
                 />
-                {rulesetLocked && <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.locked')}</p>}
-                {!canBuildCharacters(campaign.ruleset) && (
-                  <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
-                )}
-                {updateMutation.isError && updateMutation.variables && 'ruleset' in updateMutation.variables && (
-                  <p className="text-sm text-destructive mt-1">{t('campaign.ruleset.saveFailed')}</p>
-                )}
+                <div id="ruleset-notes">
+                  {(rulesetLocked || rulesetRefusedByDb) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.locked')}</p>
+                  )}
+                  {!canBuildCharacters(campaign.ruleset) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
+                  )}
+                </div>
+                {updateMutation.isError &&
+                  !rulesetRefusedByDb &&
+                  updateMutation.variables &&
+                  'ruleset' in updateMutation.variables && (
+                    <p className="text-sm text-destructive mt-1">{t('campaign.ruleset.saveFailed')}</p>
+                  )}
               </CardContent>
             </Card>
           </div>

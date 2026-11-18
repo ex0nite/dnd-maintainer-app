@@ -89,7 +89,9 @@ export async function stubBackend(
       });
     }
     if (url.pathname.startsWith('/rest/v1/campaigns')) {
-      return route.fulfill({ json: [SAMPLE_CAMPAIGN] });
+      // .single() asks for one object (PostgREST answers with the object, not a one-row list).
+      const wantsObject = (route.request().headers()['accept'] ?? '').includes('application/vnd.pgrst.object');
+      return route.fulfill({ json: wantsObject ? SAMPLE_CAMPAIGN : [SAMPLE_CAMPAIGN] });
     }
     const table = url.pathname.replace('/rest/v1/', '').split('/')[0];
     if (opts.rest && url.pathname.startsWith('/rest/v1/') && table in opts.rest) {

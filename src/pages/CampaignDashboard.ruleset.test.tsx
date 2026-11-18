@@ -19,7 +19,8 @@ vi.mock('react-i18next', () => ({
 const mockUpdateMutate = vi.fn();
 let mockCampaign: Campaign | undefined;
 let mockCharacters: { id: string; character_type: 'pc' | 'npc'; status: 'draft' | 'ready'; updated_at: string }[] = [];
-let mockUpdateError = false;
+let mockUpdateErrorCode: string | null = null;
+let mockCharactersLoading = false;
 
 vi.mock('@/hooks/useCampaigns', () => ({
   useCampaign: () => ({ data: mockCampaign, isLoading: false }),
@@ -27,8 +28,9 @@ vi.mock('@/hooks/useCampaigns', () => ({
     update: {
       mutate: mockUpdateMutate,
       isPending: false,
-      isError: mockUpdateError,
-      variables: mockUpdateError ? { id: 'camp-1', ruleset: '2014' } : undefined,
+      isError: mockUpdateErrorCode !== null,
+      error: mockUpdateErrorCode ? { code: mockUpdateErrorCode } : null,
+      variables: mockUpdateErrorCode ? { id: 'camp-1', ruleset: '2014' } : undefined,
     },
     create: { mutate: vi.fn() },
     archive: { mutate: vi.fn() },
@@ -44,7 +46,7 @@ vi.mock('@/hooks/usePageTitle', () => ({
 }));
 
 vi.mock('@/hooks/useCharacters', () => ({
-  useCharacters: () => ({ data: mockCharacters, error: null }),
+  useCharacters: () => ({ data: mockCharacters, error: null, isLoading: mockCharactersLoading }),
 }));
 
 vi.mock('@/hooks/useSessions', () => ({
@@ -90,7 +92,8 @@ describe('CampaignDashboard: rules edition card', () => {
   beforeEach(() => {
     mockCampaign = makeCampaign();
     mockCharacters = [];
-    mockUpdateError = false;
+    mockUpdateErrorCode = null;
+    mockCharactersLoading = false;
     mockUpdateMutate.mockClear();
   });
 
@@ -139,9 +142,27 @@ describe('CampaignDashboard: rules edition card', () => {
     expect(screen.queryByText('notReady')).not.toBeInTheDocument();
   });
 
-  it('shows an error when the change is refused', () => {
-    mockUpdateError = true;
+  it('shows a generic error when the change fails', () => {
+    mockUpdateErrorCode = '500';
     renderDashboard();
     expect(screen.getByText('saveFailed')).toBeInTheDocument();
+  });
+
+  it('explains the lock when the database refuses a change made from a stale screen', () => {
+    mockUpdateErrorCode = '23514';
+    renderDashboard();
+    expect(screen.getByText('locked')).toBeInTheDocument();
+    expect(screen.queryByText('saveFailed')).not.toBeInTheDocument();
+  });
+
+  it('keeps the picker disabled until the characters are loaded', () => {
+    mockCharactersLoading = true;
+    renderDashboard();
+    expect(screen.getByRole('button', { name: '2014' })).toBeDisabled();
+  });
+
+  it('describes the picker by its notes', () => {
+    renderDashboard();
+    expect(screen.getByRole('group', { name: 'title' })).toHaveAttribute('aria-describedby', 'ruleset-notes');
   });
 });

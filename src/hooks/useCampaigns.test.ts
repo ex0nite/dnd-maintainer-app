@@ -112,6 +112,17 @@ describe('useCampaignMutations', () => {
     expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ status: 'planning' }));
   });
 
+  it('create sends the rules edition the DM picked', async () => {
+    mockQueryResult.data = { ...baseCampaign, ruleset: '2014' };
+
+    const { result } = renderHook(() => useCampaignMutations(), { wrapper: createWrapper() });
+
+    result.current.create.mutate({ name: 'Old school', ruleset: '2014' });
+
+    await waitFor(() => expect(result.current.create.isSuccess).toBe(true));
+    expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ name: 'Old school', ruleset: '2014' }));
+  });
+
   it('update patches the campaign by id', async () => {
     const updated = { ...baseCampaign, name: 'Updated Name' };
     mockQueryResult.data = updated;

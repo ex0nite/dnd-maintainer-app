@@ -89,7 +89,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [ ] 7.5 Bascule vers la production (rappel : pas de sauvegarde, D-23)
 - [ ] 7.6 Recette avec les cinq joueurs
 
-- [ ] 9.1 (en cours le 2026-11-20) : fait en code et tests ; RESTE : revue, migration `20261120000000_campaign_ruleset.sql` sur le QNAP AVANT de reconstruire le MCP (`resolveCampaign` lit `ruleset`) et de publier le front
+- [ ] 9.1 (2026-11-20) : fait, revu (Opus), testé ; RESTE : migration `20261120000000_campaign_ruleset.sql` sur le QNAP AVANT de publier le front et de reconstruire le MCP (tous deux lisent `ruleset`), puis fusion dans `dev`
 - [ ] Epic 9 : règles 2014 par campagne et règles en données modifiables par le MCP (9.1 choix des règles, 9.2 spike et architecture, 9.3 règles en base, 9.4 outils MCP, 9.5 espèces et historiques, 9.6 classes, 9.7 constructeur, 9.8 sorts, 9.9 PDF, 9.10 recette) : voir `epics.md`
 
 ### Après le MVP
