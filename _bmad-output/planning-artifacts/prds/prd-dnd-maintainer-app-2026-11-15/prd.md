@@ -452,6 +452,52 @@ enrichi, publiée ou non ; les membres lisent ce qui est publié.
 - Un élément non publié est invisible d'un joueur, même par requête directe.
 - Seul le MJ écrit, modifie ou supprime ; un joueur qui le tente reçoit un refus.
 
+#### FR-30 : Édition des règles d'une campagne
+
+Le MJ choisit, par campagne, les règles de 2014 ou de 2024 ; le choix tient tant qu'aucun personnage n'est finalisé.
+
+**Conséquences (testables) :**
+
+- La base refuse de changer l'édition dès qu'un personnage est finalisé, quel que soit l'appelant.
+- La base refuse de finaliser un personnage dans une édition dont le moteur de fiches n'existe pas, et de déplacer un personnage finalisé vers une campagne d'une autre édition.
+- Un joueur ne peut ni créer une campagne ni changer son édition.
+
+#### FR-31 : Fiches de personnage selon les règles de 2014
+
+Un joueur d'une campagne de 2014 crée, fait évoluer et imprime un personnage conforme aux règles de 2014 (espèce et
+sous-espèce avec bonus, historique sans bonus, classe et sous-classe au bon niveau, sorts, équipement de départ).
+
+**Conséquences (testables) :**
+
+- Les calculs (PV, CA, bonus de maîtrise, sauvegardes, compétences, emplacements) suivent les tables de 2014, niveau par niveau.
+- Le moteur de 2024 et ses tests ne changent pas.
+
+#### FR-32 : Règles modifiables par le MJ (données)
+
+Le MJ crée, lit, modifie et supprime des règles (espèces, sous-espèces, classes, sous-classes, historiques, dons, sorts, objets)
+depuis le MCP ; le moteur les applique à côté des règles intégrées.
+
+**Conséquences (testables) :**
+
+- Une entrée invalide (champ inconnu, code, balise, lien, taille hors borne) est refusée avec le chemin du champ fautif.
+- Seul le MJ écrit ; les membres des campagnes de cette édition lisent ; un non-membre et l'anonyme ne lisent rien.
+- Une règle utilisée par un personnage ne se supprime pas ; sa modification liste les fiches concernées.
+- Les textes de règles s'affichent en texte brut, jamais interprétés.
+
+#### FR-33 : Contenu sous licence
+
+Le dépôt public ne contient que du contenu libre (SRD 5.1, licence CC-BY 4.0), avec son attribution ; tout autre contenu de
+règles est saisi par le MJ dans sa base privée.
+
+**Conséquences (testables) :**
+
+- Le dépôt, ses fixtures et ses tests ne contiennent aucun texte de livre hors SRD.
+- L'attribution du SRD accompagne la couche 2014 distribuée.
+
+Distinction avec FR-29 : FR-29 est une bibliothèque de **texte** (mécaniques homebrew à lire, publiées ou non, par
+campagne) ; FR-32 porte des règles **appliquées par le moteur** (une sous-classe qui modifie une fiche). Un élément du
+moteur peut renvoyer plus tard à un texte de la bibliothèque.
+
 ## 5. Non-objectifs
 
 - Gestion de la **triche** : un joueur peut modifier librement les valeurs de son propre personnage (D-03).

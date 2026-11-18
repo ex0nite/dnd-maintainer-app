@@ -167,6 +167,31 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 - Le propriétaire confirme l'ouverture **sans sauvegarde** (D-23) « pour le moment » (2026-11-18) : à reposer avant d'inviter les joueurs.
 - La CSP bloquante est vérifiée sur le site réel (connexion, accueil, joueurs, export, paramètres, mot de passe) : aucune violation.
 
+### D-35 · 2026-11-18 · Les règles deviennent des données : `RuleSet`, bibliothèque du MJ, SRD seul dans le dépôt
+
+Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
+
+- **Le moteur reste un pipeline Source → Grant → Résolveur.** Les 29 variantes de `Grant` sont des données sérialisables ; une
+  classe porte déjà ses aptitudes niveau par niveau, donc le niveau de choix de la sous-classe en 2014 (1, 2 ou 3) est une donnée,
+  pas du code. Ce qui est du code aujourd'hui : les registres au niveau des modules (45 appels hors `src/lib/sources/`) et les
+  identifiants en unions TypeScript fermées.
+- **Un `RuleSet` remplace les registres.** `collectBundles(build, rules)` et le résolveur le reçoivent ; un fournisseur React et le
+  moteur du MCP le construisent. Trois couches, la dernière l'emporte : règles de 2024 intégrées (code), SRD 5.1 de 2014 (JSON dans
+  le dépôt), bibliothèque du MJ (base de données).
+- **Bibliothèque par édition, pas par campagne.** Table `rule_entries (ruleset, kind, id, content, revision)` ; un seul MJ,
+  donc un seul jeu de règles par édition, lu par les membres des campagnes de cette édition, écrit par le MJ seul. Évite de
+  ressaisir les mêmes règles par campagne. FR-29 (bibliothèque de texte, par campagne) reste distinct.
+- **Identifiants d'entités ouverts, vocabulaire mécanique fermé.** Espèces, sous-classes, historiques, dons, sorts, objets : chaînes
+  en kebab-case. Caractéristiques, compétences, types de dégâts, états, catégories d'armes et d'armures : restent dans le code ;
+  une règle qui en exige un nouveau est un changement de code. Langues et outils s'ouvrent (les livres de 2014 en ajoutent).
+- **Sécurité.** Donnée seule : aucun code, balise ni lien ; texte affiché brut ; taille et nombre bornés ; validation Zod à l'écriture
+  (MCP et app) et **à la lecture** (une entrée invalide est ignorée et signalée, jamais résolue) ; garde structurelle en SQL.
+- **Licence.** Le dépôt public ne contient que le SRD 5.1 (CC-BY 4.0, 9 espèces, 4 sous-espèces, 12 classes, 12 sous-classes dont le
+  Fiélon, 1 historique, 1 don, 319 sorts, 237 objets) avec son attribution. Hors SRD (Nain des montagnes, Cercle des Spores, Chevalier
+  runique, Âme acérée, Traqueur des ténèbres, artificier, historiques et dons non SRD) : saisi par le MJ dans sa base privée.
+- **Source du SRD :** le jeu de données SRD 5.1 ouvert (un JSON par entité), converti par un script du dépôt ; rien n'est lu à
+  l'exécution. Le paquet PyPI `dnd-5e-core` est examiné et écarté (moteur de jeu Python, mêmes données SRD, hors périmètre).
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

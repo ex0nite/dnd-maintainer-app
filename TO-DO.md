@@ -90,6 +90,7 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [ ] 7.6 Recette avec les cinq joueurs
 
 - [x] 9.1 Choix des règles par campagne (FAIT et déployé le 2026-11-18 : migration appliquée sur le QNAP, front publié, MCP reconstruit ; copie manuelle de la base faite avant, `pre-9-1-*.sql` dans le dossier des secrets du QNAP, à supprimer quand plus utile)
+- [x] 9.2 Spike et architecture des règles en données (FAIT le 2026-11-18 : `docs/rules-as-data.md`, D-35, FR-30 à FR-33 ; inventaire SRD 5.1 ; besoins d'une vraie table ; le paquet PyPI `dnd-5e-core` écarté) ; À CONFIRMER par le MJ : livres autorisés à la table (`phb-2014`, `xgte`, `tcoe` proposés)
 - [ ] Epic 9 : règles 2014 par campagne et règles en données modifiables par le MCP (9.1 choix des règles, 9.2 spike et architecture, 9.3 règles en base, 9.4 outils MCP, 9.5 espèces et historiques, 9.6 classes, 9.7 constructeur, 9.8 sorts, 9.9 PDF, 9.10 recette) : voir `epics.md`
 
 ### Après le MVP

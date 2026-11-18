@@ -120,6 +120,10 @@ FR26: Epic 1 - Créer une campagne (MJ)
 FR27: Epic 1 - Rattacher les données existantes et garder le MCP fonctionnel
 FR28: Epic 8 - Récapitulatifs en texte enrichi
 FR29: Epic 8 - Bibliothèque « Règles de la table »
+FR30: Epic 9 - Édition des règles d'une campagne
+FR31: Epic 9 - Fiches de personnage selon les règles de 2014
+FR32: Epic 9 - Règles modifiables par le MJ (données)
+FR33: Epic 9 - Contenu sous licence (SRD 5.1)
 
 NFR1, NFR7 : transversaux, portés par chaque story (revue de sécurité D-06, tests pgTAP AD-14).
 NFR4, NFR5, NFR5b, NFR9 : Epic 7. NFR10 : Epic 4 (bornes) et Epic 8 (CSP). NFR8 : Epic 6 et critère de chaque story d'interface.
@@ -191,8 +195,8 @@ brainstorm de design.
 ### Epic 9 : Les règles de 2014 pour les tables qui les jouent
 
 Le MJ choisit les règles 2014 ou 2024 par campagne et crée ou modifie les règles par le MCP (règles en données, en base) ; les joueurs d'une campagne 2014 créent des personnages conformes (SRD 5.1 dans le dépôt, le reste saisi par le MJ).
-**FRs covered:** (à ajouter au PRD avant la 9.2)
-**Notes :** décision du propriétaire du 2026-11-18 ; 10 stories ; les règles du dépôt officiel sont du code, d'où la 9.3.
+**FRs covered:** FR30, FR31, FR32, FR33
+**Notes :** décision du propriétaire du 2026-11-18 ; 10 stories ; architecture : `docs/rules-as-data.md` (D-35) ; les règles du dépôt officiel sont du code, d'où la 9.3.
 
 ## Définition de terminé commune (chaque story)
 
@@ -1335,9 +1339,10 @@ ouverture aux joueurs avant la fin de cet epic (campagne, séances publiées, no
 avant la 9.2.
 **Constat du 2026-11-18 (docs du dépôt officiel, `docs/dnd-2024.md`) :** toutes les règles sont du code TypeScript
 (`src/lib/sources/*`, objets `*Source` et `Grant[]`, noms dans `gamedata.json`), donc ni modifiables ni créables par le MCP.
-Les `Grant` (39 variantes) sont des objets sérialisables : on les décrit par un schéma strict, on les stocke en base et on
+Les `Grant` (29 variantes) sont des objets sérialisables : on les décrit par un schéma strict, on les stocke en base et on
 les injecte dans le pipeline Source → Grant → Résolveur. Le contenu hors SRD est alors saisi par le MJ (via le MCP) dans
 sa base privée, jamais dans le dépôt public (remplace l'ancienne story « paquets de contenu »).
+**Résultat de la 9.2 (2026-11-18) :** architecture dans `docs/rules-as-data.md` (D-35). Périmètre précisé : `RuleSet` à trois couches (2024 intégré, SRD 2014 en JSON, bibliothèque du MJ par édition) ; le champ `needsReview` des entrées issues d'un scan bloque leur usage tant qu'il n'est pas levé (9.3, 9.4) ; sous-espèce avec parent (9.5) ; méthode de caractéristiques « saisie manuelle » (9.7) ; invocations, pacte et liste de sorts étendue (9.8). **Question ouverte pour le MJ :** la liste des livres de 2014 autorisés à la table n'est écrite nulle part (proposition : `phb-2014`, `xgte`, `tcoe`).
 
 ### Story 9.1 : Le MJ choisit les règles d'une campagne
 
