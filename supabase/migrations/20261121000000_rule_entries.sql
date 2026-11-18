@@ -17,6 +17,9 @@
 --
 -- These guards are a STRUCTURAL FLOOR, not the full validation: the strict Zod schema is the complete check.
 --
+-- Every refusal raised below carries the name of the guard in HINT as well as in CONSTRAINT: PostgREST hands the hint
+-- to API clients (the MCP reads it, story 9.4), not the constraint name.
+--
 -- Characters: species and background were closed lists of the 2024 ids. They become kebab-case ids, so a character can
 -- use a species or a background of the library. Class stays closed (story 9.3 only lets the library override a class).
 
@@ -305,17 +308,17 @@ declare
 begin
   if tg_op = 'UPDATE' and (new.ruleset, new.kind, new.id) is distinct from (old.ruleset, old.kind, old.id) then
     raise exception 'The edition, kind and id of a rule entry can not change'
-      using errcode = '23514', constraint = 'rule_entries_identity';
+      using errcode = '23514', constraint = 'rule_entries_identity', hint = 'rule_entries_identity';
   end if;
 
   v_problem := public.validate_rule_entry(new.kind, new.content);
   if v_problem is not null then
     raise exception 'Invalid rule entry %:%: %', new.kind, new.id, v_problem
-      using errcode = '23514', constraint = 'rule_entries_content_valid';
+      using errcode = '23514', constraint = 'rule_entries_content_valid', hint = 'rule_entries_content_valid';
   end if;
   if new.content ->> 'id' is distinct from new.id then
     raise exception 'Invalid rule entry %:%: content.id must equal the row id', new.kind, new.id
-      using errcode = '23514', constraint = 'rule_entries_content_valid';
+      using errcode = '23514', constraint = 'rule_entries_content_valid', hint = 'rule_entries_content_valid';
   end if;
 
   if tg_op = 'INSERT' then
@@ -324,7 +327,7 @@ begin
     select count(*) into v_count from public.rule_entries where ruleset = new.ruleset and kind = new.kind;
     if v_count >= 2000 then
       raise exception 'The % library of the % rules is full (2000 entries)', new.kind, new.ruleset
-        using errcode = '23514', constraint = 'rule_entries_quota';
+        using errcode = '23514', constraint = 'rule_entries_quota', hint = 'rule_entries_quota';
     end if;
     new.revision := 1;
     new.created_at := now();
@@ -336,7 +339,7 @@ begin
         from public.rule_entry_users(new.ruleset, new.kind, new.id) u;
       if v_count > 0 then
         raise exception 'The rule entry %:% is used by % character(s): %', new.kind, new.id, v_count, left(v_names, 500)
-          using errcode = '23503', constraint = 'rule_entries_in_use';
+          using errcode = '23503', constraint = 'rule_entries_in_use', hint = 'rule_entries_in_use';
       end if;
     end if;
     new.revision := old.revision + 1;
@@ -367,14 +370,14 @@ begin
     from public.rule_entry_users(old.ruleset, old.kind, old.id) u;
   if v_count > 0 then
     raise exception 'The rule entry %:% is used by % character(s): %', old.kind, old.id, v_count, left(v_names, 500)
-      using errcode = '23503', constraint = 'rule_entries_in_use';
+      using errcode = '23503', constraint = 'rule_entries_in_use', hint = 'rule_entries_in_use';
   end if;
   select count(*), string_agg(r.kind || ':' || r.id, ', ' order by r.kind, r.id)
     into v_count, v_names
     from public.rule_entry_references(old.ruleset, old.kind, old.id) r;
   if v_count > 0 then
     raise exception 'The rule entry %:% is referenced by % other entry(ies): %', old.kind, old.id, v_count, left(v_names, 500)
-      using errcode = '23503', constraint = 'rule_entries_referenced';
+      using errcode = '23503', constraint = 'rule_entries_referenced', hint = 'rule_entries_referenced';
   end if;
   return old;
 end
