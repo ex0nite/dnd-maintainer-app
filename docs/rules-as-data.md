@@ -304,6 +304,10 @@ simpler shape, it is listed here (the data shapes are in `docs/dnd-2024.md`, sec
   value equal to it): the delete is refused while there are some. Limit for 9.5: a `subspecies` is matched through the
   `lineage-choice` decisions (`lineageId`), the only place a sub-choice of a species is stored today; lineage ids are not unique
   across species, so the match can be over-cautious. 9.5 decides how a subspecies is stored on a character.
+- **Guard names for API clients (story 9.4).** Every refusal raised by the `rule_entries` triggers carries the guard name in
+  `HINT` as well as in `CONSTRAINT` (`rule_entries_content_valid`, `rule_entries_quota`, `rule_entries_identity`,
+  `rule_entries_in_use`, `rule_entries_referenced`): PostgREST passes the hint to its clients, not the constraint name. The MCP
+  reads it first (pgTAP `00565-rule-entries-hints.test.sql`).
 - **Characters.** `characters.species` and `characters.background` were closed lists of the 2024 ids; they become kebab-case
   checks, so a character can carry a library species or background. Engine types follow: `CharacterBuild.speciesId`,
   `backgroundId`, `feats`, the `subclass` and `feat-choice` decisions, `SourceTag` ids of species, subclass, background and feat,
