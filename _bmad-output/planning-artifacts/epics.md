@@ -120,6 +120,10 @@ FR26: Epic 1 - Créer une campagne (MJ)
 FR27: Epic 1 - Rattacher les données existantes et garder le MCP fonctionnel
 FR28: Epic 8 - Récapitulatifs en texte enrichi
 FR29: Epic 8 - Bibliothèque « Règles de la table »
+FR30: Epic 9 - Édition des règles d'une campagne
+FR31: Epic 9 - Fiches de personnage selon les règles de 2014
+FR32: Epic 9 - Règles modifiables par le MJ (données)
+FR33: Epic 9 - Contenu sous licence (SRD 5.1)
 
 NFR1, NFR7 : transversaux, portés par chaque story (revue de sécurité D-06, tests pgTAP AD-14).
 NFR4, NFR5, NFR5b, NFR9 : Epic 7. NFR10 : Epic 4 (bornes) et Epic 8 (CSP). NFR8 : Epic 6 et critère de chaque story d'interface.
@@ -191,8 +195,8 @@ brainstorm de design.
 ### Epic 9 : Les règles de 2014 pour les tables qui les jouent
 
 Le MJ choisit les règles 2014 ou 2024 par campagne et crée ou modifie les règles par le MCP (règles en données, en base) ; les joueurs d'une campagne 2014 créent des personnages conformes (SRD 5.1 dans le dépôt, le reste saisi par le MJ).
-**FRs covered:** (à ajouter au PRD avant la 9.2)
-**Notes :** décision du propriétaire du 2026-11-18 ; 10 stories ; les règles du dépôt officiel sont du code, d'où la 9.3.
+**FRs covered:** FR30, FR31, FR32, FR33
+**Notes :** décision du propriétaire du 2026-11-18 ; 10 stories ; architecture : `docs/rules-as-data.md` (D-35) ; les règles du dépôt officiel sont du code, d'où la 9.3.
 
 ## Définition de terminé commune (chaque story)
 

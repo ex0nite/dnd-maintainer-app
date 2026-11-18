@@ -1,0 +1,212 @@
+# Rules as data (epic 9, story 9.2)
+
+Result of the story 9.2 spike: what the SRD 5.1 covers, what the engine needs, and the architecture chosen for rules that the
+DM creates and edits through the MCP. It is the reference for stories 9.3 to 9.9. The decision itself is D-35 in
+`DECISIONS.md`.
+
+## 1. The constraint
+
+The engine (`src/lib/sources`, `src/lib/resolver`) is a pure pipeline: `collectBundles(build)` assembles `GrantBundle[]` from
+`SpeciesSource`, `ClassSource`, `SubclassSource`, `BackgroundSource`, `FeatSource` and `ItemSource` objects, then
+`resolveCharacter(bundles, choices)` turns them into a `ResolvedCharacter`. Everything those objects contain is a `Grant`
+(a discriminated union of 27 variants in `src/types/grants.ts`), which is plain serializable data.
+
+Two things make the rules code today, not data:
+
+- the sources live in TypeScript modules and are read through module-level lookups (`getSpeciesSource(id)`, `getClassSource(id)`,
+  `getSubclassSource(id)`, `getBackgroundSource(id)`, `getFeatSource(id)`, `getItemSource(id)`): 45 call sites outside
+  `src/lib/sources/`, plus the MCP engine;
+- the identifiers are closed TypeScript unions (`SpeciesId`, `ClassId`, `BackgroundId`, `FeatId`, `SkillId`, `LanguageId`,
+  `ToolProficiencyId`, ...) and every name shown to a user is a key of `gamedata.json`.
+
+The grant pipeline needs no change to describe 2014 rules: a class level already carries any grants, so the level at which a
+subclass is chosen (1, 2 or 3) is a `{ type: 'subclass' }` grant in the right `levels[]` entry, species already grant
+`ability-bonus`, and `lineage-choice` already models sub-species.
+
+## 2. What the SRD 5.1 covers (checked on the SRD 5.1 data, 2026-11-18)
+
+The SRD 5.1 is published under CC-BY-4.0 (attribution required, see section 7). Counts below come from the SRD 5.1 data set.
+
+| Kind | In the SRD 5.1 | Notes |
+|---|---|---|
+| Species | 9: dragonborn, dwarf, elf, gnome, half-elf, half-orc, halfling, human, tiefling | |
+| Sub-species | 4: hill dwarf, high elf, lightfoot halfling, rock gnome | **Mountain dwarf is not in the SRD.** Lightfoot halfling is. |
+| Classes | 12 | all PHB classes; **artificer is not** |
+| Subclasses | 12, one per class: berserker, champion, devotion, draconic, evocation, fiend, hunter, land, life, lore, open hand, thief | **The Fiend (warlock) is in the SRD.** Circle of Spores, Rune Knight, Soulknife, Gloom Stalker are not. |
+| Backgrounds | 1: acolyte | the other backgrounds are not |
+| Feats | 1: grappler | |
+| Spells | 319 | with their class lists |
+| Equipment | 237 | weapons, armor, gear, packs, tools |
+| Magic items | 362 | |
+| Features | 407 | class and subclass features |
+| Languages / skills / proficiencies | 16 / 18 / 117 | |
+
+### 2.1 Where the SRD data comes from
+
+Source of truth: the open SRD 5.1 data set behind the public SRD API (the `5e-database` project: one JSON file per entity, with
+class levels, features, class spell lists and equipment). It already has the shape the converter needs (levels per class,
+features per level, ability bonuses per species and sub-species). The 2014 SRD layer is generated from it by a script kept in the
+repository (`scripts/`), and the generated JSON is committed with the attribution of section 7. Nothing is fetched at run time.
+
+The PyPI package `dnd-5e-core` (Python, MIT, alpha, last release 2026-02-06, 7 stars) was assessed and is **not adopted**: it is a
+Python game and combat engine (combat, treasure, shop, monsters) that bundles the same SRD data under the same folder
+layout as that data set, so it adds nothing to take from upstream, brings a language and a scope the app does not use, and its
+MIT licence covers the code only (the SRD data keeps its CC-BY attribution duty). Its claim of "40+ subclasses" is more than
+the 12 the SRD holds: whatever the extra ones are, they are not safe to ship in a public repository.
+
+Consequence: the repository (public) may hold the English SRD text of these entries and nothing else. Everything outside it
+(mountain dwarf, Circle of Spores, Rune Knight, Soulknife, Gloom Stalker, non-SRD backgrounds and feats, artificer) is entered by
+the DM into the private database, through the MCP, from the books they own.
+
+French: there is no CC-BY French text to ship. The repository keeps English SRD text and its own French UI labels (names are
+facts; descriptions in French come from the DM's private entries).
+
+## 3. Architecture
+
+### 3.1 A `RuleSet` replaces the module-level lookups
+
+```ts
+interface RuleSet {
+  readonly ruleset: '2014' | '2024';
+  readonly species: ReadonlyMap<string, SpeciesEntry>;
+  readonly classes: ReadonlyMap<string, ClassEntry>;
+  readonly subclasses: ReadonlyMap<string, SubclassEntry>;
+  readonly backgrounds: ReadonlyMap<string, BackgroundEntry>;
+  readonly feats: ReadonlyMap<string, FeatEntry>;
+  readonly spells: ReadonlyMap<string, SpellEntry>;
+  readonly items: ReadonlyMap<string, ItemEntry>;
+}
+```
+
+`collectBundles(build, rules)` and the resolver take the `RuleSet`; `getXSource(id)` becomes `rules.species.get(id)`. A
+`RuleSetProvider` (React context, fed by one query) hands it to the screens; the MCP engine builds it the same way. The 2024
+`RuleSet` is built from the existing TypeScript sources, unchanged and with their tests.
+
+### 3.2 Three layers, last one wins
+
+1. **Built-in 2024** (code, today's sources).
+2. **Built-in 2014 SRD** (static JSON in the repository, SRD 5.1 text only, attribution file next to it).
+3. **DM library** (database, table `rule_entries`): the DM's entries for that edition. An entry with the id of a lower layer
+   replaces it, and the MCP and the app flag it as an override.
+
+### 3.3 Entry envelope
+
+One JSON object per entry, validated by a strict Zod schema (no unknown key):
+
+```json
+{
+  "schema": 1,
+  "kind": "subclass",
+  "id": "circle-of-spores",
+  "name": { "en": "Circle of Spores", "fr": "Cercle des Spores" },
+  "source": { "book": "tcoe", "page": 39 },
+  "summary": { "en": "...", "fr": "..." },
+  "body": { }
+}
+```
+
+`kind` is one of `species`, `subspecies`, `class`, `subclass`, `background`, `feat`, `spell`, `item`. The `body` is the existing
+source shape, in JSON: `grants` for species, background, feat and item; `levels[].grants` for a class;
+`features[{ classLevel, grants }]` for a subclass; plus, for a subclass, `class` and `chosenAtClassLevel`. Descriptive text
+(feature names and descriptions) lives in the entry (`features[].name`, `features[].text`), not in `gamedata.json`: an
+entry is displayed with its own text, and `gamedata.json` keys remain for the built-in layers only.
+
+### 3.4 Identifiers and closed vocabularies
+
+- **Entity ids are open strings** (kebab-case, `^[a-z0-9]+(-[a-z0-9]+)*$`, 3 to 60 characters): species, subclasses,
+  backgrounds, feats, spells, items. The closed TypeScript unions for these ids become `string` at the engine boundary; the
+  built-in layer keeps its unions through a narrowing helper.
+- **Mechanical vocabularies stay closed in code**: abilities, skills, damage types, conditions, sizes, armor and weapon
+  categories, proficiency ids, spell schools. A rule that needs a new value in one of them is a code change, not a data entry.
+  An entry validates its `Grant`s against these vocabularies, so a typo is refused with the field path.
+- **Languages and tools** are the exception that must open: the 2014 books add languages and tool proficiencies the 2024
+  engine does not list. They become registry-backed (the built-in list plus DM entries of kind `item` / `language`), decided
+  in 9.5.
+- **2014 additions to the `Grant` vocabulary** (new variants, added in 9.5 to 9.8, each with its resolver and tests):
+  spells known and spell list extension (expanded patron list), warlock invocations and pact boon, class
+  features that grant dice pools (Superiority Dice, Wild Shape uses) through the existing `resource-pool`, subspecies traits
+  through `lineage-choice`. The Grant additions are listed per story in section 6.
+
+### 3.5 Storage
+
+```
+rule_entries (
+  ruleset   text  not null check (ruleset in ('2014','2024')),
+  kind      text  not null,
+  id        text  not null,
+  content   jsonb not null,
+  revision  int   not null default 1,
+  created_at, updated_at timestamptz,
+  primary key (ruleset, kind, id)
+)
+```
+
+It is a library of the DM, not of a campaign: the single DM keeps one set of rules per edition and every campaign of that
+edition reads it (no duplication across campaigns). Reads: members of a campaign whose `ruleset` matches (policy through
+`is_member` and `campaigns.ruleset`). Writes: the DM only (`is_dm()`). Same access matrix as the other tables (AD-14).
+
+Guards in the database (the DM is trusted but the MCP writes on their behalf, so the table defends itself):
+
+- `jsonb_typeof(content) = 'object'`, `octet_length(content::text) <= 65536`, at most 2000 entries per kind and edition;
+- a validation function (`validate_rule_entry(kind, content)`, SQL) that checks the envelope: allowed keys per kind, string
+  lengths, array bounds, and refuses any string value that looks like markup, a link or a script (`<`, `>`, `javascript:`,
+  `data:`, `http`);
+- `revision` increments on every update; deletion is refused while a character uses the entry (checked by the same function).
+
+The database cannot run the full Zod schema. The structural guard above is the floor; the app and the MCP both run the Zod
+schema before writing, and **the app runs it again when reading**: an entry that fails is ignored and reported to the DM, never
+resolved.
+
+### 3.6 Characters keep their stored values
+
+A finalized sheet stores computed values (hit points, armor class, ...). Changing a rule does not rewrite stored sheets: the
+MCP update tool returns the list of characters that use the changed entry, flagged "recompute on next rebuild". A sheet is
+recomputed when its owner or the DM rebuilds it.
+
+## 4. Security
+
+- An entry is data: no code, no markup, no link. Text is shown as plain text (React escapes it). There is no Markdown or HTML
+  rendering of rule text (that belongs to epic 8, with its own sanitizer).
+- Bounded size and count, validated on write (MCP, app, database) and on read (app, MCP).
+- Written by the DM only; read by members of the campaigns of that edition; anonymous and non-members read nothing.
+- Text that a book supplies (OCR) is treated as untrusted data by the MCP: it is never interpreted as an instruction.
+- Nothing from outside the SRD enters the repository, the test fixtures included (fixtures use invented entries).
+
+## 5. Impact on the existing code
+
+| Area | Change | Story |
+|---|---|---|
+| `src/lib/sources/index.ts` | `getXSource` and `collectBundles` take a `RuleSet` | 9.3 |
+| 45 call sites (`BasicsStep`, `OriginStep`, `SubclassPicker`, `useCharacterContext`, `build-reconstruction`, `random-npc`, ...) | read the `RuleSet` from context | 9.3 |
+| `src/types/*` | open entity ids, JSON entry types, Zod schemas | 9.3 |
+| `supabase/migrations` | `rule_entries`, `validate_rule_entry`, policies, pgTAP matrix | 9.3 |
+| MCP `src/engine`, `src/tools` | build the `RuleSet`; `dnd_*_rule` tools; character tools use it | 9.4 |
+| `gamedata.json` | unchanged for built-in; entries carry their own text | 9.3 |
+| `docs/dnd-2024.md` | add the data-shape reference for entries | 9.3 |
+
+## 6. What the 2014 engine needs (differences from the 2024 data)
+
+To be filled with the table's needs in the next section, then split across 9.5 to 9.8:
+
+| Topic | 2024 engine today | 2014 needs |
+|---|---|---|
+| Ability scores | species give none, backgrounds give +2/+1 | species and subspecies give bonuses; backgrounds give none |
+| Backgrounds | skills, tool, language, origin feat | skills, tools, languages, equipment, a feature (text) |
+| Subclass | chosen at class level 3 | chosen at class level 1 (cleric, sorcerer, warlock), 2 (druid, wizard) or 3 (others) |
+| Weapon masteries | granted by 5 classes | none |
+| Feats | origin feats from backgrounds, general feats at ASI | only at ASI levels (alternative to the ASI), optional rule |
+| Spells | prepared and known per 2024 tables | 2014 known, prepared and spellbook rules; warlock pact magic, invocations, pact boon |
+| Starting equipment | bundles per class and background | class equipment choices and gold alternative |
+| Species traits | lineage choice | subspecies, darkvision, resistances, extra languages, weapon and tool proficiencies |
+
+## 7. SRD attribution
+
+The SRD 5.1 requires this notice wherever its content is distributed (to ship in the repository with the 2014 SRD layer):
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available
+> at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution
+> 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+## 8. Table needs (from the real characters)
+
+_To complete after the inventory of the five characters of the table (Matdhöur, Søren, Nox, Hiero le Fou, Robbie)._
