@@ -22,16 +22,24 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Trans, useTranslation } from 'react-i18next';
 import { ValidationError } from '@/components/ui/validation-error';
+import { RulesetPicker } from '@/components/RulesetPicker';
+import { DEFAULT_RULESET, type RulesetId } from '@/lib/ruleset';
 
 export default function CampaignList() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [campaignToArchive, setCampaignToArchive] = useState<CampaignSummary | null>(null);
-  const [newCampaign, setNewCampaign] = useState({
+  const [newCampaign, setNewCampaign] = useState<{
+    name: string;
+    setting: string;
+    description: string;
+    ruleset: RulesetId;
+  }>({
     name: '',
     setting: '',
     description: '',
+    ruleset: DEFAULT_RULESET,
   });
   const [nameError, setNameError] = useState<string>('');
 
@@ -61,7 +69,7 @@ export default function CampaignList() {
     createCampaignMutation.mutate(newCampaign, {
       onSuccess: (data) => {
         setShowNewCampaignForm(false);
-        setNewCampaign({ name: '', setting: '', description: '' });
+        setNewCampaign({ name: '', setting: '', description: '', ruleset: DEFAULT_RULESET });
         setNameError('');
         if (data?.slug) {
           navigate(`/campaign/${data.slug}`);
@@ -200,6 +208,17 @@ export default function CampaignList() {
                 placeholder={t('campaign.placeholderDescription')}
                 rows={4}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label id="campaign-ruleset-label">{t('campaign.ruleset.title')}</Label>
+              <RulesetPicker
+                idPrefix="campaign-ruleset"
+                labelledBy="campaign-ruleset-label"
+                value={newCampaign.ruleset}
+                onChange={(ruleset) => setNewCampaign({ ...newCampaign, ruleset })}
+              />
+              <p className="text-xs text-muted-foreground">{t('campaign.ruleset.createHint')}</p>
             </div>
 
             <DialogFooter>

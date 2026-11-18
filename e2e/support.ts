@@ -25,6 +25,7 @@ export const SAMPLE_CAMPAIGN = {
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
   archived_at: null,
+  ruleset: '2024',
 };
 
 /** Pick the colour theme / mode the way the ThemeProvider stores them. */

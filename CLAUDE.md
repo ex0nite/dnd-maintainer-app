@@ -92,6 +92,10 @@ All user-facing strings must use `react-i18next` translation keys — never hard
 - Subclass selection is uniformly at class level 3 for all 12 classes (array index 2 of `ClassSource.levels`), matching the 2024 PHB rule
 - Weapon masteries are defined in `src/types/items.ts` as `WEAPON_MASTERIES` and granted via `weapon-mastery-choice` grants in `ClassSource.levels`; Barbarian, Fighter, Paladin, Ranger, and Rogue receive mastery choices at various levels
 
+### Rules edition per campaign (epic 9)
+
+`campaigns.ruleset` is `'2014'` or `'2024'` (default `'2024'`; `src/lib/ruleset.ts`). The DM picks it at creation or on the dashboard (`RulesetPicker`); a database trigger refuses a change once a character is `ready`. The 2024 engine is the only sheet engine that exists: `canBuildCharacters('2014')` is false, so the builder shows a notice and the MCP character tools refuse in a 2014 campaign, until stories 9.5 to 9.8 land. The rules themselves are still TypeScript (`src/lib/sources/`); stories 9.3 and 9.4 move them to validated data editable by the MCP.
+
 ### Database Schema
 
 `supabase/migrations/` defines tables: campaigns, characters, sessions, encounters, notes. Complex data (abilities, equipment, spells, combatants, loot) stored as JSONB columns. All tables cascade-delete from campaigns. Campaigns support soft-delete via `archived_at`. The DB has both `character_type` (source column) and `is_npc` (generated/computed column). Sessions store loot items as JSONB with add/delete/upsert support in `SessionDetail`.

@@ -1,3 +1,4 @@
+import type { RulesetId } from '@/lib/ruleset';
 import type {
   AlignmentId,
   ClassId,
@@ -41,6 +42,8 @@ export interface Campaign {
   theme: ThemeId | null;
   archived_at?: string | null;
   allowed_source_books: SourceBookId[];
+  /** Rules edition of the campaign (story 9.1). */
+  ruleset: RulesetId;
 }
 
 export interface Character {

@@ -387,6 +387,7 @@
     },
     "errors": {
       "noCampaignId": "Campaign ID is required to create a character.",
+      "rulesetNotReady": "Character sheets for the {{ruleset}} rules are not available yet in this campaign.",
       "cancelRebuildFailed": "The rebuild could not be cancelled. Please try again.",
       "failedToFinalize": "Failed to finalize character: {{message}}",
       "failedToSaveDraft": "Failed to save draft. Your recent changes may not have been saved.",
@@ -792,6 +793,18 @@
     },
     "theme": "Campaign Theme",
     "themeDescription": "Customize the color theme for this campaign",
+    "ruleset": {
+      "title": "Rules edition",
+      "description": "Which edition of the rules this campaign follows. It can be changed until the first character is finalized.",
+      "createHint": "You can change it later, until a character is finalized.",
+      "options": {
+        "2014": "D&D 5e (2014)",
+        "2024": "D&D 5.5e (2024)"
+      },
+      "locked": "A character is already finalized: the rules edition can no longer change.",
+      "notReady": "Character sheets for the 2014 rules are not available yet.",
+      "saveFailed": "The rules edition could not be changed."
+    },
     "sourceBooks": {
       "title": "Source Books",
       "description": "Choose which rulebooks are available for character creation in this campaign.",

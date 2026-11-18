@@ -18,6 +18,8 @@ import type { AutosavePayload } from '@/hooks/useBuilderAutosave';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
 import { useCharacter, useCampaignDrafts, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
+import { useCampaign } from '@/hooks/useCampaigns';
+import { canBuildCharacters } from '@/lib/ruleset';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import type { Character } from '@/types/database';
 import { ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react';
@@ -556,6 +558,7 @@ export default function CharacterBuilder() {
   const navigate = useNavigate();
   const { userId, isPlayer } = useRole();
   const isNew = !characterSlug;
+  const { data: campaign } = useCampaign(campaignSlug);
   const {
     data: existingCharacter,
     isLoading: characterLoading,
@@ -581,6 +584,16 @@ export default function CharacterBuilder() {
     return (
       <div className="page-container">
         <p className="text-destructive">{t('characterBuilder.errors.noCampaignId')}</p>
+      </div>
+    );
+  }
+
+  // The sheet engine of an edition is added by epic 9: until then a campaign on those rules builds no sheet,
+  // rather than silently computing one with the other edition's rules.
+  if (campaign && !canBuildCharacters(campaign.ruleset)) {
+    return (
+      <div className="page-container">
+        <p role="status">{t('characterBuilder.errors.rulesetNotReady', { ruleset: campaign.ruleset })}</p>
       </div>
     );
   }

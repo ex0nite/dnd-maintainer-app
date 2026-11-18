@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { RulesetId } from '@/lib/ruleset';
 import { supabase } from '@/lib/supabase';
 import { Campaign, CampaignSummary } from '@/types/database';
 import { CAMPAIGN_SUMMARY_COLS, CAMPAIGN_DETAIL_COLS } from '@/lib/query-columns';
@@ -67,7 +68,7 @@ export function useCampaignMutations() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['campaigns'] });
 
   const create = useMutation({
-    mutationFn: async (campaign: { name: string; setting?: string; description?: string }) => {
+    mutationFn: async (campaign: { name: string; setting?: string; description?: string; ruleset?: RulesetId }) => {
       const { data, error } = await supabase
         .from('campaigns')
         .insert({ ...campaign, status: 'planning' })

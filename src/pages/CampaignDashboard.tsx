@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { RulesetPicker } from '@/components/RulesetPicker';
+import { canBuildCharacters } from '@/lib/ruleset';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +20,7 @@ import {
   Clock,
   Edit2,
   Palette,
+  Scale,
   Save,
   Scroll,
   Swords,
@@ -96,6 +99,8 @@ export default function CampaignDashboard() {
     handleUpdate({ setting: editedSetting });
   };
 
+  // The edition can change until a character is finalized (the database enforces it too).
+  const rulesetLocked = characters.some((c) => c.status === 'ready');
   const pcCount = characters.filter((c) => c.character_type === 'pc').length;
   const npcCount = characters.filter((c) => c.character_type === 'npc').length;
   const lastSession = sessions[0];
@@ -563,6 +568,34 @@ export default function CampaignDashboard() {
                 />
                 {updateMutation.isError && updateMutation.variables && 'theme' in updateMutation.variables && (
                   <p className="text-sm text-destructive mt-1">{t('errors.saveFailed')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4">
+            <Card className="hover-lift">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Scale className="size-5 text-muted-foreground" />
+                  <h3 className="font-semibold" id="ruleset-heading">
+                    {t('campaign.ruleset.title')}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{t('campaign.ruleset.description')}</p>
+                <RulesetPicker
+                  idPrefix="ruleset"
+                  labelledBy="ruleset-heading"
+                  value={campaign.ruleset}
+                  disabled={updateMutation.isPending || rulesetLocked}
+                  onChange={(ruleset) => updateMutation.mutate({ id: campaign.id, ruleset })}
+                />
+                {rulesetLocked && <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.locked')}</p>}
+                {!canBuildCharacters(campaign.ruleset) && (
+                  <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
+                )}
+                {updateMutation.isError && updateMutation.variables && 'ruleset' in updateMutation.variables && (
+                  <p className="text-sm text-destructive mt-1">{t('campaign.ruleset.saveFailed')}</p>
                 )}
               </CardContent>
             </Card>
