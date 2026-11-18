@@ -162,6 +162,7 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 - La table Affaires Draconiques joue en règles **2014** ; le moteur est 2024. Le propriétaire choisit : un **champ de règles par
   campagne** (le moteur 2024 et ses tests ne bougent pas), le **SRD 5.1 seul dans le dépôt public**, le contenu hors SRD fourni
   par le MJ hors dépôt (paquets importés, story 9.7). Epic 9 dans `epics.md`.
+- Les règles du dépôt officiel sont du **code** (`src/lib/sources/*`) : le MCP ne peut ni les créer ni les modifier. Le propriétaire veut que le MCP le fasse : les règles deviennent des **données validées stockées en base** et chargées par le moteur (stories 9.3 et 9.4). Le contenu hors SRD y est saisi par le MJ, jamais dans le dépôt public.
 - L'app est ouverte aux joueurs **avant** la fin de l'epic 9 (campagne, séances publiées, notes) ; les fiches 2014 suivent.
 - Le propriétaire confirme l'ouverture **sans sauvegarde** (D-23) « pour le moment » (2026-11-18) : à reposer avant d'inviter les joueurs.
 - La CSP bloquante est vérifiée sur le site réel (connexion, accueil, joueurs, export, paramètres, mot de passe) : aucune violation.
