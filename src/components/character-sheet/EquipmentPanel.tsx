@@ -3,11 +3,13 @@ import { getItemDef, getItemNameKey } from '@/lib/sources/items';
 import type { SourceTag } from '@/types/sources';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useRuleAwareT } from '@/hooks/useRuleSet';
 
 type ItemRow = { id: string; item_id: string; equipped?: boolean; quantity: number; source?: unknown };
 
 export function EquipmentPanel({ itemsData }: { itemsData: readonly ItemRow[] }) {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
 
   return (
@@ -34,7 +36,7 @@ export function EquipmentPanel({ itemsData }: { itemsData: readonly ItemRow[] })
             ? itemSource.origin === 'loot'
               ? tc('characterSheet.equipment.sourceLoot')
               : tc('characterSheet.equipment.sourceFrom', {
-                  name: getSourceDisplayName(itemSource, t),
+                  name: getSourceDisplayName(itemSource, rt),
                 })
             : null;
           const SourceIcon = itemSource

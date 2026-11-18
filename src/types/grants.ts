@@ -1,14 +1,12 @@
 import type {
   AbilityKey,
   ClassId,
-  FeatId,
   FightingStyleId,
   SkillId,
   ArmorProficiencyId,
   WeaponProficiencyId,
   ToolProficiencyId,
   LanguageId,
-  SpeciesId,
 } from '@/lib/dnd-helpers';
 import type { ChoiceKey } from '@/types/choices';
 import type { BundleCategory } from '@/types/items';
@@ -214,7 +212,7 @@ export interface AsiGrant {
 
 export interface FeatGrant {
   readonly type: 'feat';
-  readonly featId: FeatId;
+  readonly featId: string;
 }
 
 export interface SubclassGrant {
@@ -286,14 +284,14 @@ export interface FeatureChoiceGrant {
 export interface LineageChoiceGrant {
   readonly type: 'lineage-choice';
   readonly key: ChoiceKey;
-  readonly speciesId: SpeciesId;
+  readonly speciesId: string;
   readonly from: readonly string[];
 }
 
 export interface FeatChoiceGrant {
   readonly type: 'feat-choice';
   readonly key: ChoiceKey;
-  readonly from: readonly FeatId[] | null;
+  readonly from: readonly string[] | null;
   readonly category: FeatCategory;
 }
 

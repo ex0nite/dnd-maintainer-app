@@ -19,6 +19,7 @@ import {
   type FeatGrantInfo,
   type GamedataT,
 } from '@/lib/pdf-field-map';
+import type { RuleSet } from '@/lib/rules/types';
 
 export class PdfTemplateError extends Error {
   constructor(
@@ -45,7 +46,8 @@ export async function fillCharacterPdf(
   resolved: ResolvedCharacter,
   character: Character,
   t: GamedataT,
-  featSources: ReadonlyMap<string, FeatGrantInfo>
+  featSources: ReadonlyMap<string, FeatGrantInfo>,
+  rules?: RuleSet
 ): Promise<FillResult> {
   let pdfDoc: PDFDocument;
   try {
@@ -56,7 +58,7 @@ export async function fillCharacterPdf(
 
   const form = pdfDoc.getForm();
   const existing = new Set(form.getFields().map((f) => f.getName()));
-  const values = buildFieldValues(resolved, character, t, featSources);
+  const values = buildFieldValues(resolved, character, t, featSources, rules);
   const missingFields: string[] = [];
 
   for (const [semanticKey, value] of Object.entries(values.text)) {
@@ -111,6 +113,8 @@ export interface ExportOptions {
   readonly templateUrl?: string;
   /** Override the download filename (without extension). Defaults to the character name. */
   readonly filename?: string;
+  /** The campaign's rule set (story 9.3). Built-in 2024 by default. */
+  readonly rules?: RuleSet;
 }
 
 const DEFAULT_TEMPLATE_URL = '/assets/character-sheet.pdf';
@@ -140,7 +144,14 @@ export async function exportCharacterPdf(
   }
 
   const templateBytes = await response.arrayBuffer();
-  const { bytes, missingFields } = await fillCharacterPdf(templateBytes, resolved, character, t, featSources);
+  const { bytes, missingFields } = await fillCharacterPdf(
+    templateBytes,
+    resolved,
+    character,
+    t,
+    featSources,
+    opts.rules
+  );
   downloadPdf(bytes, `${opts.filename ?? characterDisplayName(character)}.pdf`);
   return { missingFields };
 }

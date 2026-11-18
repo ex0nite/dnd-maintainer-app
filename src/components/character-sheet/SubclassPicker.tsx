@@ -2,27 +2,26 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SUBCLASS_SOURCES, SUBCLASS_IDS_BY_CLASS } from '@/lib/sources/subclasses';
+import { useActiveRuleSet, useRuleName, useRuleSummary } from '@/hooks/useRuleSet';
+import { isSubclassId } from '@/lib/sources/subclasses';
 import type { PendingChoice } from '@/types/resolved';
 import type { ChoiceKey, ChoiceDecision } from '@/types/choices';
-import type { SubclassId } from '@/lib/sources/subclasses';
-import { isSubclassId } from '@/lib/sources/subclasses';
 import { useTranslation } from 'react-i18next';
 import type { SubclassSource } from '@/types/sources';
 
 interface SubclassPickerProps {
   readonly choice: Extract<PendingChoice, { type: 'subclass' }>;
   readonly currentDecision?: ChoiceDecision | undefined;
-  readonly onDecide: (choiceKey: ChoiceKey, subclassId: SubclassId) => void;
+  readonly onDecide: (choiceKey: ChoiceKey, subclassId: string) => void;
   readonly onClear?: (key: ChoiceKey) => void;
   /** When true, calls onDecide immediately on selection and hides the confirm button. */
   readonly autoCommit?: boolean;
   /**
    * Optional filtered subclass map from useGameData. Only subclasses present in
    * this map are shown, PLUS the currently selected subclass (no-data-loss union).
-   * Falls back to the full SUBCLASS_SOURCES when undefined.
+   * Falls back to every subclass of the active rule set when undefined.
    */
-  readonly allowedSubclasses?: Readonly<Partial<Record<SubclassId, SubclassSource>>>;
+  readonly allowedSubclasses?: Readonly<Partial<Record<string, SubclassSource>>>;
 }
 
 export function SubclassPicker({
@@ -35,27 +34,33 @@ export function SubclassPicker({
 }: SubclassPickerProps) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
+  const ruleSummary = useRuleSummary();
 
-  const existingSubclassId: SubclassId | null =
-    currentDecision?.type === 'subclass' && isSubclassId(currentDecision.subclassId)
+  const existingSubclassId: string | null =
+    currentDecision?.type === 'subclass' && rules.subclasses.has(currentDecision.subclassId)
       ? currentDecision.subclassId
       : null;
-  const [selected, setSelected] = useState<SubclassId | null>(existingSubclassId);
+  const [selected, setSelected] = useState<string | null>(existingSubclassId);
   const hasExistingDecision = existingSubclassId !== null;
 
-  // Use the provided allowed map or fall back to the full registry.
-  const sourceMap = allowedSubclasses ?? SUBCLASS_SOURCES;
+  // Ids visible in the picker: the allowed map when given, else every subclass of the rule set.
+  const isOffered = (id: string): boolean => (allowedSubclasses ? id in allowedSubclasses : rules.subclasses.has(id));
 
-  // Filter to ids that are present in sourceMap (visibility) OR are the currently selected id
+  // Filter to ids that are offered (visibility) OR are the currently selected id
   // (no-data-loss: keep the selection visible even when its book is disabled).
-  // Data always comes from the full SUBCLASS_SOURCES registry so features are never undefined.
-  const subclasses = SUBCLASS_IDS_BY_CLASS[choice.classId]
-    .filter((id) => id in sourceMap || id === existingSubclassId)
-    .map((id) => ({ id, ...SUBCLASS_SOURCES[id] }))
-    .sort((a, b) => t(`subclasses.${a.id}.name`).localeCompare(t(`subclasses.${b.id}.name`)));
+  // Data always comes from the full rule set so features are never undefined.
+  const subclasses = (rules.subclassesByClass.get(choice.classId) ?? [])
+    .filter((id) => isOffered(id) || id === existingSubclassId)
+    .flatMap((id) => {
+      const source = rules.subclasses.get(id);
+      return source ? [{ id, ...source }] : [];
+    })
+    .sort((a, b) => ruleName('subclass', a.id).localeCompare(ruleName('subclass', b.id)));
   const className = t(`classes.${choice.classId}`, { defaultValue: choice.classId });
 
-  const handleSelect = (id: SubclassId) => {
+  const handleSelect = (id: string) => {
     setSelected(id);
     if (autoCommit) {
       onDecide(choice.choiceKey, id);
@@ -86,7 +91,7 @@ export function SubclassPicker({
         )}
         {subclasses.map((sc) => {
           const isSelected = selected === sc.id;
-          const isDisabledBook = sc.id === existingSubclassId && !(sc.id in sourceMap);
+          const isDisabledBook = sc.id === existingSubclassId && !isOffered(sc.id);
 
           return (
             <button
@@ -98,14 +103,16 @@ export function SubclassPicker({
               }`}
             >
               <div className={`flex items-center gap-2 text-sm text-foreground ${isSelected ? 'font-semibold' : ''}`}>
-                {t(`subclasses.${sc.id}.name`)}
+                {ruleName('subclass', sc.id)}
                 {isDisabledBook && (
                   <Badge variant="destructive" className="text-xs">
                     {tc('characterBuilder.hints.disabledSourceBook')}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{t(`subclasses.${sc.id}.description`)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {ruleSummary('subclass', sc.id) ?? (isSubclassId(sc.id) ? t(`subclasses.${sc.id}.description`) : '')}
+              </p>
               {isSelected && (
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {sc.features.flatMap((f) =>
@@ -114,10 +121,11 @@ export function SubclassPicker({
                       .map((g) => (
                         <li key={g.feature.id}>
                           <span className="font-semibold">
-                            {t(`features.${g.feature.id}.name`, { defaultValue: g.feature.id })}
+                            {g.feature.name ?? t(`features.${g.feature.id}.name`, { defaultValue: g.feature.id })}
                           </span>
                           {` ${tc('characterSheet.classLevelLabel', { level: f.classLevel })} `}
-                          &mdash; {t(`features.${g.feature.id}.description`, { defaultValue: '' })}
+                          &mdash;{' '}
+                          {g.feature.description ?? t(`features.${g.feature.id}.description`, { defaultValue: '' })}
                         </li>
                       ))
                   )}

@@ -805,6 +805,29 @@
       "notReady": "Character sheets for the 2014 rules are not available yet.",
       "saveFailed": "The rules edition could not be changed."
     },
+    "rulesLibrary": {
+      "title": "Rules library",
+      "description": "Rules entered for this edition through the MCP. They apply to every campaign of the edition. An entry replaces a built-in rule that has the same identifier.",
+      "count_one": "{{count}} entry in the library for this edition.",
+      "count_other": "{{count}} entries in the library for this edition.",
+      "loading": "Loading the rules library…",
+      "error": "The rules library could not be read.",
+      "overrides": "Replace a built-in rule:",
+      "unverified": "Waiting for review (not usable by characters yet):",
+      "invalid": "Ignored, they do not pass validation:",
+      "entry": "{{name}} ({{kind}})",
+      "invalidEntry": "{{kind}} {{id}}: {{path}}: {{message}}",
+      "kinds": {
+        "species": "species",
+        "subspecies": "subspecies",
+        "class": "class",
+        "subclass": "subclass",
+        "background": "background",
+        "feat": "feat",
+        "spell": "spell",
+        "item": "item"
+      }
+    },
     "sourceBooks": {
       "title": "Source Books",
       "description": "Choose which rulebooks are available for character creation in this campaign.",
@@ -1097,5 +1120,9 @@
     "invalidCredentials": "Incorrect credentials",
     "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
     "signOut": "Sign out"
+  },
+  "ruleSet": {
+    "loading": "Loading the campaign rules…",
+    "loadFailed": "The campaign rules could not be loaded. The sheet is not computed without them."
   }
 }

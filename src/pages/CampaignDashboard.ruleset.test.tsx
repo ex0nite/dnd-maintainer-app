@@ -45,6 +45,16 @@ vi.mock('@/hooks/usePageTitle', () => ({
   usePageTitle: () => undefined,
 }));
 
+// The rules library card and the rule set (story 9.3) read their own query; they have their own tests.
+vi.mock('@/components/RulesLibraryStatus', () => ({
+  RulesLibraryStatus: () => null,
+}));
+vi.mock('@/hooks/useRuleSet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useRuleSet')>();
+  const { builtin2024RuleSet } = await import('@/lib/rules/ruleset');
+  return { ...actual, useRuleSet: () => ({ rules: builtin2024RuleSet(), status: 'ready', retry: () => undefined }) };
+});
+
 vi.mock('@/hooks/useCharacters', () => ({
   useCharacters: () => ({ data: mockCharacters, error: null, isLoading: mockCharactersLoading }),
 }));

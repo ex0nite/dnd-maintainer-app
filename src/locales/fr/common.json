@@ -805,6 +805,29 @@
       "notReady": "Les fiches de personnage des règles 2014 ne sont pas encore disponibles.",
       "saveFailed": "L'édition des règles n'a pas pu être changée."
     },
+    "rulesLibrary": {
+      "title": "Bibliothèque de règles",
+      "description": "Règles saisies pour cette édition par le MCP. Elles s'appliquent à toutes les campagnes de l'édition. Une entrée remplace la règle intégrée qui porte le même identifiant.",
+      "count_one": "{{count}} entrée dans la bibliothèque de cette édition.",
+      "count_other": "{{count}} entrées dans la bibliothèque de cette édition.",
+      "loading": "Chargement de la bibliothèque de règles…",
+      "error": "La bibliothèque de règles n'a pas pu être lue.",
+      "overrides": "Remplacent une règle intégrée :",
+      "unverified": "En attente de vérification (pas encore utilisables par un personnage) :",
+      "invalid": "Ignorées, elles ne passent pas la validation :",
+      "entry": "{{name}} ({{kind}})",
+      "invalidEntry": "{{kind}} {{id}} : {{path}} : {{message}}",
+      "kinds": {
+        "species": "espèce",
+        "subspecies": "sous-espèce",
+        "class": "classe",
+        "subclass": "sous-classe",
+        "background": "historique",
+        "feat": "don",
+        "spell": "sort",
+        "item": "objet"
+      }
+    },
     "sourceBooks": {
       "title": "Ouvrages de référence",
       "description": "Choisissez les livres de règles disponibles pour la création de personnages dans cette campagne.",
@@ -1097,5 +1120,9 @@
     "invalidCredentials": "Identifiants incorrects",
     "unavailable": "La connexion est indisponible pour le moment. Réessayez dans un instant.",
     "signOut": "Se déconnecter"
+  },
+  "ruleSet": {
+    "loading": "Chargement des règles de la campagne…",
+    "loadFailed": "Les règles de la campagne n'ont pas pu être chargées. La fiche n'est pas calculée sans elles."
   }
 }

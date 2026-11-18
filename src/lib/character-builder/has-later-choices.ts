@@ -1,5 +1,5 @@
-import type { BackgroundId, ClassId, SpeciesId } from '@/lib/dnd-helpers';
-import { BACKGROUND_SOURCES, CLASS_SOURCES, SPECIES_SOURCES } from '@/lib/sources';
+import { builtin2024RuleSet } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
 import type { Grant } from '@/types/grants';
 
 // Choice-producing grant types whose presence guarantees a follow-up step.
@@ -40,18 +40,18 @@ function grantsHaveDistinguishingChoice(grants: readonly Grant[], kind: Kind): b
   return grants.some((g) => grantIsDistinguishingChoice(g, kind));
 }
 
-export function speciesHasLaterChoices(id: SpeciesId): boolean {
-  const source = SPECIES_SOURCES.find((s) => s.id === id);
+export function speciesHasLaterChoices(id: string, rules: RuleSet = builtin2024RuleSet()): boolean {
+  const source = rules.species.get(id);
   return source ? grantsHaveDistinguishingChoice(source.grants, 'species') : false;
 }
 
-export function classHasLaterChoices(id: ClassId): boolean {
-  const source = CLASS_SOURCES.find((c) => c.id === id);
+export function classHasLaterChoices(id: string, rules: RuleSet = builtin2024RuleSet()): boolean {
+  const source = rules.classes.get(id);
   const level1 = source?.levels[0];
   return level1 ? grantsHaveDistinguishingChoice(level1.grants, 'class') : false;
 }
 
-export function backgroundHasLaterChoices(id: BackgroundId): boolean {
-  const source = BACKGROUND_SOURCES.find((b) => b.id === id);
+export function backgroundHasLaterChoices(id: string, rules: RuleSet = builtin2024RuleSet()): boolean {
+  const source = rules.backgrounds.get(id);
   return source ? grantsHaveDistinguishingChoice(source.grants, 'background') : false;
 }

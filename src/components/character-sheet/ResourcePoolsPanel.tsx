@@ -1,6 +1,7 @@
 import { getSourceDisplayName } from '@/lib/class-icons';
 import type { ResolvedCharacter } from '@/types/resolved';
 import { useTranslation } from 'react-i18next';
+import { useRuleAwareT } from '@/hooks/useRuleSet';
 
 interface ResourcePoolsPanelProps {
   readonly resolved: ResolvedCharacter;
@@ -8,6 +9,7 @@ interface ResourcePoolsPanelProps {
 
 export function ResourcePoolsPanel({ resolved }: ResourcePoolsPanelProps): React.JSX.Element | null {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
 
   if (resolved.resourcePools.length === 0) return null;
@@ -38,7 +40,7 @@ export function ResourcePoolsPanel({ resolved }: ResourcePoolsPanelProps): React
                 {regenLabel}
               </div>
               <div className="text-xs text-muted-foreground/70 mt-1">
-                {tc('characterSheet.resourcePools.source', { source: getSourceDisplayName(pool.source, t) })}
+                {tc('characterSheet.resourcePools.source', { source: getSourceDisplayName(pool.source, rt) })}
               </div>
             </div>
           );

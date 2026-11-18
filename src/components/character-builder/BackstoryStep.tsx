@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
 import { useTranslation } from 'react-i18next';
+import { isSpeciesId } from '@/lib/dnd-helpers';
 
 export function BackstoryStep() {
   const { t } = useTranslation('common');
@@ -13,7 +14,7 @@ export function BackstoryStep() {
     <div className="flex flex-col gap-6">
       <PhysicalCharacteristics
         key={context.character.species ?? 'none'}
-        speciesId={character.species}
+        speciesId={character.species && isSpeciesId(character.species) ? character.species : null}
         height={character.height ?? null}
         weight={character.weight ?? null}
         onChange={(updates) => context.updateCharacter(updates)}

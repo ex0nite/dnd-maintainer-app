@@ -1,9 +1,11 @@
 import type { ResolvedCharacter } from '@/types/resolved';
 import { useTranslation } from 'react-i18next';
+import { useRuleName } from '@/hooks/useRuleSet';
 
 export function FeaturesPanel({ features }: { features: ResolvedCharacter['features'] }) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const ruleName = useRuleName();
 
   return (
     <div className="sheet-panel">
@@ -12,33 +14,29 @@ export function FeaturesPanel({ features }: { features: ResolvedCharacter['featu
         {features.map((resolvedFeature, i) => (
           <div key={i} className="bg-muted/50 p-3 rounded border">
             <div className="font-semibold text-foreground text-sm mb-1">
-              {t(`features.${resolvedFeature.feature.id}.name`, {
-                defaultValue: resolvedFeature.feature.name ?? resolvedFeature.feature.id,
-              })}
+              {resolvedFeature.feature.name ??
+                t(`features.${resolvedFeature.feature.id}.name`, { defaultValue: resolvedFeature.feature.id })}
             </div>
             <p className="text-xs text-muted-foreground">
-              {t(`features.${resolvedFeature.feature.id}.description`, {
-                defaultValue: resolvedFeature.feature.description ?? '',
-              })}
+              {resolvedFeature.feature.description ??
+                t(`features.${resolvedFeature.feature.id}.description`, { defaultValue: '' })}
             </p>
             {resolvedFeature.source && (
               <div className="text-xs text-muted-foreground/70 mt-1">
                 {tc('characterSheet.fields.source', {
                   source:
                     resolvedFeature.source.origin === 'class'
-                      ? t(`classes.${resolvedFeature.source.id}`)
+                      ? ruleName('class', resolvedFeature.source.id)
                       : resolvedFeature.source.origin === 'subclass'
-                        ? t(`subclasses.${resolvedFeature.source.id}.name`)
+                        ? ruleName('subclass', resolvedFeature.source.id)
                         : resolvedFeature.source.origin === 'species'
-                          ? t(`species.${resolvedFeature.source.id}`)
+                          ? ruleName('species', resolvedFeature.source.id)
                           : resolvedFeature.source.origin === 'background'
-                            ? t(`backgrounds.${resolvedFeature.source.id}`)
+                            ? ruleName('background', resolvedFeature.source.id)
                             : resolvedFeature.source.origin === 'loot'
                               ? resolvedFeature.source.description
                               : resolvedFeature.source.origin === 'feat'
-                                ? t(`feats.${resolvedFeature.source.id}.name`, {
-                                    defaultValue: resolvedFeature.source.id,
-                                  })
+                                ? ruleName('feat', resolvedFeature.source.id)
                                 : resolvedFeature.source.id,
                 })}
               </div>

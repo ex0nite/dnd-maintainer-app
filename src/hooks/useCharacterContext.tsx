@@ -12,9 +12,10 @@ import type { ResolvedCharacter } from '@/types/resolved';
 import type { ClassId } from '@/lib/dnd-helpers';
 import type { GrantBundle, SubclassId } from '@/types/sources';
 import { reconstructBuild } from '@/lib/build-reconstruction';
-import { collectBundles, getSpeciesSource } from '@/lib/sources/index';
-import { CLASS_SOURCES } from '@/lib/sources/classes';
-import { SUBCLASS_IDS_BY_CLASS } from '@/lib/sources/subclasses';
+import { collectBundles } from '@/lib/sources/index';
+import { builtin2024RuleSet, classOfSubclass } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
+import { useActiveRuleSet } from '@/hooks/useRuleSet';
 import { resolveCharacter, type PersistedItem } from '@/lib/resolver/index';
 import { toast } from 'sonner';
 import i18next from 'i18next';
@@ -62,10 +63,9 @@ const CharacterContext = createContext<CharacterContextValue | null>(null);
 // Helpers
 // ---------------------------------------------------------------------------
 
-function resolveSubclassToClassId(subclassId: string): string {
-  for (const [classId, subclassIds] of Object.entries(SUBCLASS_IDS_BY_CLASS)) {
-    if ((subclassIds as readonly string[]).includes(subclassId)) return classId;
-  }
+function resolveSubclassToClassId(subclassId: string, rules: RuleSet): string {
+  const classId = classOfSubclass(rules, subclassId);
+  if (classId) return classId;
   throw new Error(`Unknown subclass "${subclassId}" — cannot resolve parent class`);
 }
 
@@ -79,7 +79,11 @@ function resolveSubclassToClassId(subclassId: string): string {
  * Unknown origins cause `parseChoiceKey` to throw.
  * Also throws if origin is 'class' but no active level row exists for the specified class.
  */
-export function resolveChoiceSequence(choiceKey: string, rows: readonly BuildLevelRow[]): number {
+export function resolveChoiceSequence(
+  choiceKey: string,
+  rows: readonly BuildLevelRow[],
+  rules: RuleSet = builtin2024RuleSet()
+): number {
   const { origin, id: classId } = parseChoiceKey(choiceKey);
 
   // Species, background, and feat (origin feat) sub-choices are part of character creation and
@@ -90,7 +94,7 @@ export function resolveChoiceSequence(choiceKey: string, rows: readonly BuildLev
   }
 
   if (origin === 'subclass') {
-    const parentClassId = resolveSubclassToClassId(classId);
+    const parentClassId = resolveSubclassToClassId(classId, rules);
     const levelRow = rows.find((r) => r.sequence !== 0 && r.class_id === parentClassId && r.deleted_at == null);
     if (!levelRow) {
       throw new Error(
@@ -119,9 +123,10 @@ function findGrantRowIndex(
   classId: string,
   grantType: 'subclass' | 'asi',
   grantIndex: number,
-  rows: readonly BuildLevelRow[]
+  rows: readonly BuildLevelRow[],
+  rules: RuleSet
 ): { ok: true; index: number } | { ok: false; error: string } {
-  const classSource = CLASS_SOURCES.find((cs) => cs.id === classId);
+  const classSource = rules.classes.get(classId);
   if (!classSource) {
     const error = `No class source found for "${classId}"`;
     logger.error(`findGrantRowIndex: ${error}`);
@@ -162,7 +167,12 @@ function findGrantRowIndex(
  * Apply a single choice decision onto a mutable rows array.
  * Returns an error string on failure, or null on success.
  */
-function applyDecisionToRows(rows: BuildLevelRow[], choiceKey: ChoiceKey, decision: ChoiceDecision): string | null {
+function applyDecisionToRows(
+  rows: BuildLevelRow[],
+  choiceKey: ChoiceKey,
+  decision: ChoiceDecision,
+  rules: RuleSet
+): string | null {
   if (decision.type === 'subclass' || decision.type === 'asi') {
     const { origin, id: classId, index: grantIndex } = parseChoiceKey(choiceKey);
     // Background (and future species) ASIs are stored in the creation row's choices JSONB,
@@ -176,7 +186,7 @@ function applyDecisionToRows(rows: BuildLevelRow[], choiceKey: ChoiceKey, decisi
       };
       return null;
     }
-    const result = findGrantRowIndex(classId, decision.type, grantIndex, rows);
+    const result = findGrantRowIndex(classId, decision.type, grantIndex, rows, rules);
     if (!result.ok) return result.error;
     if (decision.type === 'subclass') {
       rows[result.index] = { ...rows[result.index], subclass_id: decision.subclassId };
@@ -192,7 +202,7 @@ function applyDecisionToRows(rows: BuildLevelRow[], choiceKey: ChoiceKey, decisi
   if (origin === 'species' || origin === 'background' || origin === 'feat') {
     targetSeq = 0;
   } else if (origin === 'subclass') {
-    const parentClassId = resolveSubclassToClassId(classId);
+    const parentClassId = resolveSubclassToClassId(classId, rules);
     const levelRow = rows.find((r) => r.sequence !== 0 && r.class_id === parentClassId && r.deleted_at == null);
     if (!levelRow) return `No active level row found for parent class "${parentClassId}" of subclass "${classId}"`;
     targetSeq = levelRow.sequence;
@@ -265,8 +275,9 @@ function tryDeriveAndResolve(
   character: Character,
   rows: readonly BuildLevelRow[],
   equippedItems: readonly string[],
-  persistedItems?: readonly PersistedItem[],
-  useDBInventory?: boolean
+  persistedItems: readonly PersistedItem[] | undefined,
+  useDBInventory: boolean | undefined,
+  rules: RuleSet
 ): BuildResult {
   // Exclude soft-deleted rows before reconstruction
   const activeRows = rows.filter((r) => r.deleted_at == null);
@@ -285,7 +296,8 @@ function tryDeriveAndResolve(
       { species: character.species, background: character.background },
       activeRows,
       equippedItems,
-      (message) => reconstructionWarnings.push(message)
+      (message) => reconstructionWarnings.push(message),
+      rules
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown build error';
@@ -293,13 +305,18 @@ function tryDeriveAndResolve(
     return { status: 'build-error', build: null, bundles: [], resolved: null, error: message, warnings: [] };
   }
 
-  const { bundles, warnings: bundleWarnings, expandedFeats } = collectBundles(build);
-  if (bundleWarnings.length > 0) {
-    logger.warn('collectBundles warnings:', bundleWarnings);
-  }
-  const warnings: readonly string[] = [...reconstructionWarnings, ...bundleWarnings];
-
+  // Bundles are collected inside the try: a malformed rule (or stored decision) must give a resolve error on the
+  // screen, never crash the whole page.
+  let bundles: readonly GrantBundle[] = [];
+  let warnings: readonly string[] = reconstructionWarnings;
   try {
+    const collected = collectBundles(build, rules);
+    bundles = collected.bundles;
+    const { warnings: bundleWarnings, expandedFeats } = collected;
+    if (bundleWarnings.length > 0) {
+      logger.warn('collectBundles warnings:', bundleWarnings);
+    }
+    warnings = [...reconstructionWarnings, ...bundleWarnings];
     const levelRows = activeRows.filter((r) => r.sequence !== 0);
     const level = levelRows.length;
     const resolved = resolveCharacter({
@@ -312,6 +329,7 @@ function tryDeriveAndResolve(
       persistedItems,
       useDBInventory,
       expandedFeats,
+      rules,
     });
     return { status: 'ok', build, bundles, resolved, error: null, warnings };
   } catch (err) {
@@ -365,6 +383,7 @@ export function CharacterProvider({
   // equip/unequip items at runtime. Currently read-only after mount.
   const [equippedItems] = useState<readonly string[]>(initialEquippedItems);
   const [isDirty, setIsDirty] = useState<boolean>(false);
+  const rules = useActiveRuleSet();
 
   const {
     build,
@@ -373,10 +392,10 @@ export function CharacterProvider({
     error: buildError,
     warnings: buildWarnings,
   } = useMemo(
-    () => tryDeriveAndResolve(character, rows, equippedItems, initialPersistedItems, useDBInventory),
+    () => tryDeriveAndResolve(character, rows, equippedItems, initialPersistedItems, useDBInventory, rules),
     // initialPersistedItems and useDBInventory are stable (set at mount from DB query results)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [character, rows, equippedItems]
+    [character, rows, equippedItems, rules]
   );
 
   const level = useMemo(() => rows.filter((r) => r.sequence !== 0 && r.deleted_at == null).length, [rows]);
@@ -392,20 +411,23 @@ export function CharacterProvider({
     return nextDeleted ? level + 1 : null;
   }, [rows, level]);
 
-  const updateCharacter = useCallback((updates: Readonly<Partial<Character>>) => {
-    setCharacter((prev) => {
-      const next = { ...prev, ...updates };
-      // When species changes, also set size from species source
-      if ('species' in updates && updates.species !== prev.species && updates.species) {
-        const speciesSource = getSpeciesSource(updates.species);
-        if (speciesSource) {
-          next.size = speciesSource.defaultSize;
+  const updateCharacter = useCallback(
+    (updates: Readonly<Partial<Character>>) => {
+      setCharacter((prev) => {
+        const next = { ...prev, ...updates };
+        // When species changes, also set size from species source
+        if ('species' in updates && updates.species !== prev.species && updates.species) {
+          const speciesSource = rules.species.get(updates.species);
+          if (speciesSource) {
+            next.size = speciesSource.defaultSize;
+          }
         }
-      }
-      return next;
-    });
-    setIsDirty(true);
-  }, []);
+        return next;
+      });
+      setIsDirty(true);
+    },
+    [rules]
+  );
 
   const updateCreation = useCallback((updates: Readonly<CreationUpdates>) => {
     setRows((prev) => {
@@ -445,7 +467,7 @@ export function CharacterProvider({
     (choiceKey: ChoiceKey, decision: ChoiceDecision) => {
       try {
         const next = [...rows];
-        const error = applyDecisionToRows(next, choiceKey, decision);
+        const error = applyDecisionToRows(next, choiceKey, decision, rules);
         if (error) {
           toast.error(error);
           return;
@@ -457,7 +479,7 @@ export function CharacterProvider({
         toast.error(i18next.t('common:errors.choiceSaveFailed'));
       }
     },
-    [rows]
+    [rows, rules]
   );
 
   const clearChoice = useCallback(
@@ -485,7 +507,7 @@ export function CharacterProvider({
           }
 
           const grantType = category === 'subclass' ? ('subclass' as const) : ('asi' as const);
-          const result = findGrantRowIndex(classId, grantType, grantIndex, rows);
+          const result = findGrantRowIndex(classId, grantType, grantIndex, rows, rules);
           if (!result.ok) {
             toast.error(result.error);
             return;
@@ -504,7 +526,7 @@ export function CharacterProvider({
           return;
         }
 
-        const targetSeq = resolveChoiceSequence(choiceKey, rows);
+        const targetSeq = resolveChoiceSequence(choiceKey, rows, rules);
         const idx = rows.findIndex((r) => r.sequence === targetSeq);
         if (idx === -1) {
           logger.warn(`clearChoice: no row found for key "${choiceKey}" — choice not cleared`);
@@ -524,7 +546,7 @@ export function CharacterProvider({
         toast.error(i18next.t('common:errors.choiceClearFailed'));
       }
     },
-    [rows]
+    [rows, rules]
   );
 
   const levelUp = useCallback(
@@ -581,7 +603,7 @@ export function CharacterProvider({
       // Apply any decisions atomically with the level-up
       if (decisions) {
         for (const [key, decision] of decisions) {
-          const error = applyDecisionToRows(next, key, decision);
+          const error = applyDecisionToRows(next, key, decision, rules);
           if (error) {
             toast.error(error);
           }
@@ -591,7 +613,7 @@ export function CharacterProvider({
       setRows(next);
       setIsDirty(true);
     },
-    [rows]
+    [rows, rules]
   );
 
   const levelDown = useCallback(() => {

@@ -1,6 +1,5 @@
 import { collectGrantsByType } from '@/lib/resolver/helpers';
-import { LINEAGE_GRANTS_REGISTRY } from '@/lib/sources/species';
-import type { SpeciesId } from '@/lib/dnd-helpers';
+import { useActiveRuleSet } from '@/hooks/useRuleSet';
 import type { ChoiceDecision, ChoiceKey } from '@/types/choices';
 import type { PendingChoice } from '@/types/resolved';
 import type { GrantBundle } from '@/types/sources';
@@ -8,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ChoicePicker } from './ChoicePicker';
 
 interface LineagePickerProps {
-  readonly race: SpeciesId;
+  readonly race: string;
   readonly bundles: readonly GrantBundle[];
   readonly build: { choices: Record<ChoiceKey, ChoiceDecision> } | null;
   readonly makeChoice: (key: ChoiceKey, decision: ChoiceDecision) => void;
@@ -17,8 +16,9 @@ interface LineagePickerProps {
 
 export function LineagePicker({ race, bundles, build, makeChoice, clearChoice }: LineagePickerProps) {
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
 
-  if (!(race in LINEAGE_GRANTS_REGISTRY)) return null;
+  if (!rules.lineages.has(race)) return null;
 
   const lineageGrantTags = collectGrantsByType(bundles, 'lineage-choice').filter(
     (tg) => tg.source.origin === 'species'

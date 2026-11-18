@@ -16,7 +16,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/lib/sources/spells', () => ({
+// The panel reads the rule set (story 9.3), built from the real catalog: keep it, override the id check only.
+vi.mock('@/lib/sources/spells', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/sources/spells')>()),
   isSpellId: (id: string) => id.startsWith('spell-'),
 }));
 

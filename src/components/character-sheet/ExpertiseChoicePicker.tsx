@@ -6,6 +6,7 @@ import { DND_SKILLS, type SkillId, type ToolProficiencyId } from '@/lib/dnd-help
 import type { PendingChoice, ResolvedCharacter } from '@/types/resolved';
 import type { ChoiceDecision, ChoiceKey } from '@/types/choices';
 import { useTranslation } from 'react-i18next';
+import { useRuleAwareT } from '@/hooks/useRuleSet';
 
 export interface ExpertiseChoicePickerProps {
   readonly choice: Extract<PendingChoice, { type: 'expertise-choice' }>;
@@ -37,6 +38,7 @@ export function ExpertiseChoicePicker({
   onClear,
 }: ExpertiseChoicePickerProps) {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
 
   const selected =
@@ -109,7 +111,7 @@ export function ExpertiseChoicePicker({
           {tc('characterBuilder.pendingChoices.expertiseChoice', { count: choice.count })}{' '}
           <span className="text-xs font-normal text-muted-foreground">
             {tc('characterBuilder.pendingChoices.fromSource', {
-              source: getChoiceSourceName(choice.choiceKey, t),
+              source: getChoiceSourceName(choice.choiceKey, rt),
             })}
           </span>
         </p>

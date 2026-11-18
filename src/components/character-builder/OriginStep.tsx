@@ -2,8 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
 import { useGameData } from '@/hooks/useGameData';
-import { type FeatId, type SpeciesId } from '@/lib/dnd-helpers';
-import { FEAT_SOURCES } from '@/lib/sources';
+import { useActiveRuleSet, useRuleAwareT, useRuleName } from '@/hooks/useRuleSet';
+import { ruleKey } from '@/lib/rules/types';
 import { collectGrantsByType } from '@/lib/resolver/helpers';
 import { getChoiceSourceName } from '@/lib/character-builder/choice-source-name';
 import { deriveOriginFeatInfo } from '@/lib/character-builder/origin-feat-info';
@@ -13,19 +13,21 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { ChoicePicker } from './ChoicePicker';
 import { LineagePicker } from './LineagePicker';
-import { SPECIES_SOURCES } from '@/lib/sources/species';
 
 export function OriginStep() {
   const { t } = useTranslation('gamedata');
+  const rt = useRuleAwareT();
   const { t: tc } = useTranslation('common');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const gameData = useGameData(campaignSlug);
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
   const context = useCharacterContext();
   const { character, bundles, build, resolved } = context;
 
   const background = character.background ?? '';
-  const species = character.species as SpeciesId | undefined;
-  const hasResolvedSpecies = !!species && SPECIES_SOURCES.some((s) => s.id === species);
+  const species = character.species ?? undefined;
+  const hasResolvedSpecies = !!species && rules.species.has(species);
 
   // Extract background grants (shared filter — avoids repeating the chain)
   const backgroundGrants = bundles.filter((b) => b.source.origin === 'background').flatMap((b) => b.grants);
@@ -65,9 +67,9 @@ export function OriginStep() {
   // Feats the character already has from any source AND that can't be taken again, so the
   // species origin-feat picker can lock them out (e.g. Soldier grants Savage Attacker, which
   // a Human must not also pick). Repeatable feats (magic-initiate, etc.) stay selectable.
-  const unavailableFeats = useMemo<ReadonlySet<FeatId>>(() => {
-    const repeatable = new Set(FEAT_SOURCES.filter((f) => f.repeatable).map((f) => f.id));
-    const granted = new Set<FeatId>();
+  const unavailableFeats = useMemo<ReadonlySet<string>>(() => {
+    const repeatable = new Set([...rules.feats.values()].filter((f) => f.repeatable).map((f) => f.id));
+    const granted = new Set<string>();
     for (const bundle of bundles) {
       for (const grant of bundle.grants) {
         if (grant.type === 'feat' && !repeatable.has(grant.featId)) granted.add(grant.featId);
@@ -80,10 +82,12 @@ export function OriginStep() {
       if (decision?.type === 'feat-choice' && !repeatable.has(decision.featId)) granted.add(decision.featId);
     }
     return granted;
-  }, [bundles, build]);
+  }, [bundles, build, rules]);
 
   const backgroundName = background
-    ? t(`backgrounds.${background}` as `backgrounds.${string}`, { defaultValue: background })
+    ? rules.entries.has(ruleKey('background', background))
+      ? ruleName('background', background)
+      : t(`backgrounds.${background}` as `backgrounds.${string}`, { defaultValue: background })
     : null;
 
   return (
@@ -106,7 +110,7 @@ export function OriginStep() {
             <div key={choice.choiceKey}>
               <p className="text-xs text-muted-foreground mb-1">
                 {tc('characterBuilder.pendingChoices.fromSource', {
-                  source: getChoiceSourceName(choice.choiceKey, t),
+                  source: getChoiceSourceName(choice.choiceKey, rt),
                 })}
               </p>
               <ChoicePicker
@@ -139,7 +143,7 @@ export function OriginStep() {
                   ? t(`features.${originFeatInfo.id}.name` as `features.${string}.name`, {
                       defaultValue: originFeatInfo.id,
                     })
-                  : t(`feats.${originFeatInfo.id}.name` as `feats.${string}.name`, {
+                  : rt(`feats.${originFeatInfo.id}.name` as `feats.${string}.name`, {
                       defaultValue: originFeatInfo.id,
                     })}
               </Badge>
@@ -154,7 +158,7 @@ export function OriginStep() {
                 ? t(`features.${originFeatInfo.id}.description` as `features.${string}.description`, {
                     defaultValue: '',
                   })
-                : t(`feats.${originFeatInfo.id}.description` as `feats.${string}.description`, {
+                : rt(`feats.${originFeatInfo.id}.description` as `feats.${string}.description`, {
                     defaultValue: '',
                   })}
             </p>
@@ -175,7 +179,7 @@ export function OriginStep() {
             <div key={choice.choiceKey}>
               <p className="text-xs text-muted-foreground mb-1">
                 {tc('characterBuilder.pendingChoices.fromSource', {
-                  source: getChoiceSourceName(choice.choiceKey, t),
+                  source: getChoiceSourceName(choice.choiceKey, rt),
                 })}
               </p>
               <ChoicePicker
