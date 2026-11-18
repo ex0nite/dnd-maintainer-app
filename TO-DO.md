@@ -85,9 +85,11 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [x] 7.2 Installation reproductible et secrets régénérés (FAIT : `deploy/qnap/`, `docs/deploy-qnap.md`, job CI `stack` ; reste l'installation réelle sur le QNAP, avec le propriétaire)
 - [x] 7.3 Exposition HTTPS et vérification réseau (FAIT le 2026-11-18 : hôte NPM avec certificat joker Let's Encrypt, redirection 80/443 de la box,
       smoke complet depuis le réseau public, en-têtes, limite par adresse avec `X-Real-IP` forgé (429 au bout de 33 essais), scan : seuls 80 et 443 ouverts ; téléphone en 5G connecté pendant que le PC était limité ; plages CDN de NPM : risque résiduel accepté par le propriétaire le 2026-11-18, le verrou par pseudo reste le frein principal)
-- [x] 7.4 CSP stricte (FAIT en mode bloquant sous Playwright ; RESTE : passage `Report-Only` puis bloquant sur l'environnement d'essai du QNAP, voir doc)
+- [x] 7.4 CSP stricte (FAIT : bloquante sous Playwright et vérifiée sur le site réel le 2026-11-18, aucune violation sur les écrans MJ)
 - [ ] 7.5 Bascule vers la production (rappel : pas de sauvegarde, D-23)
 - [ ] 7.6 Recette avec les cinq joueurs
+
+- [ ] Epic 9 : règles 2014 par campagne (9.1 choix des règles, 9.2 spike SRD, 9.3 espèces et historiques, 9.4 classes, 9.5 constructeur, 9.6 sorts, 9.7 paquets du MJ, 9.8 PDF, 9.9 recette) : voir `epics.md`
 
 ### Après le MVP
 

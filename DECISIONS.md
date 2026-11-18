@@ -157,6 +157,15 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 - Le repli sur Supabase cloud (D-20) n'est donc pas nécessaire. À remesurer si la table grandit ou si d'autres services s'ajoutent.
 - L'installation est décrite dans `docs/deploy-qnap.md` ; la pile (`deploy/qnap/`) est épinglée par empreinte et testée en CI.
 
+### D-34 · 2026-11-18 · Règles 2014 par campagne, ouverture sans sauvegarde
+
+- La table Affaires Draconiques joue en règles **2014** ; le moteur est 2024. Le propriétaire choisit : un **champ de règles par
+  campagne** (le moteur 2024 et ses tests ne bougent pas), le **SRD 5.1 seul dans le dépôt public**, le contenu hors SRD fourni
+  par le MJ hors dépôt (paquets importés, story 9.7). Epic 9 dans `epics.md`.
+- L'app est ouverte aux joueurs **avant** la fin de l'epic 9 (campagne, séances publiées, notes) ; les fiches 2014 suivent.
+- Le propriétaire confirme l'ouverture **sans sauvegarde** (D-23) « pour le moment » (2026-11-18) : à reposer avant d'inviter les joueurs.
+- La CSP bloquante est vérifiée sur le site réel (connexion, accueil, joueurs, export, paramètres, mot de passe) : aucune violation.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le
