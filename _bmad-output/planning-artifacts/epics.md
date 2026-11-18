@@ -1339,9 +1339,10 @@ ouverture aux joueurs avant la fin de cet epic (campagne, séances publiées, no
 avant la 9.2.
 **Constat du 2026-11-18 (docs du dépôt officiel, `docs/dnd-2024.md`) :** toutes les règles sont du code TypeScript
 (`src/lib/sources/*`, objets `*Source` et `Grant[]`, noms dans `gamedata.json`), donc ni modifiables ni créables par le MCP.
-Les `Grant` (39 variantes) sont des objets sérialisables : on les décrit par un schéma strict, on les stocke en base et on
+Les `Grant` (29 variantes) sont des objets sérialisables : on les décrit par un schéma strict, on les stocke en base et on
 les injecte dans le pipeline Source → Grant → Résolveur. Le contenu hors SRD est alors saisi par le MJ (via le MCP) dans
 sa base privée, jamais dans le dépôt public (remplace l'ancienne story « paquets de contenu »).
+**Résultat de la 9.2 (2026-11-18) :** architecture dans `docs/rules-as-data.md` (D-35). Périmètre précisé : `RuleSet` à trois couches (2024 intégré, SRD 2014 en JSON, bibliothèque du MJ par édition) ; le champ `needsReview` des entrées issues d'un scan bloque leur usage tant qu'il n'est pas levé (9.3, 9.4) ; sous-espèce avec parent (9.5) ; méthode de caractéristiques « saisie manuelle » (9.7) ; invocations, pacte et liste de sorts étendue (9.8). **Question ouverte pour le MJ :** la liste des livres de 2014 autorisés à la table n'est écrite nulle part (proposition : `phb-2014`, `xgte`, `tcoe`).
 
 ### Story 9.1 : Le MJ choisit les règles d'une campagne
 

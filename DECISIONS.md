@@ -171,7 +171,7 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 
 Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
 
-- **Le moteur reste un pipeline Source → Grant → Résolveur.** Les 27 variantes de `Grant` sont des données sérialisables ; une
+- **Le moteur reste un pipeline Source → Grant → Résolveur.** Les 29 variantes de `Grant` sont des données sérialisables ; une
   classe porte déjà ses aptitudes niveau par niveau, donc le niveau de choix de la sous-classe en 2014 (1, 2 ou 3) est une donnée,
   pas du code. Ce qui est du code aujourd'hui : les registres au niveau des modules (45 appels hors `src/lib/sources/`) et les
   identifiants en unions TypeScript fermées.

@@ -9,7 +9,7 @@ DM creates and edits through the MCP. It is the reference for stories 9.3 to 9.9
 The engine (`src/lib/sources`, `src/lib/resolver`) is a pure pipeline: `collectBundles(build)` assembles `GrantBundle[]` from
 `SpeciesSource`, `ClassSource`, `SubclassSource`, `BackgroundSource`, `FeatSource` and `ItemSource` objects, then
 `resolveCharacter(bundles, choices)` turns them into a `ResolvedCharacter`. Everything those objects contain is a `Grant`
-(a discriminated union of 27 variants in `src/types/grants.ts`), which is plain serializable data.
+(a discriminated union of 29 variants in `src/types/grants.ts`), which is plain serializable data.
 
 Two things make the rules code today, not data:
 
@@ -27,19 +27,19 @@ subclass is chosen (1, 2 or 3) is a `{ type: 'subclass' }` grant in the right `l
 
 The SRD 5.1 is published under CC-BY-4.0 (attribution required, see section 7). Counts below come from the SRD 5.1 data set.
 
-| Kind | In the SRD 5.1 | Notes |
-|---|---|---|
-| Species | 9: dragonborn, dwarf, elf, gnome, half-elf, half-orc, halfling, human, tiefling | |
-| Sub-species | 4: hill dwarf, high elf, lightfoot halfling, rock gnome | **Mountain dwarf is not in the SRD.** Lightfoot halfling is. |
-| Classes | 12 | all PHB classes; **artificer is not** |
-| Subclasses | 12, one per class: berserker, champion, devotion, draconic, evocation, fiend, hunter, land, life, lore, open hand, thief | **The Fiend (warlock) is in the SRD.** Circle of Spores, Rune Knight, Soulknife, Gloom Stalker are not. |
-| Backgrounds | 1: acolyte | the other backgrounds are not |
-| Feats | 1: grappler | |
-| Spells | 319 | with their class lists |
-| Equipment | 237 | weapons, armor, gear, packs, tools |
-| Magic items | 362 | |
-| Features | 407 | class and subclass features |
-| Languages / skills / proficiencies | 16 / 18 / 117 | |
+| Kind                               | In the SRD 5.1                                                                                                           | Notes                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Species                            | 9: dragonborn, dwarf, elf, gnome, half-elf, half-orc, halfling, human, tiefling                                          |                                                                                                         |
+| Sub-species                        | 4: hill dwarf, high elf, lightfoot halfling, rock gnome                                                                  | **Mountain dwarf is not in the SRD.** Lightfoot halfling is.                                            |
+| Classes                            | 12                                                                                                                       | all PHB classes; **artificer is not**                                                                   |
+| Subclasses                         | 12, one per class: berserker, champion, devotion, draconic, evocation, fiend, hunter, land, life, lore, open hand, thief | **The Fiend (warlock) is in the SRD.** Circle of Spores, Rune Knight, Soulknife, Gloom Stalker are not. |
+| Backgrounds                        | 1: acolyte                                                                                                               | the other backgrounds are not                                                                           |
+| Feats                              | 1: grappler                                                                                                              |                                                                                                         |
+| Spells                             | 319                                                                                                                      | with their class lists                                                                                  |
+| Equipment                          | 237                                                                                                                      | weapons, armor, gear, packs, tools                                                                      |
+| Magic items                        | 362                                                                                                                      |                                                                                                         |
+| Features                           | 407                                                                                                                      | class and subclass features                                                                             |
+| Languages / skills / proficiencies | 16 / 18 / 117                                                                                                            |                                                                                                         |
 
 ### 2.1 Where the SRD data comes from
 
@@ -101,9 +101,13 @@ One JSON object per entry, validated by a strict Zod schema (no unknown key):
   "name": { "en": "Circle of Spores", "fr": "Cercle des Spores" },
   "source": { "book": "tcoe", "page": 39 },
   "summary": { "en": "...", "fr": "..." },
-  "body": { }
+  "needsReview": ["dice read from a scan, to confirm"],
+  "body": {}
 }
 ```
+
+`needsReview` is a bounded list of short notes. An entry that carries notes is stored and shown to the DM as unverified, and a
+character can not use it until the DM clears the list (the MCP tool refuses to clear it without an explicit confirmation).
 
 `kind` is one of `species`, `subspecies`, `class`, `subclass`, `background`, `feat`, `spell`, `item`. The `body` is the existing
 source shape, in JSON: `grants` for species, background, feat and item; `levels[].grants` for a class;
@@ -174,30 +178,30 @@ recomputed when its owner or the DM rebuilds it.
 
 ## 5. Impact on the existing code
 
-| Area | Change | Story |
-|---|---|---|
-| `src/lib/sources/index.ts` | `getXSource` and `collectBundles` take a `RuleSet` | 9.3 |
-| 45 call sites (`BasicsStep`, `OriginStep`, `SubclassPicker`, `useCharacterContext`, `build-reconstruction`, `random-npc`, ...) | read the `RuleSet` from context | 9.3 |
-| `src/types/*` | open entity ids, JSON entry types, Zod schemas | 9.3 |
-| `supabase/migrations` | `rule_entries`, `validate_rule_entry`, policies, pgTAP matrix | 9.3 |
-| MCP `src/engine`, `src/tools` | build the `RuleSet`; `dnd_*_rule` tools; character tools use it | 9.4 |
-| `gamedata.json` | unchanged for built-in; entries carry their own text | 9.3 |
-| `docs/dnd-2024.md` | add the data-shape reference for entries | 9.3 |
+| Area                                                                                                                           | Change                                                          | Story |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- | ----- |
+| `src/lib/sources/index.ts`                                                                                                     | `getXSource` and `collectBundles` take a `RuleSet`              | 9.3   |
+| 45 call sites (`BasicsStep`, `OriginStep`, `SubclassPicker`, `useCharacterContext`, `build-reconstruction`, `random-npc`, ...) | read the `RuleSet` from context                                 | 9.3   |
+| `src/types/*`                                                                                                                  | open entity ids, JSON entry types, Zod schemas                  | 9.3   |
+| `supabase/migrations`                                                                                                          | `rule_entries`, `validate_rule_entry`, policies, pgTAP matrix   | 9.3   |
+| MCP `src/engine`, `src/tools`                                                                                                  | build the `RuleSet`; `dnd_*_rule` tools; character tools use it | 9.4   |
+| `gamedata.json`                                                                                                                | unchanged for built-in; entries carry their own text            | 9.3   |
+| `docs/dnd-2024.md`                                                                                                             | add the data-shape reference for entries                        | 9.3   |
 
 ## 6. What the 2014 engine needs (differences from the 2024 data)
 
-To be filled with the table's needs in the next section, then split across 9.5 to 9.8:
+Differences between the 2024 data and the 2014 rules, split across 9.5 to 9.8 (section 8 lists what a real table needs):
 
-| Topic | 2024 engine today | 2014 needs |
-|---|---|---|
-| Ability scores | species give none, backgrounds give +2/+1 | species and subspecies give bonuses; backgrounds give none |
-| Backgrounds | skills, tool, language, origin feat | skills, tools, languages, equipment, a feature (text) |
-| Subclass | chosen at class level 3 | chosen at class level 1 (cleric, sorcerer, warlock), 2 (druid, wizard) or 3 (others) |
-| Weapon masteries | granted by 5 classes | none |
-| Feats | origin feats from backgrounds, general feats at ASI | only at ASI levels (alternative to the ASI), optional rule |
-| Spells | prepared and known per 2024 tables | 2014 known, prepared and spellbook rules; warlock pact magic, invocations, pact boon |
-| Starting equipment | bundles per class and background | class equipment choices and gold alternative |
-| Species traits | lineage choice | subspecies, darkvision, resistances, extra languages, weapon and tool proficiencies |
+| Topic              | 2024 engine today                                   | 2014 needs                                                                           |
+| ------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Ability scores     | species give none, backgrounds give +2/+1           | species and subspecies give bonuses; backgrounds give none                           |
+| Backgrounds        | skills, tool, language, origin feat                 | skills, tools, languages, equipment, a feature (text)                                |
+| Subclass           | chosen at class level 3                             | chosen at class level 1 (cleric, sorcerer, warlock), 2 (druid, wizard) or 3 (others) |
+| Weapon masteries   | granted by 5 classes                                | none                                                                                 |
+| Feats              | origin feats from backgrounds, general feats at ASI | only at ASI levels (alternative to the ASI), optional rule                           |
+| Spells             | prepared and known per 2024 tables                  | 2014 known, prepared and spellbook rules; warlock pact magic, invocations, pact boon |
+| Starting equipment | bundles per class and background                    | class equipment choices and gold alternative                                         |
+| Species traits     | lineage choice                                      | subspecies, darkvision, resistances, extra languages, weapon and tool proficiencies  |
 
 ## 7. SRD attribution
 
@@ -207,6 +211,39 @@ The SRD 5.1 requires this notice wherever its content is distributed (to ship in
 > at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution
 > 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
-## 8. Table needs (from the real characters)
+## 8. What a real 2014 table asks of the engine
 
-_To complete after the inventory of the five characters of the table (Matdhöur, Søren, Nox, Hiero le Fou, Robbie)._
+Drawn from the sheets of five real characters of the first table (levels 1 to 5, seven classes and subclasses, four species and
+sub-species, five backgrounds). The sheets themselves, their names and the book text stay outside the repository; this is the
+list of capabilities they require, which 9.5 to 9.9 must cover and 9.10 checks against the real sheets.
+
+| Capability                                                                                                                                   | Needed by             | Engine today                                 | Plan                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| Sub-species bonus **on top of** the species bonus (Mountain Dwarf STR +2 and CON +2, Lightfoot Halfling CHA +1 and DEX +2)                   | species               | `ability-bonus` grants exist, no parent link | `subspecies` entry with `parent`; its grants add to the parent's (9.5)         |
+| Sub-species armor proficiency; tool choice from a list given by the parent species                                                           | species               | `proficiency-choice` for tools exists        | covered by existing grants; inheritance of parent traits in the resolver (9.5) |
+| Standard human (+1 to every ability)                                                                                                         | species               | none                                         | species grants (9.5)                                                           |
+| Backgrounds without ability bonus, with skills, tools, languages, starting equipment and a text feature; **custom backgrounds of the table** | backgrounds           | origin feat and `asi` assumed                | 2014 background body; custom backgrounds are DM library entries (9.5, 9.3)     |
+| Subclass chosen at level 1 (warlock patron), 2 (druid circle) and 3 (ranger, rogue, fighter)                                                 | classes               | one `subclass` grant per class level         | already data: put the grant in the right `levels[]` entry (9.6)                |
+| Subclass **spells always available** (patron expanded list, circle spells)                                                                   | warlock, druid        | `spell` grants exist                         | expanded-list grant: `spell-list-extension` (new, 9.8)                         |
+| Pact magic, invocations, pact boon                                                                                                           | warlock               | pact slots resolved, no invocations          | `invocation-choice`, `pact-boon-choice` grants (new, 9.8)                      |
+| Cantrips known, spells known vs prepared, per-class spell lists, slots                                                                       | all casters           | partial for 2024                             | 2014 tables and lists from the SRD (9.8)                                       |
+| Class dice pools and uses (Wild Shape, Psionic Energy dice, Second Wind, Action Surge, rune uses)                                            | druid, rogue, fighter | `resource-pool`                              | existing grant, 2014 numbers (9.6)                                             |
+| Ranger 2014 features (favored enemy, natural explorer choices)                                                                               | ranger                | none                                         | `feature-choice` entries (9.6)                                                 |
+| Fighting style at the class level 2014 gives it, no weapon masteries                                                                         | fighter, ranger       | `fighting-style-choice`, masteries           | 2014 classes grant no mastery (9.6)                                            |
+| Homebrew mechanics with no engine effect (custom rune system)                                                                                | any                   | none                                         | `feature` entries with text only; never a grant (9.3)                          |
+| Ability scores entered by hand (method unknown)                                                                                              | all                   | standard array, point buy, rolling           | add a `manual` method with bounds (9.7)                                        |
+| Computed sheet values: HP, AC with armor, initiative, passive perception, saves, skills with expertise, spell save DC and attack             | all                   | resolved                                     | 2014 formulas and tests (9.6 to 9.7)                                           |
+| PDF sheet from 2014 data                                                                                                                     | all                   | field map for 2024                           | 9.9                                                                            |
+
+Source books named in the entries: `phb-2014` (partly SRD), `xgte`, `tcoe` are in use at the table; `vrgtr` is probable
+(an original background). Others (`dmg-2014`, `scag`, `vgm`, `eepc`) exist in the library but their use is unconfirmed;
+`mpmm` is not a 2014 book and is excluded from the 2014 edition. **The list of books really allowed at the table is not written
+anywhere and needs the DM's confirmation** (it feeds `allowed_source_books`, which today only knows `phb-2024`).
+
+French names: the only French glossary found (about 1790 entries) is the unofficial 2018 AideDD one, with several French
+variants for 267 entries and poor coverage of Xanathar and Tasha. It is a starting point, not the reference: an entry's French
+name must be confirmed in the book it comes from, and the entry keeps the book in `source`.
+
+Limits of the extractions made so far (private files): the books are OCR scans, with systematic errors on dice, columns mixed in
+tables (the Rune Knight rune table is the most fragile) and lost lines (one row of the Fiend expanded list). Every entry coming
+from a scan carries a `needsReview` list and is not usable until a human has checked it; the schema reserves that field.
