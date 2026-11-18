@@ -100,7 +100,7 @@ On the QNAP the Docker binaries are not in the default `PATH`:
 OpenAPI refused, sign-up refused, admin refused, RLS-empty tables, storage); 40 failed sign-ins in a row, each with a
 different forged `X-Real-IP` and `X-Forwarded-For`, give `400` x33 then `429`: the limit follows the real address; a TCP
 scan of the public address shows 80 and 443 open and nothing else (SSH, proxy admin, database, gateway, API ports
-closed). The router must forward TCP 80 and 443 only, to a fixed LAN address of the NAS. Test from mobile data: a client
+closed). A phone on mobile data signed in while the test machine was rate-limited (the limit is per address). The CDN-range gap of NPM is a known, accepted residual risk (owner decision, 2026-11-18). The router must forward TCP 80 and 443 only, to a fixed LAN address of the NAS. Test from mobile data: a client
 on the same LAN may not reach the public address (no hairpin NAT on some boxes).
 
 ## 3. Content-Security-Policy (story 7.4)
