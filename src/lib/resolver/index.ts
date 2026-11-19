@@ -12,7 +12,7 @@ import type { ResolvedCharacter, PendingChoice, ResolvedSkill } from '@/types/re
 import type { HitDie, ExpertiseChoiceGrant } from '@/types/grants';
 import { mapNonEmpty } from '@/lib/non-empty';
 import type { WeaponMasteryId } from '@/types/items';
-import { collectGrantsByType, getClassLevel } from '@/lib/resolver/helpers';
+import { collectGrantsByType, extraSpellIdsOf, getClassLevel } from '@/lib/resolver/helpers';
 import { resolveAbilities } from '@/lib/resolver/abilities';
 import { resolveSavingThrows, resolveSkills, resolveProficiencies } from '@/lib/resolver/proficiencies';
 import { resolveFeatures } from '@/lib/resolver/features';
@@ -21,8 +21,9 @@ import { resolveSpellcasting } from '@/lib/resolver/spellcasting';
 import { resolveEquipment, resolveAttacks, resolveEquippedArmorAc } from '@/lib/resolver/equipment';
 import { resolveResourcePools } from '@/lib/resolver/resource-pools';
 import { getItemDef, WEAPON_CATALOG } from '@/lib/sources/items';
-import { builtin2024RuleSet, spellsForList } from '@/lib/rules/ruleset';
+import { builtin2024RuleSet, spellChoicePool } from '@/lib/rules/ruleset';
 import type { RuleSet } from '@/lib/rules/types';
+import { featurePicksPool, optionText, otherPicks } from '@/lib/resolver/feature-picks';
 
 export interface PersistedItem {
   readonly itemId: string;
@@ -333,7 +334,11 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
         type: 'feature-choice',
         choiceKey: grant.key,
         source,
-        options: mapNonEmpty(grant.options, (o) => ({ optionId: o.optionId, featureId: o.featureId })),
+        options: mapNonEmpty(grant.options, (o) => ({
+          optionId: o.optionId,
+          featureId: o.featureId,
+          ...optionText(o),
+        })),
       });
     }
   }
@@ -380,7 +385,8 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   for (const { grant, source } of collectGrantsByType(bundles, 'spell-choice')) {
     const decision = choices[grant.key];
     const chosenIds = decision?.type === 'spell-choice' ? decision.spellIds : [];
-    const inPool = spellsForList(rules, grant.spellList, grant.spellLevel);
+    const extraSpellIds = extraSpellIdsOf(bundles, grant.spellList);
+    const inPool = spellChoicePool(rules, { ...grant, extraSpellIds });
     const validDistinct = new Set(chosenIds.filter((id) => inPool.some((s) => s.id === id)));
     if (!decision || decision.type !== 'spell-choice' || validDistinct.size < grant.count) {
       pendingChoices.push({
@@ -390,6 +396,41 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
         count: grant.count,
         spellList: grant.spellList,
         spellLevel: grant.spellLevel,
+        ...(grant.maxSpellLevel !== undefined ? { maxSpellLevel: grant.maxSpellLevel } : {}),
+        ...(extraSpellIds.length > 0 ? { extraSpellIds } : {}),
+      });
+    }
+  }
+
+  // Unresolved or underfilled feature-picks grants (2014 invocations, metamagic)
+  for (const { grant, source } of collectGrantsByType(bundles, 'feature-picks')) {
+    const pool = featurePicksPool(bundles, grant.poolId);
+    const classLevel = source.origin === 'class' ? getClassLevel(bundles, source.id) : level;
+    const decision = choices[grant.key];
+    const chosen = decision?.type === 'feature-picks' ? decision.optionIds : [];
+    const taken = new Set(otherPicks(bundles, choices, grant.poolId, grant.key));
+    const takenBefore = new Set(otherPicks(bundles, choices, grant.poolId, grant.key, true));
+    const valid = new Set(
+      chosen.filter((id) => {
+        const option = pool.find((o) => o.optionId === id);
+        return option !== undefined && (option.minClassLevel ?? 1) <= classLevel && !takenBefore.has(id);
+      })
+    );
+    if (valid.size < grant.count) {
+      pendingChoices.push({
+        type: 'feature-picks',
+        choiceKey: grant.key,
+        source,
+        count: grant.count,
+        poolId: grant.poolId,
+        classLevel,
+        options: pool.map((o) => ({
+          optionId: o.optionId,
+          featureId: o.featureId,
+          ...optionText(o),
+          ...(o.minClassLevel !== undefined ? { minClassLevel: o.minClassLevel } : {}),
+        })),
+        alreadyChosen: [...taken],
       });
     }
   }

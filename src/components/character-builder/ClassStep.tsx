@@ -84,6 +84,15 @@ export function ClassStep() {
   }, [resolved]);
   const hasSpellChoices = spellChoices.length > 0;
 
+  // 2014 invocations and metamagic: several picks among the same options, level after level.
+  const featurePicks = useMemo<readonly Extract<PendingChoice, { type: 'feature-picks' }>[]>(() => {
+    return (resolved?.pendingChoices ?? []).filter(
+      (c): c is Extract<PendingChoice, { type: 'feature-picks' }> =>
+        c.type === 'feature-picks' && c.source.origin === 'class'
+    );
+  }, [resolved]);
+  const hasFeaturePicks = featurePicks.length > 0;
+
   const levelOneClassFeatures = useMemo(() => {
     if (!resolved?.features) return [];
     return resolved.features.filter((f) => f.source.origin === 'class' && f.source.level === 1);
@@ -94,7 +103,8 @@ export function ClassStep() {
   // spellcasting summary and granted level-1 features). When none are present we surface a
   // soft notice so the step doesn't look broken — e.g. a level-1 Barbarian sees Rage and
   // Unarmored Defense but has no class choices to make here.
-  const hasAnyChoices = hasFightingStyles || hasSubclassChoices || hasFeatureChoices || hasSpellChoices;
+  const hasAnyChoices =
+    hasFightingStyles || hasSubclassChoices || hasFeatureChoices || hasSpellChoices || hasFeaturePicks;
 
   return (
     <div className="space-y-6">
@@ -241,6 +251,26 @@ export function ClassStep() {
       {hasSpellChoices && (
         <div className="space-y-4">
           {spellChoices.map((choice) => (
+            <div key={choice.choiceKey}>
+              <p className="text-xs text-muted-foreground mb-1">
+                {tc('characterBuilder.pendingChoices.fromSource', {
+                  source: getChoiceSourceName(choice.choiceKey, rt),
+                })}
+              </p>
+              <ChoicePicker
+                choice={choice}
+                currentDecision={build?.choices[choice.choiceKey]}
+                onDecide={(choiceKey, decision) => context.makeChoice(choiceKey, decision)}
+                onClear={(choiceKey) => context.clearChoice(choiceKey)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasFeaturePicks && (
+        <div className="space-y-4">
+          {featurePicks.map((choice) => (
             <div key={choice.choiceKey}>
               <p className="text-xs text-muted-foreground mb-1">
                 {tc('characterBuilder.pendingChoices.fromSource', {

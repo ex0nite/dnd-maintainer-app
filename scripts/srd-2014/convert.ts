@@ -3,7 +3,7 @@
  * `body`, docs/dnd-2024.md "Rule entries"). Pure and deterministic: same snapshot, same entries, same order.
  *
  * One converter per entry kind, registered in `CONVERTERS`. Story 9.5 converts species, subspecies and backgrounds;
- * story 9.6 classes and subclasses; items (9.7) and spells (9.8) add their converter here and their file to the snapshot.
+ * story 9.6 classes and subclasses; story 9.8 spells, spellcasting, invocations and metamagic (items, story 9.7, are code).
  *
  * Every entry is validated by `parseRuleEntry` (the strict schema the app reads it with) before it is returned: a
  * conversion that produces an invalid entry throws, nothing is written. A value the closed vocabularies of the engine
@@ -15,11 +15,13 @@
 import { parseRuleEntry, type RuleEntry, type RuleEntryKind } from '@/lib/rules/schemas';
 import {
   ABILITY_VOCAB,
+  CLASS_VOCAB,
   DAMAGE_TYPE_VOCAB,
   FIGHTING_STYLE_VOCAB,
   LANGUAGE_VOCAB,
   SIZE_VOCAB,
   SKILL_VOCAB,
+  SPELL_SCHOOL_VOCAB,
   TOOL_VOCAB,
   WEAPON_VOCAB,
 } from '@/lib/rules/vocab';
@@ -912,10 +914,16 @@ function startingEquipmentText(record: SrdRecord): string {
   return `You start with the following equipment: ${[...fixed, ...options].join('; ')}.`;
 }
 
+type Counts = Readonly<Record<string, number | undefined>>;
+
 interface ClassLevel {
   readonly level: number;
   readonly bonuses: number;
   readonly features: readonly Ref[];
+  /** The Spellcasting columns of the SRD class table (`cantrips_known`, `spells_known`, `spell_slots_level_N`). */
+  readonly spellcasting: Counts;
+  /** Class-specific columns (`invocations_known`, `metamagic_known`, `mystic_arcanum_level_N`...). */
+  readonly specific: Counts;
 }
 
 function classLevelsOf(snapshot: Snapshot, classId: string): ClassLevel[] {
@@ -925,6 +933,8 @@ function classLevelsOf(snapshot: Snapshot, classId: string): ClassLevel[] {
       level: l.level as number,
       bonuses: l.ability_score_bonuses as number,
       features: refs(l.features),
+      spellcasting: (l.spellcasting ?? {}) as Counts,
+      specific: (l.class_specific ?? {}) as Counts,
     }))
     .sort((a, b) => a.level - b.level);
   if (rows.length !== 20 || rows.some((r, i) => r.level !== i + 1))
@@ -963,6 +973,333 @@ function primaryAbility(cls: SrdRecord): string {
   return mapAbility(ref.index);
 }
 
+// ---------------------------------------------------------------------------
+// Spellcasting (story 9.8): slots, pact magic, spells known and prepared, invocations, metamagic, pact boon
+// ---------------------------------------------------------------------------
+
+/**
+ * Casters that prepare their spells, with the divisor of the class level (SRD 5.1 class text): the cleric ("your Wisdom
+ * modifier + your cleric level"), the druid (same), the wizard ("your Intelligence modifier + your wizard level") and the
+ * paladin ("your Charisma modifier + half your paladin level, rounded down"), at least one spell. The bard, ranger,
+ * sorcerer and warlock know their spells and prepare none.
+ */
+const PREPARED_CASTERS: Readonly<Record<string, 1 | 2>> = { cleric: 1, druid: 1, wizard: 1, paladin: 2 };
+
+/**
+ * The wizard's spellbook is not a column of the SRD table (the data set has no `spells_known` for it). SRD 5.1: "At 1st
+ * level, you have a spellbook containing six 1st-level wizard spells of your choice." and "Each time you gain a wizard
+ * level after 1st, you can add two wizard spells of your choice to your spellbook. Each of these spells must be of a
+ * level for which you have spell slots".
+ */
+const WIZARD_SPELLBOOK = { atFirstLevel: 6, perLevel: 2 } as const;
+
+const num = (value: number | undefined): number => value ?? 0;
+
+/** Slots of spell levels 1 to 9 of one table row, trailing zeros left out. */
+function slotRow(sc: Counts): number[] {
+  const row = Array.from({ length: 9 }, (_, i) => num(sc[`spell_slots_level_${i + 1}`]));
+  while (row.length > 0 && row[row.length - 1] === 0) row.pop();
+  return row;
+}
+
+/** Highest spell level of a table row that has slots (pact magic: the level of the slots). */
+const highestSlotLevel = (sc: Counts): number => slotRow(sc).length;
+
+const ORDINALS = ['th', 'st', 'nd', 'rd'];
+const ordinal = (n: number): string => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : (ORDINALS[n % 10] ?? 'th')}`;
+
+/**
+ * The grants a caster class gets from the SRD class table, per class level: `spellcasting` (ability, preparation) and the
+ * slot table at the level the Spellcasting feature starts (`spellcasting.level` of the class record), cantrips and spells
+ * known as `spell-choice` grants (the NEW picks of each level, spells of any level the class has slots for), the
+ * wizard's spellbook, the warlock's pact magic table and Mystic Arcanum.
+ */
+function casterGrants(cls: SrdRecord, levels: readonly ClassLevel[], keys: ChoiceKeys): ReadonlyMap<number, Grant[]> {
+  const out = new Map<number, Grant[]>();
+  const sc = cls.spellcasting as { level: number; spellcasting_ability: Ref } | undefined;
+  if (!sc) return out;
+  const classId = cls.index;
+  const add = (level: number, grant: Grant): void => void out.set(level, [...(out.get(level) ?? []), grant]);
+  const isWarlock = classId === 'warlock';
+  const divisor = PREPARED_CASTERS[classId];
+  const first = levels.find((l) => l.level === sc.level) ?? fail(`${classId}: no level ${sc.level}`);
+  if (Object.keys(first.spellcasting).length === 0) fail(`${classId}: no spellcasting columns at level ${sc.level}`);
+
+  add(sc.level, {
+    type: 'spellcasting',
+    ability: mapAbility(sc.spellcasting_ability.index),
+    source: 'class',
+    ...(divisor ? { prepared: { levelDivisor: divisor } } : {}),
+  });
+  if (isWarlock) {
+    add(sc.level, {
+      type: 'pact-magic',
+      table: levels.map((l) => {
+        const slotLevel = highestSlotLevel(l.spellcasting);
+        return { count: slotLevel > 0 ? num(l.spellcasting[`spell_slots_level_${slotLevel}`]) : 0, slotLevel };
+      }),
+    });
+  } else {
+    add(sc.level, { type: 'spell-slots', table: levels.map((l) => slotRow(l.spellcasting)) });
+  }
+
+  const increase = (what: string, value: number, previous: number): number => {
+    if (value < previous) fail(`${classId}: ${what} goes down from ${previous} to ${value}`);
+    return value - previous;
+  };
+  let cantrips = 0;
+  let known = 0;
+  const arcanum: Record<number, number> = {};
+  for (const row of levels) {
+    const columns = row.spellcasting;
+    const newCantrips = increase('cantrips known', num(columns.cantrips_known), cantrips);
+    cantrips += newCantrips;
+    if (newCantrips > 0) {
+      add(row.level, {
+        type: 'spell-choice',
+        key: keys.key('spell-choice'),
+        count: newCantrips,
+        spellList: classId,
+        spellLevel: 0,
+      });
+    }
+    // Spells of level 1 to the highest slot level: the SRD "Spells Known" column, or the wizard's spellbook.
+    let newKnown = 0;
+    if (classId === 'wizard') {
+      newKnown = row.level === 1 ? WIZARD_SPELLBOOK.atFirstLevel : WIZARD_SPELLBOOK.perLevel;
+    } else if (columns.spells_known !== undefined) {
+      newKnown = increase('spells known', columns.spells_known, known);
+      known = columns.spells_known;
+    }
+    if (newKnown > 0) {
+      add(row.level, {
+        type: 'spell-choice',
+        key: keys.key('spell-choice'),
+        count: newKnown,
+        spellList: classId,
+        spellLevel: 1,
+        maxSpellLevel: highestSlotLevel(columns) || fail(`${classId}: spells known at level ${row.level} but no slots`),
+      });
+    }
+    // Mystic Arcanum: "Choose one 6th-level spell from the warlock spell list as this arcanum" (then 7th, 8th, 9th).
+    for (const spellLevel of [6, 7, 8, 9]) {
+      const owned = num(row.specific[`mystic_arcanum_level_${spellLevel}`]);
+      if (owned > (arcanum[spellLevel] ?? 0)) {
+        arcanum[spellLevel] = owned;
+        add(row.level, {
+          type: 'spell-choice',
+          key: keys.key('spell-choice'),
+          count: owned,
+          spellList: classId,
+          spellLevel,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** "Prerequisite: 5th level, Pact of the Blade." from the data set's prerequisites of an invocation. */
+function prerequisiteText(feature: SrdRecord, snapshot: Snapshot): string {
+  const lastOf = (url: string): string => url.split('/').pop() ?? '';
+  const spellName = (url: string): string =>
+    snapshot.spells.find((s) => s.index === lastOf(url))?.name ?? fail(`${feature.index}: unknown spell ${url}`);
+  const featureName = (url: string): string =>
+    snapshot.features.find((f) => f.index === lastOf(url))?.name ?? fail(`${feature.index}: unknown feature ${url}`);
+  const prerequisites = feature.prerequisites as readonly {
+    type: string;
+    level?: number;
+    spell?: string;
+    feature?: string;
+  }[];
+  const parts = prerequisites.map((p) => {
+    if (p.type === 'level') return `${ordinal(p.level ?? fail(`${feature.index}: level prerequisite`))} level`;
+    if (p.type === 'spell') return `the ${spellName(p.spell ?? '')} cantrip`;
+    if (p.type === 'feature') return featureName(p.feature ?? '');
+    return fail(`${feature.index}: unknown prerequisite type ${p.type}`);
+  });
+  return parts.length > 0 ? `Prerequisite: ${parts.join(', ')}. ` : '';
+}
+
+/** Options of a pool of picks (invocations, metamagic): one per SRD feature, text as the option's feature. */
+function pickOptions(snapshot: Snapshot, features: readonly SrdRecord[], prefix: string, stripName: RegExp): Json[] {
+  return features.map((f) => {
+    const prerequisites = f.prerequisites as readonly { type: string; level?: number }[];
+    const minLevel = prerequisites.find((p) => p.type === 'level')?.level;
+    return {
+      optionId: slugId(f.index.slice(prefix.length)),
+      featureId: slugId(f.index),
+      ...(minLevel !== undefined ? { minClassLevel: minLevel } : {}),
+      grants: [
+        {
+          type: 'feature',
+          feature: {
+            id: slugId(f.index),
+            name: f.name.replace(stripName, ''),
+            description: prerequisiteText(f, snapshot) + text(f.desc),
+          },
+        },
+      ],
+    };
+  });
+}
+
+/**
+ * Pools of picks added level after level: the warlock's Eldritch Invocations and the sorcerer's Metamagic. The options
+ * are the features the data set names under the parent feature (`eldritch-invocations`, `metamagic-1`).
+ *
+ * The number of picks is written here from the SRD 5.1 class tables, NOT read from the data set: its
+ * `invocations_known` column has 3 at warlock level 4 and 4 at level 6 (the SRD table says 2 and 3: "Invocations Known"
+ * is 2, 2, 2, 3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8 from level 2) and its `metamagic_known` column goes up at
+ * level 16 instead of 17 (SRD: "You gain two ... You gain another one at 10th and 17th level"). `picksGrants` checks that
+ * the level where each pool starts is the level of its SRD feature.
+ */
+const PICK_POOLS: readonly {
+  readonly classId: string;
+  readonly poolId: string;
+  /** [class level, picks known from that level on]. */
+  readonly known: readonly (readonly [number, number])[];
+  readonly startFeature: string;
+  readonly parent: string;
+  readonly featurePrefix: string;
+  readonly stripName: RegExp;
+}[] = [
+  {
+    classId: 'warlock',
+    poolId: 'warlock-invocations',
+    known: [
+      [2, 2],
+      [5, 3],
+      [7, 4],
+      [9, 5],
+      [12, 6],
+      [15, 7],
+      [18, 8],
+    ],
+    startFeature: 'eldritch-invocations',
+    parent: 'eldritch-invocations',
+    featurePrefix: 'eldritch-invocation-',
+    stripName: /^Eldritch Invocation: /,
+  },
+  {
+    classId: 'sorcerer',
+    poolId: 'sorcerer-metamagic',
+    known: [
+      [3, 2],
+      [10, 3],
+      [17, 4],
+    ],
+    startFeature: 'metamagic-1',
+    parent: 'metamagic-1',
+    featurePrefix: 'metamagic-',
+    stripName: /^Metamagic: /,
+  },
+];
+
+function picksGrants(
+  snapshot: Snapshot,
+  classId: string,
+  levels: readonly ClassLevel[],
+  keys: ChoiceKeys
+): ReadonlyMap<number, Grant[]> {
+  const out = new Map<number, Grant[]>();
+  const pool = PICK_POOLS.find((p) => p.classId === classId);
+  if (!pool) return out;
+  // The options are the ones the parent feature lists (the `parent` field of the option records is missing for one of
+  // the metamagic options in the data set).
+  const parentFeature = snapshot.features.find((f) => f.index === pool.parent) ?? fail(`no feature ${pool.parent}`);
+  const specific = parentFeature.feature_specific as {
+    invocations?: readonly Ref[];
+    subfeature_options?: OptionSet;
+  };
+  const listed =
+    specific.invocations ?? (specific.subfeature_options ? optionItems(specific.subfeature_options, pool.poolId) : []);
+  const byIndex = new Map(snapshot.features.map((f) => [f.index, f]));
+  const features = listed
+    .map((ref) => byIndex.get(ref.index) ?? fail(`${pool.poolId}: unknown option ${ref.index}`))
+    .filter((f) => f.index.startsWith(pool.featurePrefix))
+    .sort((a, b) => (a.index < b.index ? -1 : 1));
+  if (features.length !== listed.length || features.length === 0)
+    fail(`${classId}: options of ${pool.poolId} do not all start with ${pool.featurePrefix}`);
+  const startLevel = levels.find((l) => l.features.some((f) => f.index === pool.startFeature))?.level;
+  if (startLevel !== pool.known[0][0])
+    fail(`${classId}: ${pool.startFeature} is at level ${startLevel}, not ${pool.known[0][0]}`);
+  let owned = 0;
+  for (const row of levels) {
+    const count = [...pool.known].reverse().find(([from]) => row.level >= from)?.[1] ?? 0;
+    if (count === owned) continue;
+    out.set(row.level, [
+      {
+        type: 'feature-picks',
+        key: keys.key('feature-picks'),
+        poolId: pool.poolId,
+        count: count - owned,
+        ...(owned === 0 ? { options: pickOptions(snapshot, features, pool.featurePrefix, pool.stripName) } : {}),
+      },
+    ]);
+    owned = count;
+  }
+  if (owned === 0) fail(`${classId}: no picks in ${pool.poolId}`);
+  return out;
+}
+
+/** The warlock's Pact Boon: one of the three features the data set lists under the feature. */
+function pactBoonChoice(snapshot: Snapshot, keys: ChoiceKeys): Grant {
+  const boon = snapshot.features.find((f) => f.index === 'pact-boon') ?? fail('no pact-boon feature');
+  const options = (boon.feature_specific as { subfeature_options: OptionSet }).subfeature_options;
+  const byIndex = new Map(snapshot.features.map((f) => [f.index, f]));
+  return {
+    type: 'feature-choice',
+    key: keys.key('feature-choice'),
+    options: optionItems(options, 'pact boon').map((item) => {
+      const f = byIndex.get(item.index) ?? fail(`unknown pact boon ${item.index}`);
+      return {
+        optionId: slugId(item.index.replace(/^pact-of-the-/, '')),
+        featureId: slugId(item.index),
+        grants: [{ type: 'feature', feature: featureText(f, undefined) }],
+      };
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Spells
+// ---------------------------------------------------------------------------
+
+const convertSpells: Converter = (snapshot) =>
+  snapshot.spells.map((spell) => {
+    const components = spell.components as readonly string[];
+    const material = typeof spell.material === 'string' ? spell.material.trim() : undefined;
+    if (components.includes('M') !== (material !== undefined)) {
+      fail(`${spell.index}: material component and the M flag disagree`);
+    }
+    const higher = Array.isArray(spell.higher_level) && spell.higher_level.length > 0 ? text(spell.higher_level) : '';
+    const classes = [...new Set(refs(spell.classes).map((c) => member(CLASS_VOCAB, c.index, 'spell class')))].sort();
+    return {
+      schema: 1,
+      kind: 'spell',
+      id: slugId(spell.index),
+      name: { en: spell.name },
+      source: { book: SRD_BOOK },
+      summary: { en: higher ? `${text(spell.desc)}\n\nAt Higher Levels. ${higher}` : text(spell.desc) },
+      body: {
+        level: spell.level as number,
+        school: member(SPELL_SCHOOL_VOCAB, (spell.school as Ref).index, 'spell school'),
+        ritual: spell.ritual as boolean,
+        concentration: spell.concentration as boolean,
+        castingTime: spell.casting_time as string,
+        range: spell.range as string,
+        duration: spell.duration as string,
+        components: {
+          verbal: components.includes('V'),
+          somatic: components.includes('S'),
+          material: material ?? false,
+        },
+        classes,
+      },
+    };
+  });
+
 const convertClasses: Converter = (snapshot, unexpressed) =>
   snapshot.classes.map((cls) => {
     const classId = cls.index;
@@ -981,6 +1318,8 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
       fail(`${classId}: Ability Score Improvement features ${asiFeatureLevels} differ from the table ${asi}`);
     }
 
+    const casting = casterGrants(cls, levels, keys);
+    const picks = picksGrants(snapshot, classId, levels, keys);
     const outLevels = levels.map((row) => {
       const grants: Grant[] = [];
       if (row.level === 1) {
@@ -1005,6 +1344,7 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
         const feature = features.get(ref.index) ?? fail(`${classId}: unknown feature ${ref.index}`);
         grants.push({ type: 'feature', feature: featureText(feature, CLASS_FEATURE_EXTRAS[ref.index]) });
         grants.push(...(CLASS_MECHANICS[ref.index]?.(keys, styles) ?? []));
+        if (ref.index === 'pact-boon') grants.push(pactBoonChoice(snapshot, keys));
         if (ref.index === choiceFeatureIndex) {
           grants.push({ type: 'subclass', classId, key: keys.key('subclass') });
         }
@@ -1012,6 +1352,7 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
       if (asi.includes(row.level)) {
         grants.push({ type: 'asi', key: keys.key('asi'), points: 2, from: null });
       }
+      grants.push(...(casting.get(row.level) ?? []), ...(picks.get(row.level) ?? []));
       return { grants };
     });
 
@@ -1021,7 +1362,7 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
     unexpressed.push({
       kind: 'class',
       id: classId,
-      what: `${textOnly.length} features kept as text only (resources, spellcasting and invocations arrive with story 9.8)`,
+      what: `${textOnly.length} features kept as text only (resource pools and effects the engine does not compute)`,
     });
     return {
       schema: 1,
@@ -1036,6 +1377,49 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
 function classNameOf(id: string, en: string): Json {
   const fr = FRENCH_CLASS_NAMES[id];
   return fr ? { en, fr } : { en };
+}
+
+/**
+ * What the spells a subclass lists in the data set mean, quoted from the SRD 5.1 text of its spells feature:
+ * - domain (cleric Life) and oath (paladin Devotion): "Once you gain a domain spell, you always have it prepared";
+ *   "Once you gain access to an oath spell, you always have it prepared";
+ * - circle (druid Land): "Once you gain access to a circle spell, you always have it prepared" (per terrain);
+ * - expanded list (warlock Fiend): "The following spells are added to the warlock spell list for you": they can be learned,
+ *   they are not known automatically.
+ */
+const SUBCLASS_SPELLS: Readonly<Record<string, 'prepared' | 'prepared-by-terrain' | 'expanded-list'>> = {
+  life: 'prepared',
+  devotion: 'prepared',
+  land: 'prepared-by-terrain',
+  fiend: 'expanded-list',
+};
+
+interface SubclassSpell {
+  readonly level: number;
+  readonly spellId: string;
+  /** Index of the feature the entry requires besides the level (the terrain of the Circle of the Land), if any. */
+  readonly feature?: string;
+}
+
+function subclassSpells(sub: SrdRecord, snapshot: Snapshot): SubclassSpell[] {
+  const known = new Set(snapshot.spells.map((s) => s.index));
+  const list = (sub.spells ?? []) as readonly {
+    prerequisites: readonly { type: string; index: string }[];
+    spell: Ref;
+  }[];
+  return list.map((entry) => {
+    const levelPrerequisite =
+      entry.prerequisites.find((p) => p.type === 'level') ?? fail(`${sub.index}: spell without level`);
+    const level = Number(
+      /-(\d+)$/.exec(levelPrerequisite.index)?.[1] ?? fail(`${sub.index}: bad level ${levelPrerequisite.index}`)
+    );
+    if (!known.has(entry.spell.index)) fail(`${sub.index}: unknown spell ${entry.spell.index}`);
+    return {
+      level,
+      spellId: slugId(entry.spell.index),
+      feature: entry.prerequisites.find((p) => p.type === 'feature')?.index,
+    };
+  });
 }
 
 const FIGHTER_STYLES = ['archery', 'defense', 'dueling', 'great-weapon-fighting', 'protection', 'two-weapon-fighting'];
@@ -1065,6 +1449,9 @@ const convertSubclasses: Converter = (snapshot, unexpressed) =>
     const isOption = (f: SrdRecord): boolean =>
       own.some((p) => p.index !== f.index && f.index.startsWith(`${p.index}-`));
     const keys = new ChoiceKeys('subclass', sub.index);
+    const spells = subclassSpells(sub, snapshot);
+    const spellMode = SUBCLASS_SPELLS[sub.index];
+    if (spells.length > 0 && !spellMode) fail(`${sub.index}: lists spells but its meaning is not in SUBCLASS_SPELLS`);
 
     const entries: { level: number; feature: SrdRecord }[] = [
       ...levelRows.flatMap((l) =>
@@ -1089,16 +1476,37 @@ const convertSubclasses: Converter = (snapshot, unexpressed) =>
           options: options.map((o) => ({
             optionId: slugId(o.index.slice(feature.index.length + 1)),
             featureId: slugId(o.index),
-            grants: [{ type: 'feature', feature: featureText(o, undefined) }],
+            grants: [
+              { type: 'feature', feature: featureText(o, undefined) },
+              // The circle spells of this terrain, always prepared from the druid level the SRD gives them.
+              ...spells
+                .filter((s) => s.feature === o.index)
+                .map((s) => ({ type: 'spell', spellId: s.spellId, alwaysPrepared: true, minClassLevel: s.level })),
+            ],
           })),
         });
       }
       byLevel.set(level, grants);
     }
+    // Domain, oath and expanded-list spells join the grants of the class level they come with (a level with no feature of
+    // its own gets an entry with the spells only).
+    if (spellMode === 'prepared' || spellMode === 'expanded-list') {
+      const atLevel = new Map<number, string[]>();
+      for (const s of spells) atLevel.set(s.level, [...(atLevel.get(s.level) ?? []), s.spellId]);
+      for (const [level, spellIds] of atLevel) {
+        const grants = byLevel.get(level) ?? [];
+        if (spellMode === 'prepared') {
+          grants.push(...spellIds.map((spellId) => ({ type: 'spell', spellId, alwaysPrepared: true })));
+        } else {
+          grants.push({ type: 'spell-list-extension', spellList: classId, spellIds });
+        }
+        byLevel.set(level, grants);
+      }
+    }
     unexpressed.push({
       kind: 'subclass',
       id: sub.index,
-      what: `${entries.length} features kept as text (domain, oath and expanded spell lists arrive with story 9.8)`,
+      what: `${entries.length} features kept as text (their effects the engine does not compute); ${spells.length} spells ${spellMode ?? 'none'}`,
     });
     return {
       schema: 1,
@@ -1117,13 +1525,14 @@ const convertSubclasses: Converter = (snapshot, unexpressed) =>
     };
   });
 
-/** Converters in output order. Stories 9.7 and 9.8 add items and spells here. */
+/** Converters in output order. */
 export const CONVERTERS: readonly { readonly kind: RuleEntryKind; readonly convert: Converter }[] = [
   { kind: 'species', convert: convertSpecies },
   { kind: 'subspecies', convert: convertSubspecies },
   { kind: 'background', convert: convertBackgrounds },
   { kind: 'class', convert: convertClasses },
   { kind: 'subclass', convert: convertSubclasses },
+  { kind: 'spell', convert: convertSpells },
 ];
 
 /** Converts a snapshot and validates every entry with the app's strict schema. Throws on the first invalid entry. */

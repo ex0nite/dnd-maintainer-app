@@ -14,7 +14,8 @@ import { parseChoiceKey } from '@/types/choices';
 import type { ChoiceDecision, ChoiceKey } from '@/types/choices';
 import type { FeatureGrant } from '@/types/grants';
 import type { PendingChoice, ResolvedCharacter } from '@/types/resolved';
-import type { SourceTag, SubclassId } from '@/types/sources';
+import type { GrantBundle, SourceTag, SubclassId } from '@/types/sources';
+import { useActiveRuleSet } from '@/hooks/useRuleSet';
 import { Dices } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,8 @@ interface LevelUpDialogProps {
   readonly resolvedSkills: ResolvedCharacter['skills'] | null;
   /** All decisions already made across all level rows — for expertise cross-dedup. */
   readonly allDecisions: Readonly<Record<ChoiceKey, ChoiceDecision>>;
+  /** Every grant bundle of the character before this level (spells added to a list by features, option pools of picks). */
+  readonly bundles?: readonly GrantBundle[];
 }
 
 /** Returns true when a single PendingChoice is satisfied by the given decision map. */
@@ -86,6 +89,8 @@ function isChoiceSatisfied(choice: PendingChoice, decisions: ReadonlyMap<ChoiceK
       return decision?.type === 'lineage-choice' && decision.lineageId.length > 0;
     case 'feature-choice':
       return decision?.type === 'feature-choice' && decision.optionId.length > 0;
+    case 'feature-picks':
+      return decision?.type === 'feature-picks' && decision.optionIds.length >= choice.count;
     default: {
       const _exhaustive: never = choice;
       logger.warn(`isChoiceSatisfied: unhandled choice type — treating as unsatisfied`, _exhaustive);
@@ -108,8 +113,10 @@ export function LevelUpDialog({
   resolvedWeaponProficiencies,
   resolvedSkills,
   allDecisions,
+  bundles,
 }: LevelUpDialogProps) {
   const { t } = useTranslation('common');
+  const rules = useActiveRuleSet();
   const { t: tg } = useTranslation('gamedata');
   const hpAverageGrant = Math.floor(hitDie / 2) + 1;
 
@@ -128,8 +135,8 @@ export function LevelUpDialog({
   const hpRange = useMemo(() => [1, hitDie] as const, [hitDie]);
 
   const preview = useMemo(
-    () => getGrantsForLevel(classId, targetLevel, currentSubclassId),
-    [classId, targetLevel, currentSubclassId]
+    () => getGrantsForLevel(classId, targetLevel, currentSubclassId, rules),
+    [classId, targetLevel, currentSubclassId, rules]
   );
 
   // Features to display (not choices)
@@ -153,8 +160,10 @@ export function LevelUpDialog({
         resolvedWeaponProficiencies: resolvedWeaponProficiencies,
         alreadyClaimedMasteries: new Set(),
         allChosenStyles: [...alreadyChosenStyles],
+        allBundles: [...(bundles ?? []), { source, grants: [...preview.classGrants, ...preview.subclassGrants] }],
+        priorChoices: allDecisions,
       }),
-    [preview, source, resolvedWeaponProficiencies, alreadyChosenStyles]
+    [preview, source, resolvedWeaponProficiencies, alreadyChosenStyles, bundles, allDecisions]
   );
 
   // Pair each ASI choice with its companion feat-choice (same origin/id/index, different category)

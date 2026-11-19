@@ -38,9 +38,11 @@ export const RULE_LIMITS = {
   entryIdMax: 60,
   refIdMax: 60,
   nameMax: 120,
-  summaryMax: 2000,
+  summaryMax: 4000,
   descriptionMax: 4000,
   shortTextMax: 120,
+  /** Material component of a spell (a few spells list a long set of materials). */
+  materialMax: 400,
   needsReviewMax: 20,
   needsReviewNoteMax: 200,
   grantsMax: 60,
@@ -49,6 +51,7 @@ export const RULE_LIMITS = {
   subclassFeaturesMax: 40,
   lineagesMax: 20,
   featureChoiceOptionsMax: 30,
+  featurePicksOptionsMax: 40,
   sourceBookMax: 20,
   sourcePageMax: 2000,
   /** Bytes of the JSON text (`octet_length(content::text)` in SQL). */
@@ -269,6 +272,8 @@ const featureChoiceOptionSchema = z.strictObject({
   optionId: refIdSchema,
   featureId: refIdSchema,
   grants: z.array(z.lazy(() => grantSchemaRef)).max(RULE_LIMITS.grantsMax),
+  /** `feature-picks` only. */
+  minClassLevel: classLevel.optional(),
 });
 
 export const GRANT_SCHEMAS = {
@@ -320,6 +325,7 @@ export const GRANT_SCHEMAS = {
     type: z.literal('spellcasting'),
     ability: abilityEnum,
     source: z.enum(['class', 'species', 'feat']),
+    prepared: z.strictObject({ levelDivisor: z.union([z.literal(1), z.literal(2)]) }).optional(),
   }),
   spell: z.strictObject({
     type: z.literal('spell'),
@@ -406,10 +412,42 @@ export const GRANT_SCHEMAS = {
     count,
     spellList: classEnum,
     spellLevel: z.number().int().min(0).max(9),
+    maxSpellLevel: z.number().int().min(1).max(9).optional(),
+  }),
+  'spell-slots': z.strictObject({
+    type: z.literal('spell-slots'),
+    table: z
+      .array(z.array(z.number().int().min(0).max(9)).max(9))
+      .min(1)
+      .max(RULE_LIMITS.classLevels),
+  }),
+  'pact-magic': z.strictObject({
+    type: z.literal('pact-magic'),
+    table: z
+      .array(
+        z.strictObject({
+          count: z.number().int().min(0).max(9),
+          slotLevel: z.number().int().min(0).max(9),
+        })
+      )
+      .min(1)
+      .max(RULE_LIMITS.classLevels),
+  }),
+  'spell-list-extension': z.strictObject({
+    type: z.literal('spell-list-extension'),
+    spellList: classEnum,
+    spellIds: z.array(refIdSchema).min(1).max(RULE_LIMITS.listMax),
+  }),
+  'feature-picks': z.strictObject({
+    type: z.literal('feature-picks'),
+    key: choiceKeySchema,
+    poolId: refIdSchema,
+    count,
+    options: z.array(featureChoiceOptionSchema).min(1).max(RULE_LIMITS.featurePicksOptionsMax).optional(),
   }),
 } as const;
 
-/** The grant `type`s a rule entry may use: exactly the 29 variants of `Grant`. */
+/** The grant `type`s a rule entry may use: exactly the 33 variants of `Grant`. */
 export type GrantType = keyof typeof GRANT_SCHEMAS;
 // Compile-time: the schema map and the `Grant` union list the same discriminants.
 type SchemaMissing = Exclude<Grant['type'], GrantType>;
@@ -449,6 +487,10 @@ export const grantSchema = z.discriminatedUnion('type', [
   GRANT_SCHEMAS.feat,
   GRANT_SCHEMAS['resource-pool'],
   GRANT_SCHEMAS['spell-choice'],
+  GRANT_SCHEMAS['spell-slots'],
+  GRANT_SCHEMAS['pact-magic'],
+  GRANT_SCHEMAS['spell-list-extension'],
+  GRANT_SCHEMAS['feature-picks'],
 ]);
 grantSchemaRef = grantSchema;
 
@@ -524,7 +566,7 @@ export const BODY_SCHEMAS = {
     components: z.strictObject({
       verbal: z.boolean(),
       somatic: z.boolean(),
-      material: z.union([safeText(RULE_LIMITS.nameMax * 2), z.literal(false)]),
+      material: z.union([safeText(RULE_LIMITS.materialMax), z.literal(false)]),
     }),
     classes: z.array(classEnum).min(1).max(CLASS_VOCAB.length),
   }),

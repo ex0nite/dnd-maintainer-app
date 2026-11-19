@@ -46,8 +46,8 @@ function builtinGrants(): { where: string; grant: Grant }[] {
 }
 
 describe('grant schemas', () => {
-  it('cover exactly the 29 variants of Grant', () => {
-    expect(GRANT_TYPES).toHaveLength(29);
+  it('cover exactly the 33 variants of Grant', () => {
+    expect(GRANT_TYPES).toHaveLength(33);
   });
 
   it('accept every grant of the built-in 2024 rules (the schemas match what the engine already uses)', () => {

@@ -68,6 +68,7 @@ export function makeChoiceDecisionSchema({ isFeat, isSpell }: ChoiceDecisionIdCh
     }),
     z.object({ type: z.literal('lineage-choice'), lineageId: z.string().min(1) }),
     z.object({ type: z.literal('feature-choice'), optionId: z.string().min(1) }),
+    z.object({ type: z.literal('feature-picks'), optionIds: z.array(z.string().min(1)).readonly() }),
     z.object({ type: z.literal('feat-choice'), featId: z.string().refine(isFeat, { message: 'Unknown feat ID' }) }),
     z.object({
       type: z.literal('spell-choice'),

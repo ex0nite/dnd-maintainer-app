@@ -191,6 +191,38 @@ export interface SpellcastingGrant {
   readonly type: 'spellcasting';
   readonly ability: AbilityKey;
   readonly source: 'class' | 'species' | 'feat';
+  /**
+   * 2014 classes that prepare spells (story 9.8): prepared spells = ability modifier + class level divided by
+   * `levelDivisor` (1 for the cleric, druid and wizard, 2 for the paladin), at least 1. Absent: the class knows its
+   * spells (bard, ranger, sorcerer, warlock) and prepares none. Only read together with a `spell-slots` or `pact-magic` grant.
+   */
+  readonly prepared?: { readonly levelDivisor: 1 | 2 };
+}
+
+/**
+ * Spell slots of a class by class level (story 9.8, the Spell Slots columns of the SRD 5.1 class tables):
+ * `table[classLevel - 1]` lists the slots of spell levels 1 to 9 (trailing zeros left out). When a class has one, it
+ * replaces the built-in 2024 slot table.
+ */
+export interface SpellSlotsGrant {
+  readonly type: 'spell-slots';
+  readonly table: readonly (readonly number[])[];
+}
+
+/** Pact magic by class level (the warlock): `table[classLevel - 1]` is the number of slots and their level. */
+export interface PactMagicGrant {
+  readonly type: 'pact-magic';
+  readonly table: readonly { readonly count: number; readonly slotLevel: number }[];
+}
+
+/**
+ * Spells added to a class spell list (the 2014 warlock patron's expanded list): they can be picked by `spell-choice`
+ * grants of that list, they are not known automatically.
+ */
+export interface SpellListExtensionGrant {
+  readonly type: 'spell-list-extension';
+  readonly spellList: ClassId;
+  readonly spellIds: readonly string[];
 }
 
 export interface SpellGrant {
@@ -273,12 +305,27 @@ export interface FeatureChoiceOption {
   readonly optionId: string;
   readonly featureId: string;
   readonly grants: readonly Grant[];
+  /** `feature-picks` only: the option is offered from this class level (e.g. the invocations that ask for level 5). */
+  readonly minClassLevel?: number;
 }
 
 export interface FeatureChoiceGrant {
   readonly type: 'feature-choice';
   readonly key: ChoiceKey;
   readonly options: readonly [FeatureChoiceOption, ...FeatureChoiceOption[]];
+}
+
+/**
+ * Several picks among the same options, added level after level (2014 warlock invocations, sorcerer metamagic).
+ * Every grant of a pool carries its own key and the number of NEW picks (`count`); only the first one of a pool lists the
+ * `options` (the others share them through `poolId`, so the text is stored once). An option is picked once per pool.
+ */
+export interface FeaturePicksGrant {
+  readonly type: 'feature-picks';
+  readonly key: ChoiceKey;
+  readonly poolId: string;
+  readonly count: number;
+  readonly options?: readonly [FeatureChoiceOption, ...FeatureChoiceOption[]];
 }
 
 export interface LineageChoiceGrant {
@@ -363,6 +410,11 @@ export interface SpellChoiceGrant {
   readonly count: number;
   readonly spellList: ClassId;
   readonly spellLevel: SpellDef['level'];
+  /**
+   * 2014 known and spellbook spells (story 9.8): when present, the picks are free among the spells of the list of level
+   * `spellLevel` to `maxSpellLevel` (the highest level the class has slots for), not of one level only.
+   */
+  readonly maxSpellLevel?: number;
 }
 
 export type Grant =
@@ -394,4 +446,8 @@ export type Grant =
   | FeatureChoiceGrant
   | FeatGrant
   | ResourcePoolGrant
-  | SpellChoiceGrant;
+  | SpellChoiceGrant
+  | SpellSlotsGrant
+  | PactMagicGrant
+  | SpellListExtensionGrant
+  | FeaturePicksGrant;

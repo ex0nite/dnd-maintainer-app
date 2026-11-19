@@ -185,7 +185,16 @@
                 "name": "Channel Divinity: Turn the Unholy",
                 "description": "As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.\n\nA turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action."
               }
-            }
+            },
+            { "type": "spell", "spellId": "protection-from-evil-and-good", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "sanctuary", "alwaysPrepared": true }
+          ]
+        },
+        {
+          "classLevel": 5,
+          "grants": [
+            { "type": "spell", "spellId": "lesser-restoration", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "zone-of-truth", "alwaysPrepared": true }
           ]
         },
         {
@@ -202,6 +211,20 @@
           ]
         },
         {
+          "classLevel": 9,
+          "grants": [
+            { "type": "spell", "spellId": "beacon-of-hope", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "dispel-magic", "alwaysPrepared": true }
+          ]
+        },
+        {
+          "classLevel": 13,
+          "grants": [
+            { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "guardian-of-faith", "alwaysPrepared": true }
+          ]
+        },
+        {
           "classLevel": 15,
           "grants": [
             {
@@ -212,6 +235,13 @@
                 "description": "Beginning at 15th level, you are always under the effects of a protection from evil and good spell."
               }
             }
+          ]
+        },
+        {
+          "classLevel": 17,
+          "grants": [
+            { "type": "spell", "spellId": "commune", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "flame-strike", "alwaysPrepared": true }
           ]
         },
         {
@@ -552,7 +582,24 @@
                 "name": "Dark One's Blessing",
                 "description": "Starting at 1st level, when you reduce a hostile creature to 0 hit points, you gain temporary hit points equal to your Charisma modifier + your warlock level (minimum of 1)."
               }
+            },
+            { "type": "spell-list-extension", "spellList": "warlock", "spellIds": ["burning-hands", "command"] }
+          ]
+        },
+        {
+          "classLevel": 3,
+          "grants": [
+            {
+              "type": "spell-list-extension",
+              "spellList": "warlock",
+              "spellIds": ["blindness-deafness", "scorching-ray"]
             }
+          ]
+        },
+        {
+          "classLevel": 5,
+          "grants": [
+            { "type": "spell-list-extension", "spellList": "warlock", "spellIds": ["fireball", "stinking-cloud"] }
           ]
         },
         {
@@ -567,6 +614,16 @@
               }
             }
           ]
+        },
+        {
+          "classLevel": 7,
+          "grants": [
+            { "type": "spell-list-extension", "spellList": "warlock", "spellIds": ["fire-shield", "wall-of-fire"] }
+          ]
+        },
+        {
+          "classLevel": 9,
+          "grants": [{ "type": "spell-list-extension", "spellList": "warlock", "spellIds": ["flame-strike", "hallow"] }]
         },
         {
           "classLevel": 10,
@@ -898,7 +955,15 @@
                         "name": "Circle of the Land: Arctic",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "hold-person", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "spike-growth", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "sleet-storm", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "slow", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "ice-storm", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "commune-with-nature", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "cone-of-cold", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -912,7 +977,15 @@
                         "name": "Circle of the Land: Coast",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "mirror-image", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "misty-step", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "water-breathing", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "water-walk", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "control-water", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "conjure-elemental", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "scrying", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -926,7 +999,20 @@
                         "name": "Circle of the Land: Desert",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "blur", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "silence", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "create-food-and-water", "alwaysPrepared": true, "minClassLevel": 5 },
+                    {
+                      "type": "spell",
+                      "spellId": "protection-from-energy",
+                      "alwaysPrepared": true,
+                      "minClassLevel": 5
+                    },
+                    { "type": "spell", "spellId": "blight", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "hallucinatory-terrain", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "insect-plague", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "wall-of-stone", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -940,7 +1026,15 @@
                         "name": "Circle of the Land: Forest",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "barkskin", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "spider-climb", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "call-lightning", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "plant-growth", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "divination", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "commune-with-nature", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "tree-stride", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -954,7 +1048,15 @@
                         "name": "Circle of the Land: Grassland",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "invisibility", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "pass-without-trace", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "daylight", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "haste", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "divination", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "dream", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "insect-plague", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -968,7 +1070,15 @@
                         "name": "Circle of the Land: Mountain",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "spider-climb", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "spike-growth", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "lightning-bolt", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "meld-into-stone", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "stone-shape", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "stoneskin", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "passwall", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "wall-of-stone", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 },
                 {
@@ -982,7 +1092,15 @@
                         "name": "Circle of the Land: Swamp",
                         "description": "The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle's wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle's mysterious rites."
                       }
-                    }
+                    },
+                    { "type": "spell", "spellId": "acid-arrow", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "darkness", "alwaysPrepared": true, "minClassLevel": 3 },
+                    { "type": "spell", "spellId": "water-walk", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "stinking-cloud", "alwaysPrepared": true, "minClassLevel": 5 },
+                    { "type": "spell", "spellId": "freedom-of-movement", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "locate-creature", "alwaysPrepared": true, "minClassLevel": 7 },
+                    { "type": "spell", "spellId": "insect-plague", "alwaysPrepared": true, "minClassLevel": 9 },
+                    { "type": "spell", "spellId": "scrying", "alwaysPrepared": true, "minClassLevel": 9 }
                   ]
                 }
               ]
@@ -1115,7 +1233,9 @@
                 "name": "Disciple of Life",
                 "description": "Also starting at 1st level, your healing spells are more effective. Whenever you use a spell of 1st level or higher to restore hit points to a creature, the creature regains additional hit points equal to 2 + the spell's level."
               }
-            }
+            },
+            { "type": "spell", "spellId": "bless", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "cure-wounds", "alwaysPrepared": true }
           ]
         },
         {
@@ -1132,6 +1252,20 @@
           ]
         },
         {
+          "classLevel": 3,
+          "grants": [
+            { "type": "spell", "spellId": "lesser-restoration", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "spiritual-weapon", "alwaysPrepared": true }
+          ]
+        },
+        {
+          "classLevel": 5,
+          "grants": [
+            { "type": "spell", "spellId": "beacon-of-hope", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "revivify", "alwaysPrepared": true }
+          ]
+        },
+        {
           "classLevel": 6,
           "grants": [
             {
@@ -1144,6 +1278,7 @@
             }
           ]
         },
+        { "classLevel": 7, "grants": [{ "type": "spell", "spellId": "death-ward", "alwaysPrepared": true }] },
         {
           "classLevel": 8,
           "grants": [
@@ -1155,6 +1290,13 @@
                 "description": "At 8th level, you gain the ability to infuse your weapon strikes with divine energy. Once on each of your turns when you hit a creature with a weapon attack, you can cause the attack to deal an extra 1d8 radiant damage to the target. When you reach 14th level, the extra damage increases to 2d8."
               }
             }
+          ]
+        },
+        {
+          "classLevel": 9,
+          "grants": [
+            { "type": "spell", "spellId": "mass-cure-wounds", "alwaysPrepared": true },
+            { "type": "spell", "spellId": "raise-dead", "alwaysPrepared": true }
           ]
         },
         {

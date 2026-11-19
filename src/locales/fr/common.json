@@ -183,6 +183,8 @@
       "lineageChoice": "Choisissez votre lignée",
       "featChoice": "Choisissez un don d'origine",
       "featureChoice": "Choisissez une option",
+      "featurePicks": "Choisissez {{count}} option(s)",
+      "spellChoiceUpTo": "Choisissez {{count}} sort(s) de niveau 1 à {{level}}",
       "unsupported": "Choix non pris en charge pour l'instant : {{type}}",
       "remaining": "restant(s)",
       "fromSource": "de {{source}}"
@@ -483,6 +485,7 @@
       "spellAttackBonus": "Bonus d'attaque des sorts",
       "spellLevelLabel": "Niveau {{level}}",
       "spellLevelUnknown": "Niveau inconnu",
+      "preparedSpells": "Sorts préparés",
       "chosenOfTarget": "{{chosen}}/{{target}}",
       "source": "Source : {{source}}",
       "maxHp": "PV max.",
