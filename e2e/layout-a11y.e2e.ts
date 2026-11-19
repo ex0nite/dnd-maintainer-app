@@ -192,6 +192,16 @@ export const PAGES: PageUnderTest[] = [
       await expect(page.getByLabel('Pseudo')).toBeVisible();
     },
   },
+  {
+    // Story 9.5: the SRD 5.1 attribution (licenses section of the settings).
+    name: 'settings (licenses)',
+    path: '/settings/theme',
+    signedIn: true,
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: 'Licenses' })).toBeVisible();
+      await expect(page.getByRole('link', { name: /systems-reference-document/ })).toBeVisible();
+    },
+  },
 ];
 
 for (const pageUnderTest of PAGES) {

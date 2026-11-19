@@ -98,7 +98,16 @@
       "sylvan": "Sylvan",
       "arcane": "Arcane"
     },
-    "useGlobalTheme": "Use global theme"
+    "useGlobalTheme": "Use global theme",
+    "licenses": {
+      "title": "Licenses",
+      "description": "Rules content shipped with the app and its license.",
+      "srdTitle": "System Reference Document 5.1",
+      "srdNotice": "This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License.",
+      "srdScope": "The 2014 rules built into the app (species, subspecies, backgrounds) come from the SRD 5.1. Their descriptions are in English, the only language of the SRD.",
+      "srdLink": "SRD 5.1",
+      "licenseLink": "CC BY 4.0 license"
+    }
   },
   "characterBuilder": {
     "title": "Create New Character",

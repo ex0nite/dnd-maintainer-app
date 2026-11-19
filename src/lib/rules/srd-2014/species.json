@@ -1,0 +1,634 @@
+[
+  {
+    "schema": 1,
+    "id": "dragonborn",
+    "name": { "en": "Dragonborn", "fr": "Drakéide" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "str", "bonus": 2 },
+        { "type": "ability-bonus", "ability": "cha", "bonus": 1 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "draconic" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "draconic-ancestry",
+            "name": "Draconic Ancestry",
+            "description": "You have draconic ancestry. Choose one type of dragon from the Draconic Ancestry table. Your breath weapon and damage resistance are determined by the dragon type, as shown in the table."
+          }
+        },
+        {
+          "type": "lineage-choice",
+          "key": "lineage-choice:species:dragonborn:0",
+          "speciesId": "dragonborn",
+          "from": ["black", "blue", "brass", "bronze", "copper", "gold", "green", "red", "silver", "white"]
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "breath-weapon",
+            "name": "Breath Weapon",
+            "description": "You can use your action to exhale destructive energy. Your draconic ancestry determines the size, shape, and damage type of the exhalation.\n\nWhen you use your breath weapon, each creature in the area of the exhalation must make a saving throw, the type of which is determined by your draconic ancestry. The DC for this saving throw equals 8 + your Constitution modifier + your proficiency bonus. A creature takes 2d6 damage on a failed save, and half as much damage on a successful one. The damage increases to 3d6 at 6th level, 4d6 at 11th level, and 5d6 at 16th level.\n\nAfter you use your breath weapon, you cannot use it again until you complete a short or long rest.",
+            "usesPerRest": "short",
+            "usesCount": 1,
+            "saveDC": { "dcAbility": "con" }
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "damage-resistance",
+            "name": "Damage Resistance",
+            "description": "You have resistance to the damage type associated with your draconic ancestry."
+          }
+        }
+      ],
+      "lineages": [
+        {
+          "id": "black",
+          "name": { "en": "Black", "fr": "Noir" },
+          "grants": [
+            { "type": "resistance", "damageType": "acid" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-black",
+                "name": "Draconic Ancestry (Black)",
+                "description": "Black dragon. Damage type: Acid. Breath weapon: 30 ft. line, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "blue",
+          "name": { "en": "Blue", "fr": "Bleu" },
+          "grants": [
+            { "type": "resistance", "damageType": "lightning" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-blue",
+                "name": "Draconic Ancestry (Blue)",
+                "description": "Blue dragon. Damage type: Lightning. Breath weapon: 30 ft. line, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "brass",
+          "name": { "en": "Brass", "fr": "Airain" },
+          "grants": [
+            { "type": "resistance", "damageType": "fire" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-brass",
+                "name": "Draconic Ancestry (Brass)",
+                "description": "Brass dragon. Damage type: Fire. Breath weapon: 30 ft. line, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "bronze",
+          "name": { "en": "Bronze", "fr": "Bronze" },
+          "grants": [
+            { "type": "resistance", "damageType": "lightning" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-bronze",
+                "name": "Draconic Ancestry (Bronze)",
+                "description": "Bronze dragon. Damage type: Lightning. Breath weapon: 30 ft. line, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "copper",
+          "name": { "en": "Copper", "fr": "Cuivre" },
+          "grants": [
+            { "type": "resistance", "damageType": "acid" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-copper",
+                "name": "Draconic Ancestry (Copper)",
+                "description": "Copper dragon. Damage type: Acid. Breath weapon: 30 ft. line, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "gold",
+          "name": { "en": "Gold", "fr": "Or" },
+          "grants": [
+            { "type": "resistance", "damageType": "fire" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-gold",
+                "name": "Draconic Ancestry (Gold)",
+                "description": "Gold dragon. Damage type: Fire. Breath weapon: 15 ft. cone, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "green",
+          "name": { "en": "Green", "fr": "Vert" },
+          "grants": [
+            { "type": "resistance", "damageType": "poison" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-green",
+                "name": "Draconic Ancestry (Green)",
+                "description": "Green dragon. Damage type: Poison. Breath weapon: 15 ft. cone, Constitution saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "red",
+          "name": { "en": "Red", "fr": "Rouge" },
+          "grants": [
+            { "type": "resistance", "damageType": "fire" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-red",
+                "name": "Draconic Ancestry (Red)",
+                "description": "Red dragon. Damage type: Fire. Breath weapon: 15 ft. cone, Dexterity saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "silver",
+          "name": { "en": "Silver", "fr": "Argent" },
+          "grants": [
+            { "type": "resistance", "damageType": "cold" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-silver",
+                "name": "Draconic Ancestry (Silver)",
+                "description": "Silver dragon. Damage type: Cold. Breath weapon: 15 ft. cone, Constitution saving throw."
+              }
+            }
+          ]
+        },
+        {
+          "id": "white",
+          "name": { "en": "White", "fr": "Blanc" },
+          "grants": [
+            { "type": "resistance", "damageType": "cold" },
+            {
+              "type": "feature",
+              "feature": {
+                "id": "draconic-ancestry-white",
+                "name": "Draconic Ancestry (White)",
+                "description": "White dragon. Damage type: Cold. Breath weapon: 15 ft. cone, Constitution saving throw."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "dwarf",
+    "name": { "en": "Dwarf", "fr": "Nain" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 25,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 25 },
+        { "type": "ability-bonus", "ability": "con", "bonus": 2 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "dwarvish" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "dwarven-resilience",
+            "name": "Dwarven Resilience",
+            "description": "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          }
+        },
+        { "type": "resistance", "damageType": "poison" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "stonecunning",
+            "name": "Stonecunning",
+            "description": "Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "dwarven-combat-training",
+            "name": "Dwarven Combat Training",
+            "description": "You have proficiency with the battleaxe, handaxe, light hammer, and warhammer."
+          }
+        },
+        { "type": "proficiency", "category": "weapon", "id": "battleaxe" },
+        { "type": "proficiency", "category": "weapon", "id": "handaxe" },
+        { "type": "proficiency", "category": "weapon", "id": "lighthammer" },
+        { "type": "proficiency", "category": "weapon", "id": "warhammer" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "tool-proficiency",
+            "name": "Tool Proficiency",
+            "description": "You gain proficiency with the artisan's tools of your choice: smith's tools, brewer's supplies, or mason's tools."
+          }
+        },
+        {
+          "type": "proficiency-choice",
+          "category": "tool",
+          "key": "tool-choice:species:dwarf:0",
+          "count": 1,
+          "from": ["smithstools", "brewersupplies", "masonstools"]
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "elf",
+    "name": { "en": "Elf", "fr": "Elfe" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "dex", "bonus": 2 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "elvish" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "fey-ancestry",
+            "name": "Fey Ancestry",
+            "description": "You have advantage on saving throws against being charmed, and magic cannot put you to sleep."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "trance",
+            "name": "Trance",
+            "description": "Elves do not need to sleep. Instead, they meditate deeply, remaining semiconscious, for 4 hours a day. (The Common word for such meditation is \"trance.\") While meditating, you can dream after a fashion; such dreams are actually mental exercises that have become reflexive through years of practice. After resting this way, you gain the same benefit that a human does from 8 hours of sleep."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "keen-senses",
+            "name": "Keen Senses",
+            "description": "You have proficiency in the Perception skill."
+          }
+        },
+        { "type": "proficiency", "category": "skill", "id": "perception" }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "gnome",
+    "name": { "en": "Gnome", "fr": "Gnome" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "small",
+      "speed": 25,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 25 },
+        { "type": "ability-bonus", "ability": "int", "bonus": 2 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "gnomish" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "gnome-cunning",
+            "name": "Gnome Cunning",
+            "description": "You have advantage on all Intelligence, Wisdom, and Charisma saving throws against magic."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "half-elf",
+    "name": { "en": "Half-Elf", "fr": "Demi-elfe" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "cha", "bonus": 2 },
+        {
+          "type": "ability-choice",
+          "key": "ability-choice:species:half-elf:0",
+          "count": 2,
+          "bonus": 1,
+          "from": ["str", "dex", "con", "int", "wis"]
+        },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "elvish" },
+        {
+          "type": "proficiency-choice",
+          "category": "language",
+          "key": "language-choice:species:half-elf:0",
+          "count": 1,
+          "from": [
+            "dwarvish",
+            "giant",
+            "gnomish",
+            "goblin",
+            "halfling",
+            "orc",
+            "abyssal",
+            "celestial",
+            "draconic",
+            "deepspeech",
+            "infernal",
+            "primordial",
+            "sylvan",
+            "undercommon"
+          ]
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "fey-ancestry",
+            "name": "Fey Ancestry",
+            "description": "You have advantage on saving throws against being charmed, and magic cannot put you to sleep."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "skill-versatility",
+            "name": "Skill Versatility",
+            "description": "You gain proficiency in two skills of your choice."
+          }
+        },
+        {
+          "type": "proficiency-choice",
+          "category": "skill",
+          "key": "skill-choice:species:half-elf:0",
+          "count": 2,
+          "from": [
+            "acrobatics",
+            "animalhandling",
+            "arcana",
+            "athletics",
+            "deception",
+            "history",
+            "insight",
+            "intimidation",
+            "investigation",
+            "medicine",
+            "nature",
+            "perception",
+            "performance",
+            "persuasion",
+            "religion",
+            "sleightofhand",
+            "stealth",
+            "survival"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "half-orc",
+    "name": { "en": "Half-Orc", "fr": "Demi-orque" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "str", "bonus": 2 },
+        { "type": "ability-bonus", "ability": "con", "bonus": 1 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "orc" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "savage-attacks",
+            "name": "Savage Attacks",
+            "description": "When you score a critical hit with a melee weapon attack, you can roll one of the weapon's damage dice one additional time and add it to the extra damage of the critical hit."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "relentless-endurance",
+            "name": "Relentless Endurance",
+            "description": "When you are reduced to 0 hit points but not killed outright, you can drop to 1 hit point instead. you cannot use this feature again until you finish a long rest.",
+            "usesPerRest": "long",
+            "usesCount": 1
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "menacing",
+            "name": "Menacing",
+            "description": "You gain proficiency in the Intimidation skill."
+          }
+        },
+        { "type": "proficiency", "category": "skill", "id": "intimidation" }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "halfling",
+    "name": { "en": "Halfling", "fr": "Halfelin" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "small",
+      "speed": 25,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 25 },
+        { "type": "ability-bonus", "ability": "dex", "bonus": 2 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "halfling" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "brave",
+            "name": "Brave",
+            "description": "You have advantage on saving throw against being frightened."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "halfling-nimbleness",
+            "name": "Halfling Nimbleness",
+            "description": "You can move through the space of any creature that is of a size larger than yours."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "lucky",
+            "name": "Lucky",
+            "description": "When you roll a 1 on the d20 for an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "human",
+    "name": { "en": "Human", "fr": "Humain" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "str", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "dex", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "con", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "int", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "wis", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "cha", "bonus": 1 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        {
+          "type": "proficiency-choice",
+          "category": "language",
+          "key": "language-choice:species:human:0",
+          "count": 1,
+          "from": [
+            "dwarvish",
+            "elvish",
+            "giant",
+            "gnomish",
+            "goblin",
+            "halfling",
+            "orc",
+            "abyssal",
+            "celestial",
+            "draconic",
+            "deepspeech",
+            "infernal",
+            "primordial",
+            "sylvan",
+            "undercommon"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema": 1,
+    "id": "tiefling",
+    "name": { "en": "Tiefling", "fr": "Tieffelin" },
+    "source": { "book": "srd-5-1" },
+    "kind": "species",
+    "body": {
+      "size": "medium",
+      "speed": 30,
+      "grants": [
+        { "type": "speed", "mode": "walk", "value": 30 },
+        { "type": "ability-bonus", "ability": "int", "bonus": 1 },
+        { "type": "ability-bonus", "ability": "cha", "bonus": 2 },
+        { "type": "proficiency", "category": "language", "id": "common" },
+        { "type": "proficiency", "category": "language", "id": "infernal" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "darkvision",
+            "name": "Darkvision",
+            "description": "You have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light. You cannot discern color in darkness, only shades of gray."
+          }
+        },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "hellish-resistance",
+            "name": "Hellish Resistance",
+            "description": "You have resistance to fire damage."
+          }
+        },
+        { "type": "resistance", "damageType": "fire" },
+        {
+          "type": "feature",
+          "feature": {
+            "id": "infernal-legacy",
+            "name": "Infernal Legacy",
+            "description": "You know the thaumaturgy cantrip. When you reach 3rd level, you can cast the hellish rebuke spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the darkness spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+          }
+        }
+      ]
+    }
+  }
+]

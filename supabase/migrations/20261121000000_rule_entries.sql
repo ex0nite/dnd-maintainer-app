@@ -13,7 +13,11 @@
 --     characters) and arrays (100 elements), and no string that looks like markup, a link or a script;
 --   * revision increments on every update (created_at, revision are never set by the API);
 --   * an entry used by a character (rule_entry_users) or named by another entry (rule_entry_references) can not be
---     deleted, and an entry used by a character can not receive review notes.
+--     deleted, and an entry used by a character can not receive review notes;
+--   * except (story 9.5) for an entry flagged overrides_builtin: it replaces a built-in rule of its edition, which takes
+--     its place again when the entry is deleted or waits for review, so nothing a character uses vanishes. Characters do
+--     not block it; other entries naming it still do. The DM writes the flag (the MCP computes it): a wrong flag only
+--     lets the DM delete their own entry, the characters then resolve without it (with a warning).
 --
 -- These guards are a STRUCTURAL FLOOR, not the full validation: the strict Zod schema is the complete check.
 --
@@ -41,6 +45,9 @@ create table public.rule_entries (
              constraint rule_entries_content_object check (jsonb_typeof(content) = 'object')
              constraint rule_entries_content_size check (octet_length(content::text) <= 65536),
   revision   integer     not null default 1 constraint rule_entries_revision_check check (revision >= 1),
+  -- True when the entry replaces a built-in rule of its edition (2024 code, 2014 SRD layer). Computed and written by the
+  -- MCP on every write (story 9.5): the database does not know the built-in rules.
+  overrides_builtin boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (ruleset, kind, id)
@@ -332,8 +339,10 @@ begin
     new.revision := 1;
     new.created_at := now();
   else
-    -- Review notes make an entry unusable: refused while a character uses it (same answer as a deletion).
-    if jsonb_typeof(new.content -> 'needsReview') = 'array' and jsonb_array_length(new.content -> 'needsReview') > 0 then
+    -- Review notes make an entry unusable: refused while a character uses it (same answer as a deletion), unless the
+    -- entry replaces a built-in rule, which stays in force while the entry waits for review.
+    if not new.overrides_builtin
+       and jsonb_typeof(new.content -> 'needsReview') = 'array' and jsonb_array_length(new.content -> 'needsReview') > 0 then
       select count(*), string_agg(u.name, ', ' order by u.name)
         into v_count, v_names
         from public.rule_entry_users(new.ruleset, new.kind, new.id) u;
@@ -365,9 +374,11 @@ declare
   v_names text;
   v_count integer;
 begin
+  -- An entry that replaces a built-in rule leaves that rule in force when it is deleted: characters do not block it.
   select count(*), string_agg(u.name, ', ' order by u.name)
     into v_count, v_names
-    from public.rule_entry_users(old.ruleset, old.kind, old.id) u;
+    from public.rule_entry_users(old.ruleset, old.kind, old.id) u
+   where not old.overrides_builtin;
   if v_count > 0 then
     raise exception 'The rule entry %:% is used by % character(s): %', old.kind, old.id, v_count, left(v_names, 500)
       using errcode = '23503', constraint = 'rule_entries_in_use', hint = 'rule_entries_in_use';
@@ -398,8 +409,9 @@ alter table public.rule_entries enable row level security;
 revoke all on public.rule_entries from public, anon, authenticated;
 grant select, delete on public.rule_entries to authenticated;
 -- revision and the timestamps are the database's; the identity of an entry never changes after the insert.
-grant insert (ruleset, kind, id, content) on public.rule_entries to authenticated;
-grant update (content) on public.rule_entries to authenticated;
+-- overrides_builtin is written by the MCP with the content (only the DM passes the write policies).
+grant insert (ruleset, kind, id, content, overrides_builtin) on public.rule_entries to authenticated;
+grant update (content, overrides_builtin) on public.rule_entries to authenticated;
 
 -- Members read the library of the editions of their campaigns (campaigns RLS applies inside the subquery).
 create policy rule_entries_member_select on public.rule_entries

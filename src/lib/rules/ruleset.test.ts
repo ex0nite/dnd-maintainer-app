@@ -150,7 +150,9 @@ describe('buildRuleSet: layers', () => {
       overrides: false,
     });
     expect(rules.entries.get(ruleKey('species', 'test-elfkin'))).toMatchObject({ layer: 'library', overrides: true });
-    expect(buildRuleSet('2014').species.size).toBe(0);
+    expect(buildRuleSet('2014', [], { srdEntries: [] }).species.size).toBe(0);
+    // Story 9.5: the generated SRD layer (9 species).
+    expect(buildRuleSet('2014').species.size).toBe(9);
   });
 
   it('adds library spells to the class lists', () => {

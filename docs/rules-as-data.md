@@ -299,11 +299,12 @@ simpler shape, it is listed here (the data shapes are in `docs/dnd-2024.md`, sec
   **whatever the current edition of their campaign** (a campaign can change edition while it holds drafts): `characters.species/background/class/subclass`, `character_build_levels.class_id/subclass_id/feat_id`,
   feat, spell and lineage decisions in `choices`, `character_items.item_id`. The delete trigger refuses (23503) while it returns
   rows. It is a separate function from `validate_rule_entry`, so the MCP can show who uses an entry before an update (section 3.6).
-  It also blocks deleting a library entry that only overrides a built-in rule while characters use that id: safest default.
+  It also blocked deleting a library entry that only overrides a built-in rule while characters use that id; story 9.5 lifts
+  that limit with the `overrides_builtin` column (section 10.4).
   `rule_entry_references(ruleset, kind, id)` lists the other entries of the edition whose content mentions the id (any string
   value equal to it): the delete is refused while there are some. Limit for 9.5: a `subspecies` is matched through the
   `lineage-choice` decisions (`lineageId`), the only place a sub-choice of a species is stored today; lineage ids are not unique
-  across species, so the match can be over-cautious. 9.5 decides how a subspecies is stored on a character.
+  across species, so the match can be over-cautious. 9.5 keeps that storage: a subspecies is a lineage decision (section 10.3).
 - **Guard names for API clients (story 9.4).** Every refusal raised by the `rule_entries` triggers carries the guard name in
   `HINT` as well as in `CONSTRAINT` (`rule_entries_content_valid`, `rule_entries_quota`, `rule_entries_identity`,
   `rule_entries_in_use`, `rule_entries_referenced`): PostgREST passes the hint to its clients, not the constraint name. The MCP
@@ -330,3 +331,86 @@ simpler shape, it is listed here (the data shapes are in `docs/dnd-2024.md`, sec
   thereby block the deletion of a library entry with that id until the DM edits the sheet.
 - **Not done in 9.3** (left to the stories that need them): the MCP tools (9.4), consuming `subspecies` (9.5), the SRD 2014 converter
   and data (9.5 to 9.8), library entries in the random NPC generator and in the class quick-build (they draw from the built-in rules).
+
+## 10. As implemented in story 9.5
+
+### 10.1 The SRD 2014 generator
+
+- **Script.** `npm run srd:generate` (`scripts/generate-srd-2014.ts`). It converts a **snapshot** of the SRD 5.1 data set
+  committed in `scripts/srd-2014/snapshot/` (records of the `5e-database` project, folder `src/2014/en`, at the commit pinned
+  in `scripts/srd-2014/upstream.ts`) into rule entries, validates each one with `parseRuleEntry` and writes one file per kind
+  in `src/lib/rules/srd-2014/` (`species.json`, `subspecies.json`, `background.json`), next to `ATTRIBUTION.md` (section 7).
+  `-- --fetch` refreshes the snapshot from the pinned commit first (the only network access, never at run time); `-- --check`
+  fails if the committed output differs. `src/lib/rules/srd-2014.ts` imports the JSON (`SRD_2014_ENTRIES`).
+- **Deterministic.** Records sorted by index in the snapshot, entries sorted by id, JSON formatted by Prettier with the
+  repository settings. `scripts/srd-2014/convert.test.ts` converts the committed snapshot (no network) and compares the
+  result with the committed output, and checks that the record order does not matter.
+- **Converters per kind** (`scripts/srd-2014/convert.ts`, `CONVERTERS`): species, subspecies, background in 9.5; classes and
+  subclasses (9.6), items (9.7) and spells (9.8) add their converter and their snapshot file. Vocabulary is mapped
+  explicitly (SRD proficiency index to the engine's skill, weapon, tool and armor ids; `deep-speech` to `deepspeech`); an
+  unknown value **throws**, nothing is guessed. Facts the data set does not structure are small tables in the converter,
+  each quoting the SRD sentence it encodes: poison and fire resistances, Dwarven Toughness (`hp-bonus`), uses per rest and
+  save DC of the breath weapon, Relentless Endurance uses, the full equipment line of the acolyte. French names of the
+  entries are facts (`name.fr`); descriptions stay in English.
+- **Book.** Every SRD entry has `source.book = "srd-5-1"` (not a `SourceBookId`: SRD entries are always offered, like the
+  library).
+
+### 10.2 What the 2014 SRD layer holds
+
+- **Species** (9): `speed` grant and `body.speed`, `body.size`, `ability-bonus` grants, fixed languages (`proficiency`
+  language), language choices (`proficiency-choice` language with the SRD list), `ability-choice` (half-elf: +1 to two of STR,
+  DEX, CON, INT, WIS), skill and tool choices (half-elf skills, dwarf artisan tool), weapon and skill proficiencies, and each
+  trait as a `feature` with its SRD name and text. The dragonborn's ancestry is a `lineage-choice` with 10 lineages
+  (resistance, plus a feature naming the breath weapon's damage, area and save); the Breath Weapon feature carries
+  `saveDC: { dcAbility: 'con' }` and one use per short rest.
+- **Subspecies** (4): `hill-dwarf`, `high-elf`, `lightfoot-halfling`, `rock-gnome`, each `{ parent, grants }` with its own
+  ability bonus and traits (Dwarven Toughness `hp-bonus` 1 per level, elf weapon training, an extra language, tinker's tools).
+- **Background** (1): `acolyte`: skills, two languages of choice, Shelter of the Faithful and the SRD equipment line as
+  `feature` text. No ability bonus, no feat (2014).
+- **Kept as text only** (the trait's feature, no engine effect; the generator lists them at each run): darkvision, advantage
+  on saves or checks (Dwarven Resilience, Fey Ancestry, Brave, Gnome Cunning), Stonecunning and Artificer's Lore (double
+  proficiency on some History checks), Lucky, Trance, Halfling Nimbleness, Naturally Stealthy, Savage Attacks, the breath
+  weapon's damage dice by level, Tinker's devices, the High Elf cantrip and the Tiefling's Infernal Legacy (no SRD spell in
+  the 2014 rules before 9.8), the background's equipment (items in 9.7); personality traits, ideals, bonds and flaws are not
+  converted.
+- **Languages and tools stay closed** (section 3.4 planned to open them in 9.5): every language and tool the SRD 5.1 uses is
+  already in the engine vocabulary, so nothing forces it yet. A book language or tool the DM needs is still a code change.
+
+### 10.3 Subspecies in the engine
+
+- A subspecies is offered as a **lineage of its parent species**. `buildRuleSet` attaches each usable subspecies (verified,
+  valid, parent present in the rule set) to `rules.lineages` of its parent (a new object: built-in maps are never mutated) and
+  its own name to `rules.lineageNames`. One whose parent is missing, or whose id is already a lineage of the parent, is
+  offered to nobody (logged).
+- `collectBundles` adds, right after the species bundle, the grant of `subspeciesChoice(rules, speciesId)`: a
+  `lineage-choice` with key `lineage-choice:species:<species>:<n>`, `n` being the first index the species' own lineage
+  choices do not use (0 for every SRD species with subspecies; a dragonborn with a library subspecies, or the 2024 elf, gets
+  1). The existing lineage expansion then adds the chosen subspecies' grants **on top of** the species grants: the resolver
+  sums ability bonuses, proficiencies, features and the `hp-bonus`.
+- **Stored** like any lineage: `{ type: 'lineage-choice', lineageId: <subspecies id> }` in the creation row's `choices`
+  (`reconstructBuild`, `useCharacterContext` and the MCP already route `species` choice keys there); `rule_entry_users` already
+  finds a subspecies through those decisions. An unknown subspecies id, or one of another species, resolves to nothing with
+  the warning `No grants for lineage ...`; no crash.
+- **2024 unchanged.** The built-in 2024 rules have no subspecies, so no choice is added and `builtin2024RuleSet()` keeps the
+  very lineage objects of `src/lib/sources/species.ts`. A 2024 library subspecies works the same way as in 2014.
+- **Limit.** The builder's `LineagePicker` shows the first lineage choice of a species only: a species that has its own
+  lineage choice **and** subspecies (none in the SRD) needs the 2014 builder (9.7) to show the second one. The sheet header
+  also shows the first lineage decision only.
+- `ruleset_has_engine('2014')` stays false: 2014 characters still can not be finalized (classes 9.6, builder 9.7).
+
+### 10.4 `rule_entries.overrides_builtin` (limit I4 of 9.4)
+
+- New column `overrides_builtin boolean not null default false` (migration `20261121000000_rule_entries.sql`, not deployed
+  yet, edited in place). It is **not** part of the entry's JSON envelope.
+- **Written by the MCP** on every create and update: `hasRule(baseRuleSet(edition), kind, id)`, i.e. whether the id exists in
+  the built-in layers of the edition (2024 code, 2014 SRD layer). The tool's caller never provides it. The API grants the
+  column in `insert` and `update`; row-level security lets only the DM write it (pgTAP
+  `00567-rule-entries-overrides.test.sql`).
+- **Guards.** When it is true, `rule_entries_before_delete` ignores the characters (the built-in rule takes its place again,
+  nothing a sheet uses vanishes) but still refuses while **other entries** name the id; adding review notes is allowed too
+  (the built-in rule stays in force while the entry waits). When it is false, nothing changes.
+- **Trust.** The database can not check the flag (it does not know the built-in rules): a DM writing `true` by hand on an
+  entry that overrides nothing could delete it while characters use it; those sheets then resolve without it, with a
+  warning. The DM is trusted (single DM); the MCP never lets the model set it.
+- **Stale flag.** An entry written before 9.5, or before a built-in rule of the same id existed (a 2014 species now in the
+  SRD), keeps `false` until its next update; `dnd_delete_rule` says so and asks for one update first.

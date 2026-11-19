@@ -1,5 +1,5 @@
 import type { SpeciesId, ClassId, BackgroundId, FeatId } from '@/lib/dnd-helpers';
-import { builtin2024RuleSet, missingReason, spellsForList } from '@/lib/rules/ruleset';
+import { builtin2024RuleSet, missingReason, spellsForList, subspeciesChoice } from '@/lib/rules/ruleset';
 import type { RuleSet } from '@/lib/rules/types';
 import type { RuleEntryKind } from '@/lib/rules/schemas';
 import { getLogger } from '@/lib/logger';
@@ -154,6 +154,10 @@ export function collectBundles(build: CharacterBuild, rules: RuleSet = builtin20
   if (speciesSource) {
     const tag: SourceTag = { origin: 'species', id: build.speciesId };
     bundles.push({ source: tag, grants: speciesSource.grants });
+    // Subspecies (story 9.5): a lineage choice whose decision expands, with the other lineages below, into the
+    // subspecies grants, added to the species grants.
+    const subspecies = subspeciesChoice(rules, build.speciesId);
+    if (subspecies) bundles.push({ source: tag, grants: [subspecies] });
   } else {
     const msg = `No source data found for species "${build.speciesId}" — species grants will be empty${why('species', build.speciesId)}`;
     warnings.push(msg);
