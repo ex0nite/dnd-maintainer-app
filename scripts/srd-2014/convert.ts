@@ -3,7 +3,7 @@
  * `body`, docs/dnd-2024.md "Rule entries"). Pure and deterministic: same snapshot, same entries, same order.
  *
  * One converter per entry kind, registered in `CONVERTERS`. Story 9.5 converts species, subspecies and backgrounds;
- * classes and subclasses (9.6), items (9.7) and spells (9.8) add their converter here and their file to the snapshot.
+ * story 9.6 classes and subclasses; items (9.7) and spells (9.8) add their converter here and their file to the snapshot.
  *
  * Every entry is validated by `parseRuleEntry` (the strict schema the app reads it with) before it is returned: a
  * conversion that produces an invalid entry throws, nothing is written. A value the closed vocabularies of the engine
@@ -16,6 +16,7 @@ import { parseRuleEntry, type RuleEntry, type RuleEntryKind } from '@/lib/rules/
 import {
   ABILITY_VOCAB,
   DAMAGE_TYPE_VOCAB,
+  FIGHTING_STYLE_VOCAB,
   LANGUAGE_VOCAB,
   SIZE_VOCAB,
   SKILL_VOCAB,
@@ -44,6 +45,7 @@ interface OptionSet {
       readonly item?: Ref;
       readonly ability_score?: Ref;
       readonly bonus?: number;
+      readonly choice?: OptionSet;
     }[];
   };
 }
@@ -98,6 +100,7 @@ const WEAPON_IDS: Readonly<Record<string, string>> = {
   'martial-weapons': 'martial',
   'hand-crossbows': 'handcrossbow',
   'light-crossbows': 'lightcrossbow',
+  'crossbows-light': 'lightcrossbow',
 };
 
 const ARMOR_IDS: Readonly<Record<string, string>> = {
@@ -253,7 +256,7 @@ function name(id: string, en: string): Json {
 class ChoiceKeys {
   private readonly next = new Map<string, number>();
   constructor(
-    private readonly origin: 'species' | 'background',
+    private readonly origin: 'species' | 'background' | 'class' | 'subclass',
     private readonly owner: string
   ) {}
   key(category: string): string {
@@ -267,7 +270,12 @@ function optionItems(set: OptionSet, what: string): Ref[] {
   if (set.from.option_set_type !== 'options_array' || !set.from.options) {
     return fail(`${what}: option set "${set.from.option_set_type}" is not supported`);
   }
-  return set.from.options.map((o) => o.item ?? fail(`${what}: option without an item`));
+  // A nested choice ("one type of artisan's tools or one musical instrument", monk) is flattened: any of its items.
+  return set.from.options.flatMap((o) =>
+    o.option_type === 'choice' && o.choice
+      ? optionItems(o.choice, what)
+      : [o.item ?? fail(`${what}: option without an item`)]
+  );
 }
 
 function languageChoice(set: OptionSet, keys: ChoiceKeys, what: string): Grant {
@@ -543,11 +551,398 @@ const convertBackgrounds: Converter = (snapshot, unexpressed) =>
     };
   });
 
-/** Converters in output order. Stories 9.6 to 9.8 add classes, subclasses, items and spells here. */
+// ---------------------------------------------------------------------------
+// Classes and subclasses (story 9.6)
+// ---------------------------------------------------------------------------
+
+/** French names of the classes and subclasses (names are facts, descriptions stay in English). */
+const FRENCH_CLASS_NAMES: Readonly<Record<string, string>> = {
+  barbarian: 'Barbare',
+  bard: 'Barde',
+  cleric: 'Clerc',
+  druid: 'Druide',
+  fighter: 'Guerrier',
+  monk: 'Moine',
+  paladin: 'Paladin',
+  ranger: 'Rôdeur',
+  rogue: 'Roublard',
+  sorcerer: 'Ensorceleur',
+  warlock: 'Occultiste',
+  wizard: 'Magicien',
+  berserker: 'Voie du Berserker',
+  lore: 'Collège du Savoir',
+  life: 'Domaine de la Vie',
+  land: 'Cercle de la Terre',
+  champion: 'Champion',
+  'open-hand': 'Voie de la Main ouverte',
+  devotion: 'Serment de dévotion',
+  hunter: 'Chasseur',
+  thief: 'Voleur',
+  draconic: 'Lignée draconique',
+  fiend: 'Fiélon',
+  evocation: 'École d’évocation',
+};
+
+/**
+ * The class feature that opens the subclass choice. The SRD 5.1 data set does not say it in a structured form; the level
+ * of the feature is the class level at which the subclass is chosen (1, 2 or 3), checked against the first level of
+ * every subclass of the data set.
+ */
+const SUBCLASS_CHOICE_FEATURE: Readonly<Record<string, string>> = {
+  barbarian: 'primal-path',
+  bard: 'bard-college',
+  cleric: 'divine-domain',
+  druid: 'druid-circle',
+  fighter: 'martial-archetype',
+  monk: 'monastic-tradition',
+  paladin: 'sacred-oath',
+  ranger: 'ranger-archetype',
+  rogue: 'roguish-archetype',
+  sorcerer: 'sorcerous-origin',
+  warlock: 'otherworldly-patron',
+  wizard: 'arcane-tradition',
+};
+
+/** Engine feature id of an SRD feature whose id the resolver knows (`resolveBardicInspiration` reads this id). */
+const FEATURE_IDS: Readonly<Record<string, string>> = {
+  'bardic-inspiration-d6': 'bard-bardic-inspiration',
+};
+
+/**
+ * Uses per rest of class features, read from the SRD text quoted in the comment. Only features that have no
+ * progression twin are listed (Action Surge, Indomitable and Channel Divinity of the cleric come as one SRD feature
+ * per number of uses, which a sheet would list side by side): those keep their text only.
+ */
+const CLASS_FEATURE_EXTRAS: Readonly<Record<string, Json>> = {
+  // "you must finish a short or long rest before you can use it again"
+  'second-wind': { usesPerRest: 'short', usesCount: 1 },
+  // "You must finish a long rest before you can use this feature again."
+  'wholeness-of-body': { usesPerRest: 'long', usesCount: 1 },
+  // "Once per day when you finish a short rest"
+  'arcane-recovery': { usesPerRest: 'long', usesCount: 1 },
+  // "You can't use this feature again until you finish a long rest."
+  'natural-recovery': { usesPerRest: 'long', usesCount: 1 },
+  // "you can't use it again until you finish a short or long rest."
+  'stroke-of-luck': { usesPerRest: 'short', usesCount: 1 },
+  // "you must finish a long rest before you can do so again."
+  'eldritch-master': { usesPerRest: 'long', usesCount: 1 },
+  // "You must then finish a short or long rest to use your Channel Divinity again." (paladin)
+  'channel-divinity': { usesPerRest: 'short', usesCount: 1 },
+};
+
+const ALL_SIX_ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+
+/** Effects of class and subclass features the engine computes, read from the SRD text quoted in the comment. */
+type Mechanics = (keys: ChoiceKeys, fightingStyles: readonly string[]) => Grant[];
+
+const expertise =
+  (fromTools: readonly string[]): Mechanics =>
+  (keys) => [{ type: 'expertise-choice', key: keys.key('expertise-choice'), count: 2, from: null, fromTools }];
+const fightingStyle: Mechanics = (keys, styles) => [
+  { type: 'fighting-style-choice', key: keys.key('fighting-style-choice'), count: 1, from: styles },
+];
+const savingThrow = (ability: string): Grant => ({ type: 'proficiency', category: 'saving-throw', id: ability });
+
+const CLASS_MECHANICS: Readonly<Record<string, Mechanics>> = {
+  // "your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier"
+  'barbarian-unarmored-defense': () => [
+    { type: 'armor-class', calculation: { mode: 'unarmored', formula: 'barbarian' } },
+  ],
+  // "your AC equals 10 + your Dexterity modifier + your Wisdom modifier"
+  'monk-unarmored-defense': () => [{ type: 'armor-class', calculation: { mode: 'unarmored', formula: 'monk' } }],
+  // "choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves' tools"
+  'rogue-expertise-1': expertise(['thievestools']),
+  'rogue-expertise-2': expertise(['thievestools']),
+  // "choose two of your skill proficiencies"
+  'bard-expertise-1': expertise([]),
+  'bard-expertise-2': expertise([]),
+  // "add half your proficiency bonus, rounded down, to any ability check you make that doesn't already include your
+  // proficiency bonus"
+  'jack-of-all-trades': () => [
+    {
+      type: 'ability-check-bonus',
+      abilities: [...ALL_SIX_ABILITIES],
+      value: 'half-proficiency',
+      onlyWhenNotProficient: true,
+      featureId: 'jack-of-all-trades',
+    },
+  ],
+  // "you gain proficiency in all saving throws"
+  'diamond-soul': () => ALL_SIX_ABILITIES.map(savingThrow),
+  // "You gain proficiency in Wisdom saving throws."
+  'slippery-mind': () => [savingThrow('wis')],
+  'fighter-fighting-style': fightingStyle,
+  'paladin-fighting-style': fightingStyle,
+  'ranger-fighting-style': fightingStyle,
+};
+
+const SUBCLASS_MECHANICS: Readonly<Record<string, Mechanics>> = {
+  // "you gain proficiency with heavy armor"
+  'life:bonus-proficiency': () => [{ type: 'proficiency', category: 'armor', id: 'heavy' }],
+  // "you gain proficiency with three skills of your choice"
+  'lore:bonus-proficiencies': (keys) => [
+    { type: 'proficiency-choice', category: 'skill', key: keys.key('skill-choice'), count: 3, from: null },
+  ],
+  // "you can choose a second option from the Fighting Style class feature" (the Fighter's list)
+  'champion:additional-fighting-style': fightingStyle,
+  // "your hit point maximum increases by 1 and increases by 1 again whenever you gain a level in this class"
+  // (counted on the character level: exact for a single-class character)
+  'draconic:draconic-resilience': () => [{ type: 'hp-bonus', perLevel: 1 }],
+};
+
+/** `dragon-ancestor-black---acid-damage` is a valid id once its runs of hyphens are collapsed. */
+const slugId = (index: string): string => index.replace(/-+/g, '-');
+
+/** Armor proficiencies: the SRD says "all armor" for fighter and paladin; druids avoid metal (SRD class text). */
+function classArmor(classId: string, index: string): string[] {
+  if (index === 'all-armor') return ['light', 'medium', 'heavy'];
+  if (classId === 'druid') {
+    // "Druids will not wear armor or use shields made of metal."
+    if (index === 'medium-armor') return ['medium-nonmetal'];
+    if (index === 'shields') return ['shields-nonmetal'];
+  }
+  return [ARMOR_IDS[index] ?? fail(`armor "${index}" is not in the engine vocabulary`)];
+}
+
+function classProficiencies(record: SrdRecord): Grant[] {
+  return refs(record.proficiencies).flatMap((p): Grant[] => {
+    if (p.index === 'all-armor' || p.index in ARMOR_IDS) {
+      return classArmor(record.index, p.index).map((id) => ({ type: 'proficiency', category: 'armor', id }));
+    }
+    return [{ type: 'proficiency', ...mapProficiency(p.index) }];
+  });
+}
+
+/** Starting equipment as text: items become grants with story 9.7 (SRD equipment). */
+function startingEquipmentText(record: SrdRecord): string {
+  const fixed = ((record.starting_equipment as readonly { equipment: Ref; quantity: number }[] | undefined) ?? []).map(
+    (e) => {
+      const label = e.equipment.name ?? e.equipment.index;
+      return e.quantity > 1 ? `${e.quantity} ${label}` : label;
+    }
+  );
+  const options = ((record.starting_equipment_options as readonly { desc: string }[] | undefined) ?? []).map(
+    (o) => o.desc
+  );
+  return `You start with the following equipment: ${[...fixed, ...options].join('; ')}.`;
+}
+
+interface ClassLevel {
+  readonly level: number;
+  readonly bonuses: number;
+  readonly features: readonly Ref[];
+}
+
+function classLevelsOf(snapshot: Snapshot, classId: string): ClassLevel[] {
+  const rows = snapshot.levels
+    .filter((l) => (l.class as Ref).index === classId && !l.subclass)
+    .map((l) => ({
+      level: l.level as number,
+      bonuses: l.ability_score_bonuses as number,
+      features: refs(l.features),
+    }))
+    .sort((a, b) => a.level - b.level);
+  if (rows.length !== 20 || rows.some((r, i) => r.level !== i + 1))
+    fail(`${classId}: levels 1 to 20 are not all there`);
+  return rows;
+}
+
+function featureText(feature: SrdRecord, extra: Json | undefined): Json {
+  return {
+    id: FEATURE_IDS[feature.index] ?? slugId(feature.index),
+    name: feature.name,
+    description: text(feature.desc),
+    ...(extra ?? {}),
+  };
+}
+
+const isAsiFeature = (index: string): boolean => /ability-score-improvement/.test(index);
+
+/** Class levels where the SRD table adds an Ability Score Improvement (its cumulative count goes up). */
+function asiLevels(levels: readonly ClassLevel[]): number[] {
+  return levels.filter((l, i) => l.bonuses > (i === 0 ? 0 : levels[i - 1].bonuses)).map((l) => l.level);
+}
+
+function featuresOfClass(snapshot: Snapshot, classId: string): ReadonlyMap<string, SrdRecord> {
+  return new Map(
+    snapshot.features.filter((f) => (f.class as Ref).index === classId && !f.subclass).map((f) => [f.index, f])
+  );
+}
+
+function primaryAbility(cls: SrdRecord): string {
+  const multi = cls.multi_classing as { prerequisites?: { ability_score: Ref }[]; prerequisite_options?: OptionSet };
+  const ref =
+    multi.prerequisites?.[0]?.ability_score ??
+    multi.prerequisite_options?.from.options?.[0]?.ability_score ??
+    fail(`${cls.index}: no primary ability`);
+  return mapAbility(ref.index);
+}
+
+const convertClasses: Converter = (snapshot, unexpressed) =>
+  snapshot.classes.map((cls) => {
+    const classId = cls.index;
+    const levels = classLevelsOf(snapshot, classId);
+    const features = featuresOfClass(snapshot, classId);
+    const keys = new ChoiceKeys('class', classId);
+    const choiceFeatureIndex = SUBCLASS_CHOICE_FEATURE[classId] ?? fail(`${classId}: no subclass choice feature`);
+    const styles = [...features.keys()]
+      .sort()
+      .map((i) => /^(?:fighter-|ranger-)?fighting-style-(.+)$/.exec(i)?.[1])
+      .filter((s): s is string => s !== undefined)
+      .map((s) => member(FIGHTING_STYLE_VOCAB, s, 'fighting style'));
+    const asi = asiLevels(levels);
+    const asiFeatureLevels = levels.filter((l) => l.features.some((f) => isAsiFeature(f.index))).map((l) => l.level);
+    if (JSON.stringify(asi) !== JSON.stringify(asiFeatureLevels)) {
+      fail(`${classId}: Ability Score Improvement features ${asiFeatureLevels} differ from the table ${asi}`);
+    }
+
+    const outLevels = levels.map((row) => {
+      const grants: Grant[] = [];
+      if (row.level === 1) {
+        grants.push({ type: 'hit-die', die: cls.hit_die as number });
+        grants.push(...classProficiencies(cls));
+        for (const choice of (cls.proficiency_choices as readonly OptionSet[] | undefined) ?? []) {
+          grants.push(proficiencyChoice(choice, keys, `${classId} proficiency choice`));
+        }
+        grants.push({ type: 'armor-class', calculation: { mode: 'armored' } });
+        grants.push({
+          type: 'feature',
+          feature: {
+            id: `${classId}-starting-equipment`,
+            name: 'Starting equipment',
+            description: startingEquipmentText(cls),
+          },
+        });
+        unexpressed.push({
+          kind: 'class',
+          id: classId,
+          what: 'starting equipment: text only (SRD items arrive with story 9.7)',
+        });
+      }
+      for (const ref of row.features) {
+        if (isAsiFeature(ref.index)) continue;
+        const feature = features.get(ref.index) ?? fail(`${classId}: unknown feature ${ref.index}`);
+        grants.push({ type: 'feature', feature: featureText(feature, CLASS_FEATURE_EXTRAS[ref.index]) });
+        grants.push(...(CLASS_MECHANICS[ref.index]?.(keys, styles) ?? []));
+        if (ref.index === choiceFeatureIndex) {
+          grants.push({ type: 'subclass', classId, key: keys.key('subclass') });
+        }
+      }
+      if (asi.includes(row.level)) {
+        grants.push({ type: 'asi', key: keys.key('asi'), points: 2, from: null });
+      }
+      return { grants };
+    });
+
+    const textOnly = levels
+      .flatMap((l) => l.features)
+      .filter((f) => !isAsiFeature(f.index) && !CLASS_MECHANICS[f.index] && !CLASS_FEATURE_EXTRAS[f.index]);
+    unexpressed.push({
+      kind: 'class',
+      id: classId,
+      what: `${textOnly.length} features kept as text only (resources, spellcasting and invocations arrive with story 9.8)`,
+    });
+    return {
+      schema: 1,
+      kind: 'class',
+      id: classId,
+      name: classNameOf(classId, cls.name),
+      source: { book: SRD_BOOK },
+      body: { primaryAbility: primaryAbility(cls), levels: outLevels },
+    };
+  });
+
+function classNameOf(id: string, en: string): Json {
+  const fr = FRENCH_CLASS_NAMES[id];
+  return fr ? { en, fr } : { en };
+}
+
+const FIGHTER_STYLES = ['archery', 'defense', 'dueling', 'great-weapon-fighting', 'protection', 'two-weapon-fighting'];
+
+const convertSubclasses: Converter = (snapshot, unexpressed) =>
+  snapshot.subclasses.map((sub) => {
+    const classId = (sub.class as Ref).index;
+    const classLevels = classLevelsOf(snapshot, classId);
+    const choiceFeature = SUBCLASS_CHOICE_FEATURE[classId] ?? fail(`${classId}: no subclass choice feature`);
+    const chosenAt =
+      classLevels.find((l) => l.features.some((f) => f.index === choiceFeature))?.level ??
+      fail(`${classId}: ${choiceFeature} is at no level`);
+    const own = snapshot.features.filter((f) => (f.subclass as Ref | undefined)?.index === sub.index);
+    // `supreme-healing` is missing its `subclass` field in the data set: level rows name features by index, so look them up in all.
+    const byIndex = new Map(snapshot.features.map((f) => [f.index, f]));
+    const levelRows = snapshot.levels
+      .filter((l) => (l.subclass as Ref | undefined)?.index === sub.index)
+      .sort((a, b) => (a.level as number) - (b.level as number));
+    const first = levelRows[0]?.level as number | undefined;
+    if (first !== chosenAt) fail(`${sub.index}: first feature level ${first} is not the choice level ${chosenAt}`);
+
+    const inLevels = new Set(levelRows.flatMap((l) => refs(l.features).map((f) => f.index)));
+    // A feature of the subclass in no level row either is an option of another one (`hunters-prey-*` under
+    // `hunters-prey`, the `dragon-ancestor-*` colors) or stands on its own at its own level (`circle-spells-1`).
+    const unused = own.filter((f) => !inLevels.has(f.index)).sort((a, b) => (a.index < b.index ? -1 : 1));
+    const optionsOf = (parent: string): SrdRecord[] => unused.filter((f) => f.index.startsWith(`${parent}-`));
+    const isOption = (f: SrdRecord): boolean =>
+      own.some((p) => p.index !== f.index && f.index.startsWith(`${p.index}-`));
+    const keys = new ChoiceKeys('subclass', sub.index);
+
+    const entries: { level: number; feature: SrdRecord }[] = [
+      ...levelRows.flatMap((l) =>
+        refs(l.features).map((r) => ({
+          level: l.level as number,
+          feature: byIndex.get(r.index) ?? fail(`${sub.index}: unknown feature ${r.index}`),
+        }))
+      ),
+      ...unused.filter((f) => !isOption(f)).map((f) => ({ level: f.level as number, feature: f })),
+    ].sort((a, b) => a.level - b.level);
+
+    const byLevel = new Map<number, Grant[]>();
+    for (const { level, feature } of entries) {
+      const grants = byLevel.get(level) ?? [];
+      grants.push({ type: 'feature', feature: featureText(feature, undefined) });
+      grants.push(...(SUBCLASS_MECHANICS[`${sub.index}:${feature.index}`]?.(keys, FIGHTER_STYLES) ?? []));
+      const options = optionsOf(feature.index);
+      if (options.length > 0) {
+        grants.push({
+          type: 'feature-choice',
+          key: keys.key('feature-choice'),
+          options: options.map((o) => ({
+            optionId: slugId(o.index.slice(feature.index.length + 1)),
+            featureId: slugId(o.index),
+            grants: [{ type: 'feature', feature: featureText(o, undefined) }],
+          })),
+        });
+      }
+      byLevel.set(level, grants);
+    }
+    unexpressed.push({
+      kind: 'subclass',
+      id: sub.index,
+      what: `${entries.length} features kept as text (domain, oath and expanded spell lists arrive with story 9.8)`,
+    });
+    return {
+      schema: 1,
+      kind: 'subclass',
+      id: sub.index,
+      name: classNameOf(sub.index, sub.name),
+      source: { book: SRD_BOOK },
+      summary: { en: text(sub.desc) },
+      body: {
+        class: classId,
+        chosenAtClassLevel: chosenAt,
+        features: [...byLevel.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([classLevel, grants]) => ({ classLevel, grants })),
+      },
+    };
+  });
+
+/** Converters in output order. Stories 9.7 and 9.8 add items and spells here. */
 export const CONVERTERS: readonly { readonly kind: RuleEntryKind; readonly convert: Converter }[] = [
   { kind: 'species', convert: convertSpecies },
   { kind: 'subspecies', convert: convertSubspecies },
   { kind: 'background', convert: convertBackgrounds },
+  { kind: 'class', convert: convertClasses },
+  { kind: 'subclass', convert: convertSubclasses },
 ];
 
 /** Converts a snapshot and validates every entry with the app's strict schema. Throws on the first invalid entry. */

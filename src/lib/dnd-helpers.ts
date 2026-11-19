@@ -407,6 +407,7 @@ export const DND_WEAPON_PROFICIENCIES = [
 export type WeaponProficiencyId = (typeof DND_WEAPON_PROFICIENCIES)[number];
 
 export const DND_TOOL_PROFICIENCIES = [
+  'alchemistssupplies',
   'thievestools',
   'herbalismkit',
   'smithstools',

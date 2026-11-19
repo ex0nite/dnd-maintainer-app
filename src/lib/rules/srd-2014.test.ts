@@ -197,11 +197,12 @@ describe('SRD 2014 layer: the generated entries', () => {
     }
   });
 
-  it('has no built-in 2024 rule underneath (no goliath, no 2024 background, no feat, no class)', () => {
+  it('has no built-in 2024 rule underneath (no goliath, no 2024 background, no feat; the 2014 classes are all SRD)', () => {
     expect(RULES.species.has('goliath')).toBe(false);
     expect(RULES.backgrounds.has('sage')).toBe(false);
     expect(RULES.feats.size).toBe(0);
-    expect(RULES.classes.size).toBe(0);
+    expect(RULES.classes.size).toBe(12);
+    expect([...RULES.classes.values()].every((c) => !RULES.entries.get(ruleKey('class', c.id))?.overrides)).toBe(true);
   });
 });
 

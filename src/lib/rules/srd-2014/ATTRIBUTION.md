@@ -9,7 +9,8 @@ The JSON files of this folder (the 2014 SRD layer of the rules) and the snapshot
 
 Changes made to that material: the SRD records of the open `5e-database` data set (project `5e-bits/5e-database`, folder
 `src/2014/en`, commit pinned in `scripts/srd-2014/upstream.ts`) are converted by `scripts/generate-srd-2014.ts` into the
-rule entries of this application (grants, choices, feature text). Names keep the SRD English text and gain a French name;
+rule entries of this application (grants, choices, feature text; for the classes, the level tables of the SRD become
+levels of grants, and the starting equipment of a class is written as one sentence from its SRD lists). Names keep the SRD English text and gain a French name;
 descriptions keep the SRD English text; a few descriptions of dragon ancestries are rebuilt from the SRD table.
 
 Nothing outside the SRD 5.1 may be added here: this repository is public.

@@ -48,7 +48,9 @@ describe('SRD 2014 generator', () => {
     expect(mapProficiency('brewers-supplies')).toEqual({ category: 'tool', id: 'brewersupplies' });
     expect(mapProficiency('tinkers-tools')).toEqual({ category: 'tool', id: 'tinkerstools' });
     expect(mapLanguage('deep-speech')).toBe('deepspeech');
-    expect(() => mapProficiency('alchemists-supplies')).toThrow(/not in the engine vocabulary/);
+    expect(mapProficiency('alchemists-supplies')).toEqual({ category: 'tool', id: 'alchemistssupplies' });
+    expect(mapProficiency('crossbows-light')).toEqual({ category: 'weapon', id: 'lightcrossbow' });
+    expect(() => mapProficiency('mystery-tools')).toThrow(/not in the engine vocabulary/);
     expect(() => mapLanguage('thieves-cant')).toThrow(/not in the engine vocabulary/);
   });
 
@@ -56,5 +58,39 @@ describe('SRD 2014 generator', () => {
     const snap = snapshot();
     const evil = { ...snap, backgrounds: [{ ...snap.backgrounds[0], name: '<b>Acolyte</b>' }] };
     expect(() => convertSrd2014(evil)).toThrow(/background acolyte is invalid: name.en/);
+  });
+
+  it('converts the 12 classes and 12 subclasses of the SRD and reports what stays text (story 9.6)', () => {
+    const { entries, unexpressed } = convertSrd2014(snapshot());
+    expect(entries.class).toHaveLength(12);
+    expect(entries.subclass).toHaveLength(12);
+    expect(unexpressed.some((u) => u.kind === 'class' && u.id === 'wizard' && /text only/.test(u.what))).toBe(true);
+    expect(unexpressed.some((u) => u.kind === 'class' && u.id === 'fighter' && /starting equipment/.test(u.what))).toBe(
+      true
+    );
+  });
+
+  it('refuses a class whose Ability Score Improvement features disagree with the level table', () => {
+    const snap = snapshot();
+    const levels = snap.levels.map((l) =>
+      l.index === 'fighter-6' ? { ...l, ability_score_bonuses: 1 } : l
+    ) as unknown as SrdRecord[];
+    expect(() => convertSrd2014({ ...snap, levels })).toThrow(/Ability Score Improvement features/);
+  });
+
+  it('refuses a subclass whose first level is not the level of its class choice', () => {
+    const snap = snapshot();
+    const levels = snap.levels.filter((l) => l.index !== 'life-1') as unknown as SrdRecord[];
+    expect(() => convertSrd2014({ ...snap, levels })).toThrow(/is not the choice level 1/);
+  });
+
+  it('refuses an equipment or proficiency value the engine does not know', () => {
+    const snap = snapshot();
+    const classes = snap.classes.map((c) =>
+      c.index === 'wizard'
+        ? { ...c, proficiencies: [...(c.proficiencies as unknown[]), { index: 'mystery-tools', name: 'Mystery' }] }
+        : c
+    ) as unknown as SrdRecord[];
+    expect(() => convertSrd2014({ ...snap, classes })).toThrow(/not in the engine vocabulary/);
   });
 });
