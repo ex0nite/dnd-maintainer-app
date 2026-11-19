@@ -1,5 +1,7 @@
 import type { SpeciesId, ClassId, BackgroundId, FeatId } from '@/lib/dnd-helpers';
-import { builtin2024RuleSet, missingReason, spellsForList, subspeciesChoice } from '@/lib/rules/ruleset';
+import { builtin2024RuleSet, missingReason, spellChoicePool, subspeciesChoice } from '@/lib/rules/ruleset';
+import { collectGrantsByType, extraSpellIdsOf } from '@/lib/resolver/helpers';
+import { featurePicksPool, otherPicks } from '@/lib/resolver/feature-picks';
 import type { RuleSet } from '@/lib/rules/types';
 import type { RuleEntryKind } from '@/lib/rules/schemas';
 import { getLogger } from '@/lib/logger';
@@ -272,10 +274,12 @@ export function collectBundles(build: CharacterBuild, rules: RuleSet = builtin20
   for (const { grant, source } of allSpellChoiceGrants) {
     const decision = build.choices[grant.key];
     if (decision?.type === 'spell-choice') {
-      const pool = spellsForList(rules, grant.spellList, grant.spellLevel);
+      const pool = spellChoicePool(rules, { ...grant, extraSpellIds: extraSpellIdsOf(bundles, grant.spellList) });
       for (const spellId of decision.spellIds) {
         if (!pool.some((s) => s.id === spellId)) {
-          const msg = `spell-choice "${grant.key}" decision references spell "${spellId}" not in ${grant.spellList} list at level ${grant.spellLevel}`;
+          const levels =
+            grant.maxSpellLevel !== undefined ? `${grant.spellLevel} to ${grant.maxSpellLevel}` : grant.spellLevel;
+          const msg = `spell-choice "${grant.key}" decision references spell "${spellId}" not in ${grant.spellList} list at level ${levels}`;
           warnings.push(msg);
           logger.warn(msg);
           continue;
@@ -474,6 +478,29 @@ export function collectBundles(build: CharacterBuild, rules: RuleSet = builtin20
         warnings.push(msg);
         logger.warn(msg);
       }
+    }
+  }
+
+  // Feature-picks expansion (story 9.8: 2014 invocations and metamagic). Same single-pass rule as above: the options'
+  // grants are terminal. A pick counts when the option exists in the pool, the class level allows it and no earlier
+  // grant of the pool took it.
+  for (const { grant, source } of collectGrantsByType(bundles, 'feature-picks')) {
+    const decision = build.choices[grant.key];
+    if (decision?.type !== 'feature-picks') continue;
+    const pool = featurePicksPool(bundles, grant.poolId);
+    const classLevel = source.origin === 'class' ? (classCounts.get(source.id) ?? 0) : Number.MAX_SAFE_INTEGER;
+    const taken = new Set(otherPicks(bundles, build.choices, grant.poolId, grant.key, true));
+    const seen = new Set<string>();
+    for (const optionId of decision.optionIds) {
+      const option = pool.find((o) => o.optionId === optionId);
+      if (!option || (option.minClassLevel ?? 1) > classLevel || taken.has(optionId) || seen.has(optionId)) {
+        const msg = `feature-picks "${grant.key}" decision references option "${optionId}" that is unknown, not yet allowed or already taken`;
+        warnings.push(msg);
+        logger.warn(msg);
+        continue;
+      }
+      seen.add(optionId);
+      bundles.push({ source, grants: [{ type: 'feature', feature: { id: option.featureId } }, ...option.grants] });
     }
   }
 

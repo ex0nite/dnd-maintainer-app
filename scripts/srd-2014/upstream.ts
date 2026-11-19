@@ -27,6 +27,7 @@ export const SNAPSHOT_FILES = {
   levels: '5e-SRD-Levels.json',
   subclasses: '5e-SRD-Subclasses.json',
   features: '5e-SRD-Features.json',
+  spells: '5e-SRD-Spells.json',
 } as const;
 
 export type SnapshotName = keyof typeof SNAPSHOT_FILES;

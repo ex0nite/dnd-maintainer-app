@@ -209,6 +209,21 @@ Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
 - Équipement de départ des classes en choix `bundle-choice` (objets et paquets du SRD ajoutés au catalogue en code) ; ce qui n'a
   pas de prix dans le SRD est marqué `notForSale`.
 
+### D-37 · 2026-11-19 · Les sorts de 2014 sont des données ; les nombres viennent des tables du SRD, pas du jeu de données (story 9.8)
+
+- **Sorts et incantation en données** : les 319 sorts du SRD 5.1 (entrées `spell`), les emplacements (`spell-slots`), la magie de
+  pacte (`pact-magic`), les sorts connus et le livre de sorts (`spell-choice` avec `maxSpellLevel`), les sorts préparés
+  (`spellcasting.prepared`), les sorts de domaine, de serment et de cercle (`spell` toujours préparés), la liste étendue du
+  patron (`spell-list-extension`), les invocations et la métamagie (`feature-picks`) et le don de pacte (`feature-choice`) sont
+  générés par le même script depuis le même instantané. Le moteur 2024 est inchangé : une classe sans table utilise les tables
+  intégrées. Détails : `docs/rules-as-data.md` section 13.
+- **Les nombres sont ceux des tables du SRD.** Le jeu de données donne un nombre d'invocations faux aux niveaux 4 et 6 de
+  l'occultiste (3 et 4 au lieu de 2 et 3) et une métamagie au niveau 16 au lieu de 17 : le convertisseur écrit les nombres du SRD
+  et un test les fige. Les emplacements, sorts mineurs et sorts connus sont comparés par test, à la main, aux tables du SRD.
+- **Sorts préparés = un nombre**, pas une liste (comme en 2024) ; sorts des espèces (cantrip du haut-elfe, Héritage infernal du
+  tieffelin) restent en texte : un choix de sort d'espèce n'a pas d'écran et un octroi d'espèce ne se déclenche pas par niveau.
+- **Limites relevées** : `summaryMax` 4000 (un sort va jusqu'à 3825 caractères), `materialMax` 400.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

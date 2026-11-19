@@ -357,6 +357,47 @@
                 "name": "Bardic Inspiration (d6)",
                 "description": "You can inspire others through stirring words or music. To do so, you use a bonus action on your turn to choose one creature other than yourself within 60 feet of you who can hear you. That creature gains one Bardic Inspiration die, a d6. Once within the next 10 minutes, the creature can roll the die and add the number rolled to one ability check, attack roll, or saving throw it makes. The creature can wait until after it rolls the d20 before deciding to use the Bardic Inspiration die, but must decide before the GM says whether the roll succeeds or fails. Once the Bardic Inspiration die is rolled, it is lost. A creature can have only one Bardic Inspiration die at a time.\n\nYou can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain any expended uses when you finish a long rest.\n\nYour Bardic Inspiration die changes when you reach certain levels in this class. The die becomes a d8 at 5th level, a d10 at 10th level, and a d12 at 15th level."
               }
+            },
+            { "type": "spellcasting", "ability": "cha", "source": "class" },
+            {
+              "type": "spell-slots",
+              "table": [
+                [2],
+                [3],
+                [4, 2],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 2, 1, 1]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:0",
+              "count": 2,
+              "spellList": "bard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:1",
+              "count": 4,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -384,6 +425,14 @@
                 "name": "Song of Rest (d6)",
                 "description": "Beginning at 2nd level, you can use soothing music or oration to help revitalize your wounded allies during a short rest. If you or any friendly creatures who can hear your performance regain hit points at the end of the short rest by spending one or more Hit Dice, each of those creatures regains an extra 1d6 hit points.\n\nThe extra hit points increase when you reach certain levels in this class: to 1d8 at 9th level, to 1d10 at 13th level, and to 1d12 at 17th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:2",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -412,10 +461,37 @@
                 "description": "At 3rd level, you delve into the advanced techniques of a bard college of your choice, such as the College of Lore. Your choice grants you features at 3rd level and again at 6th and 14th level."
               }
             },
-            { "type": "subclass", "classId": "bard", "key": "subclass:class:bard:0" }
+            { "type": "subclass", "classId": "bard", "key": "subclass:class:bard:0" },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:3",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:bard:0", "points": 2, "from": null }] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:bard:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:4",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:5",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -433,6 +509,14 @@
                 "name": "Font of Inspiration",
                 "description": "Beginning when you reach 5th level, you regain all of your expended uses of Bardic Inspiration when you finish a short or long rest."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:6",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
@@ -453,11 +537,42 @@
                 "name": "Bard College feature",
                 "description": "At 3rd level, you delve into the advanced techniques of a bard college of your choice, such as the College of Lore. Your choice grants you features at 3rd level and again at 6th and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:7",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:bard:1", "points": 2, "from": null }] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:8",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:bard:1", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:9",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -467,6 +582,14 @@
                 "name": "Song of Rest (d8)",
                 "description": "Beginning at 2nd level, you can use soothing music or oration to help revitalize your wounded allies during a short rest. If you or any friendly creatures who can hear your performance regain hit points at the end of the short rest by spending one or more Hit Dice, each of those creatures regains an extra 1d6 hit points.\n\nThe extra hit points increase when you reach certain levels in this class: to 1d8 at 9th level, to 1d10 at 13th level, and to 1d12 at 17th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:10",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
             }
           ]
         },
@@ -502,10 +625,36 @@
                 "name": "Magical Secrets",
                 "description": "By 10th level, you have plundered magical knowledge from a wide spectrum of disciplines. Choose two spells from any class, including this one. A spell you choose must be of a level you can cast, as shown on the Bard table, or a cantrip.\n\nThe chosen spells count as bard spells for you and are included in the number in the Spells Known column of the Bard table.\n\nYou learn two additional spells from any class at 14th level and again at 18th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:11",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:12",
+              "count": 2,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
             }
           ]
         },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:13",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 6
+            }
+          ]
+        },
         { "grants": [{ "type": "asi", "key": "asi:class:bard:2", "points": 2, "from": null }] },
         {
           "grants": [
@@ -516,6 +665,14 @@
                 "name": "Song of Rest (d10)",
                 "description": "Beginning at 2nd level, you can use soothing music or oration to help revitalize your wounded allies during a short rest. If you or any friendly creatures who can hear your performance regain hit points at the end of the short rest by spending one or more Hit Dice, each of those creatures regains an extra 1d6 hit points.\n\nThe extra hit points increase when you reach certain levels in this class: to 1d8 at 9th level, to 1d10 at 13th level, and to 1d12 at 17th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:14",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 7
             }
           ]
         },
@@ -536,6 +693,14 @@
                 "name": "Bard College feature",
                 "description": "At 3rd level, you delve into the advanced techniques of a bard college of your choice, such as the College of Lore. Your choice grants you features at 3rd level and again at 6th and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:15",
+              "count": 2,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 7
             }
           ]
         },
@@ -548,6 +713,14 @@
                 "name": "Bardic Inspiration (d12)",
                 "description": "You can inspire others through stirring words or music. To do so, you use a bonus action on your turn to choose one creature other than yourself within 60 feet of you who can hear you. That creature gains one Bardic Inspiration die, a d6. Once within the next 10 minutes, the creature can roll the die and add the number rolled to one ability check, attack roll, or saving throw it makes. The creature can wait until after it rolls the d20 before deciding to use the Bardic Inspiration die, but must decide before the GM says whether the roll succeeds or fails. Once the Bardic Inspiration die is rolled, it is lost. A creature can have only one Bardic Inspiration die at a time.\n\nYou can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain any expended uses when you finish a long rest.\n\nYour Bardic Inspiration die changes when you reach certain levels in this class. The die becomes a d8 at 5th level, a d10 at 10th level, and a d12 at 15th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:16",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 8
             }
           ]
         },
@@ -561,6 +734,14 @@
                 "name": "Song of Rest (d12)",
                 "description": "Beginning at 2nd level, you can use soothing music or oration to help revitalize your wounded allies during a short rest. If you or any friendly creatures who can hear your performance regain hit points at the end of the short rest by spending one or more Hit Dice, each of those creatures regains an extra 1d6 hit points.\n\nThe extra hit points increase when you reach certain levels in this class: to 1d8 at 9th level, to 1d10 at 13th level, and to 1d12 at 17th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:17",
+              "count": 1,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
             }
           ]
         },
@@ -573,6 +754,14 @@
                 "name": "Magical Secrets",
                 "description": "By 10th level, you have plundered magical knowledge from a wide spectrum of disciplines. Choose two spells from any class, including this one. A spell you choose must be of a level you can cast, as shown on the Bard table, or a cantrip.\n\nThe chosen spells count as bard spells for you and are included in the number in the Spells Known column of the Bard table.\n\nYou learn two additional spells from any class at 14th level and again at 18th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:bard:18",
+              "count": 2,
+              "spellList": "bard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
             }
           ]
         },
@@ -676,6 +865,39 @@
                 "name": "Domain Spells",
                 "description": "Each domain has a list of spells--its domain spells--that you gain at the cleric levels noted in the domain description. Once you gain a domain spell, you always have it prepared, and it doesn't count against the number of spells you can prepare each day.\n\nIf you have a domain spell that doesn't appear on the cleric spell list, the spell is nonetheless a cleric spell for you."
               }
+            },
+            { "type": "spellcasting", "ability": "wis", "source": "class", "prepared": { "levelDivisor": 1 } },
+            {
+              "type": "spell-slots",
+              "table": [
+                [2],
+                [3],
+                [4, 2],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 2, 1, 1]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:cleric:0",
+              "count": 3,
+              "spellList": "cleric",
+              "spellLevel": 0
             }
           ]
         },
@@ -719,7 +941,18 @@
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:cleric:0", "points": 2, "from": null }] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:cleric:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:cleric:1",
+              "count": 1,
+              "spellList": "cleric",
+              "spellLevel": 0
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -814,6 +1047,13 @@
                 "name": "Divine Intervention",
                 "description": "Beginning at 10th level, you can call on your deity to intervene on your behalf when your need is great.\n\nImploring your deity's aid requires you to use your action. Describe the assistance you seek, and roll percentile dice. If you roll a number equal to or lower than your cleric level, your deity intervenes. The GM chooses the nature of the intervention; the effect of any cleric spell or cleric domain spell would be appropriate.\n\nIf your deity intervenes, you can't use this feature again for 7 days. Otherwise, you can use it again after you finish a long rest.\n\nAt 20th level, your call for intervention succeeds automatically, no roll required."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:cleric:2",
+              "count": 1,
+              "spellList": "cleric",
+              "spellLevel": 0
             }
           ]
         },
@@ -976,6 +1216,39 @@
                 "name": "Druidic",
                 "description": "You know Druidic, the secret language of druids. You can speak the language and use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful DC 15 Wisdom (Perception) check but can't decipher it without magic."
               }
+            },
+            { "type": "spellcasting", "ability": "wis", "source": "class", "prepared": { "levelDivisor": 1 } },
+            {
+              "type": "spell-slots",
+              "table": [
+                [2],
+                [3],
+                [4, 2],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 2, 1, 1]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:druid:0",
+              "count": 2,
+              "spellList": "druid",
+              "spellLevel": 0
             }
           ]
         },
@@ -1011,7 +1284,14 @@
                 "description": "Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.\n\nYour druid level determines the beasts you can transform into, as shown in the Beast Shapes table. At 2nd level, for example, you can transform into any beast that has a challenge rating of 1/4 or lower that doesn't have a flying or swimming speed.\n\nYou can stay in a beast shape for a number of hours equal to half your druid level (rounded down). You then revert to your normal form unless you expend another use of this feature. You can revert to your normal form earlier by using a bonus action on your turn. You automatically revert if you fall unconscious, drop to 0 hit points, or die.\n\nWhile you are transformed, the following rules apply:\n\n- Your game statistics are replaced by the statistics of the beast, but you retain your alignment, personality, and Intelligence, Wisdom, and Charisma scores. You also retain all of your skill and saving throw proficiencies, in addition to gaining those of the creature. If the creature has the same proficiency as you and the bonus in its stat block is higher than yours, use the creature's bonus instead of yours. If the creature has any legendary or lair actions, you can't use them.\n\n- When you transform, you assume the beast's hit points and Hit Dice. When you revert to your normal form, you return to the number of hit points you had before you transformed. However, if you revert as a result of dropping to 0 hit points, any excess damage carries over to your normal form. For example, if you take 10 damage in animal form and have only 1 hit point left, you revert and take 9 damage. As long as the excess damage doesn't reduce your normal form to 0 hit points, you aren't knocked unconscious.\n\n- You can't cast spells, and your ability to speak or take any action that requires hands is limited to the capabilities of your beast form. Transforming doesn't break your concentration on a spell you've already cast, however, or prevent you from taking actions that are part of a spell, such as call lightning, that you've already cast.\n\n- You retain the benefit of any features from your class, race, or other source and can use them if the new form is physically capable of doing so. However, you can't use any of your special senses, such as darkvision, unless your new form also has that sense.\n\n- You choose whether your equipment falls to the ground in your space, merges into your new form, or is worn by it. Worn equipment functions as normal, but the GM decides whether it is practical for the new form to wear a piece of equipment, based on the creature's shape and size. Your equipment doesn't change size or shape to match the new form, and any equipment that the new form can't wear must either fall to the ground or merge with it. Equipment that merges with the form has no effect until you leave the form."
               }
             },
-            { "type": "asi", "key": "asi:class:druid:0", "points": 2, "from": null }
+            { "type": "asi", "key": "asi:class:druid:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:druid:1",
+              "count": 1,
+              "spellList": "druid",
+              "spellLevel": 0
+            }
           ]
         },
         { "grants": [] },
@@ -1051,6 +1331,13 @@
                 "name": "Druid Circle feature",
                 "description": "At 2nd level, you choose to identify with a circle of druids, such as the Circle of the Land. Your choice grants you features at 2nd level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:druid:2",
+              "count": 1,
+              "spellList": "druid",
+              "spellLevel": 0
             }
           ]
         },
@@ -1831,6 +2118,32 @@
                 "name": "Divine Smite",
                 "description": "Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend."
               }
+            },
+            { "type": "spellcasting", "ability": "cha", "source": "class", "prepared": { "levelDivisor": 2 } },
+            {
+              "type": "spell-slots",
+              "table": [
+                [],
+                [2],
+                [3],
+                [3],
+                [4, 2],
+                [4, 2],
+                [4, 3],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2]
+              ]
             }
           ]
         },
@@ -2097,6 +2410,40 @@
                 "name": "Spellcasting: Ranger",
                 "description": "By the time you reach 2nd level, you have learned to use the magical essence of nature to cast spells, much as a druid does."
               }
+            },
+            { "type": "spellcasting", "ability": "wis", "source": "class" },
+            {
+              "type": "spell-slots",
+              "table": [
+                [],
+                [2],
+                [3],
+                [3],
+                [4, 2],
+                [4, 2],
+                [4, 3],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:0",
+              "count": 2,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -2118,6 +2465,14 @@
                 "name": "Primeval Awareness",
                 "description": "Beginning at 3rd level, you can use your action and expend one ranger spell slot to focus your awareness on the region around you. For 1 minute per level of the spell slot you expend, you can sense whether the following types of creatures are present within 1 mile of you (or within up to 6 miles if you are in your favored terrain): aberrations, celestials, dragons, elementals, fey, fiends, and undead. This feature doesn't reveal the creatures' location or number."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:1",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -2131,6 +2486,14 @@
                 "name": "Extra Attack",
                 "description": "Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:2",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
             }
           ]
         },
@@ -2163,6 +2526,14 @@
                 "name": "Ranger Archetype feature",
                 "description": "At 3rd level, you choose an archetype that you strive to emulate, such as the Hunter. Your choice grants you features at 3rd level and again at 7th, 11th, and 15th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:3",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
             }
           ]
         },
@@ -2179,7 +2550,18 @@
             { "type": "asi", "key": "asi:class:ranger:1", "points": 2, "from": null }
           ]
         },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:4",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2209,11 +2591,30 @@
                 "name": "Ranger Archetype feature",
                 "description": "At 3rd level, you choose an archetype that you strive to emulate, such as the Hunter. Your choice grants you features at 3rd level and again at 7th, 11th, and 15th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:5",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
         { "grants": [{ "type": "asi", "key": "asi:class:ranger:2", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:6",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2243,11 +2644,30 @@
                 "name": "Ranger Archetype feature",
                 "description": "At 3rd level, you choose an archetype that you strive to emulate, such as the Hunter. Your choice grants you features at 3rd level and again at 7th, 11th, and 15th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:7",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
             }
           ]
         },
         { "grants": [{ "type": "asi", "key": "asi:class:ranger:3", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:8",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2260,7 +2680,19 @@
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:ranger:4", "points": 2, "from": null }] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:ranger:4", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:ranger:9",
+              "count": 1,
+              "spellList": "ranger",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2625,7 +3057,48 @@
                 "description": "Choose a sorcerous origin, which describes the source of your innate magical power, such as Draconic Bloodline.\n\nYour choice grants you features when you choose it at 1st level and again at 6th, 14th, and 18th level."
               }
             },
-            { "type": "subclass", "classId": "sorcerer", "key": "subclass:class:sorcerer:0" }
+            { "type": "subclass", "classId": "sorcerer", "key": "subclass:class:sorcerer:0" },
+            { "type": "spellcasting", "ability": "cha", "source": "class" },
+            {
+              "type": "spell-slots",
+              "table": [
+                [2],
+                [3],
+                [4, 2],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 2, 1, 1]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:0",
+              "count": 4,
+              "spellList": "sorcerer",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:1",
+              "count": 2,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
+            }
           ]
         },
         {
@@ -2653,6 +3126,14 @@
                 "name": "Flexible Casting: Converting Spell Slot",
                 "description": "As a bonus action on your turn, you can expend one spell slot and gain a number of sorcery points equal to the slot's level.."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:2",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -2665,11 +3146,169 @@
                 "name": "Metamagic",
                 "description": "At 3rd level, you gain the ability to twist your spells to suit your needs. You gain two of the following Metamagic options of your choice. You gain another one at 10th and 17th level.\n\nYou can use only one Metamagic option on a spell when you cast it, unless otherwise noted."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:3",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:sorcerer:0",
+              "poolId": "sorcerer-metamagic",
+              "count": 2,
+              "options": [
+                {
+                  "optionId": "careful-spell",
+                  "featureId": "metamagic-careful-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-careful-spell",
+                        "name": "Careful Spell",
+                        "description": "When you cast a spell that forces other creatures to make a saving throw, you can protect some of those creatures from the spell's full force. To do so, you spend 1 sorcery point and choose a number of those creatures up to your Charisma modifier (minimum of one creature). A chosen creature automatically succeeds on its saving throw against the spell."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "distant-spell",
+                  "featureId": "metamagic-distant-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-distant-spell",
+                        "name": "Distant Spell",
+                        "description": "When you cast a spell that has a range of 5 feet or greater, you can spend 1 sorcery point to double the range of the spell.\n\nWhen you cast a spell that has a range of touch, you can spend 1 sorcery point to make the range of the spell 30 feet."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "empowered-spell",
+                  "featureId": "metamagic-empowered-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-empowered-spell",
+                        "name": "Empowered Spell",
+                        "description": "When you roll damage for a spell, you can spend 1 sorcery point to reroll a number of the damage dice up to your Charisma modifier (minimum of one). You must use the new rolls.\n\nYou can use Empowered Spell even if you have already used a different Metamagic option during the casting of the spell."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "extended-spell",
+                  "featureId": "metamagic-extended-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-extended-spell",
+                        "name": "Extended Spell",
+                        "description": "When you cast a spell that has a duration of 1 minute or longer, you can spend 1 sorcery point to double its duration, to a maximum duration of 24 hours."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "heightened-spell",
+                  "featureId": "metamagic-heightened-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-heightened-spell",
+                        "name": "Heightened Spell",
+                        "description": "When you cast a spell that forces a creature to make a saving throw to resist its effects, you can spend 3 sorcery points to give one target of the spell disadvantage on its first saving throw made against the spell."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "quickened-spell",
+                  "featureId": "metamagic-quickened-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-quickened-spell",
+                        "name": "Quickened Spell",
+                        "description": "When you cast a spell that has a casting time of 1 action, you can spend 2 sorcery points to change the casting time to 1 bonus action for this casting."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "subtle-spell",
+                  "featureId": "metamagic-subtle-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-subtle-spell",
+                        "name": "Subtle Spell",
+                        "description": "When you cast a spell, you can spend 1 sorcery point to cast it without any somatic or verbal components."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "twinned-spell",
+                  "featureId": "metamagic-twinned-spell",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "metamagic-twinned-spell",
+                        "name": "Twinned Spell",
+                        "description": "When you cast a spell that targets only one creature and doesn't have a range of self, you can spend a number of sorcery points equal to the spell's level to target a second creature in range with the same spell (1 sorcery point if the spell is a cantrip).\n\nTo be eligible, a spell must be incapable of targeting more than one creature at the spell's current level. For example, magic missile and scorching ray aren't eligible, but ray of frost is."
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:sorcerer:0", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:sorcerer:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:4",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:5",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:6",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2679,12 +3318,54 @@
                 "name": "Sorcerous Origin feature",
                 "description": "Choose a sorcerous origin, which describes the source of your innate magical power, such as Draconic Bloodline.\n\nYour choice grants you features when you choose it at 1st level and again at 6th, 14th, and 18th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:7",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:sorcerer:1", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:8",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:sorcerer:1", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:9",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:10",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2694,12 +3375,55 @@
                 "name": "Metamagic",
                 "description": "At 3rd level, you gain the ability to twist your spells to suit your needs. You gain two of the following Metamagic options of your choice. You gain another one at 10th and 17th level.\n\nYou can use only one Metamagic option on a spell when you cast it, unless otherwise noted."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:11",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:12",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:sorcerer:1",
+              "poolId": "sorcerer-metamagic",
+              "count": 1
             }
           ]
         },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:13",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 6
+            }
+          ]
+        },
         { "grants": [{ "type": "asi", "key": "asi:class:sorcerer:2", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:14",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 7
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2712,7 +3436,18 @@
             }
           ]
         },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:15",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 8
+            }
+          ]
+        },
         { "grants": [{ "type": "asi", "key": "asi:class:sorcerer:3", "points": 2, "from": null }] },
         {
           "grants": [
@@ -2723,6 +3458,20 @@
                 "name": "Metamagic",
                 "description": "At 3rd level, you gain the ability to twist your spells to suit your needs. You gain two of the following Metamagic options of your choice. You gain another one at 10th and 17th level.\n\nYou can use only one Metamagic option on a spell when you cast it, unless otherwise noted."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:sorcerer:16",
+              "count": 1,
+              "spellList": "sorcerer",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:sorcerer:2",
+              "poolId": "sorcerer-metamagic",
+              "count": 1
             }
           ]
         },
@@ -2828,6 +3577,47 @@
                 "name": "Pact Magic",
                 "description": "Your arcane research and the magic bestowed on you by your patron have given you facility with spells."
               }
+            },
+            { "type": "spellcasting", "ability": "cha", "source": "class" },
+            {
+              "type": "pact-magic",
+              "table": [
+                { "count": 1, "slotLevel": 1 },
+                { "count": 2, "slotLevel": 1 },
+                { "count": 2, "slotLevel": 2 },
+                { "count": 2, "slotLevel": 2 },
+                { "count": 2, "slotLevel": 3 },
+                { "count": 2, "slotLevel": 3 },
+                { "count": 2, "slotLevel": 4 },
+                { "count": 2, "slotLevel": 4 },
+                { "count": 2, "slotLevel": 5 },
+                { "count": 2, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 3, "slotLevel": 5 },
+                { "count": 4, "slotLevel": 5 },
+                { "count": 4, "slotLevel": 5 },
+                { "count": 4, "slotLevel": 5 },
+                { "count": 4, "slotLevel": 5 }
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:0",
+              "count": 2,
+              "spellList": "warlock",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:1",
+              "count": 2,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -2840,6 +3630,486 @@
                 "name": "Eldritch Invocations",
                 "description": "In your study of occult lore, you have unearthed eldritch invocations, fragments of forbidden knowledge that imbue you with an abiding magical ability.\n\nAt 2nd level, you gain two eldritch invocations of your choice. Your invocation options are detailed at the end of the class description. When you gain certain warlock levels, you gain additional invocations of your choice, as shown in the Invocations Known column of the Warlock table.\n\nAdditionally, when you gain a level in this class, you can choose one of the invocations you know and replace it with another invocation that you could learn at that level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:2",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:0",
+              "poolId": "warlock-invocations",
+              "count": 2,
+              "options": [
+                {
+                  "optionId": "agonizing-blast",
+                  "featureId": "eldritch-invocation-agonizing-blast",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-agonizing-blast",
+                        "name": "Agonizing Blast",
+                        "description": "Prerequisite: the Eldritch Blast cantrip. When you cast eldritch blast, add your Charisma modifier to the damage it deals on a hit."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "armor-of-shadows",
+                  "featureId": "eldritch-invocation-armor-of-shadows",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-armor-of-shadows",
+                        "name": "Armor of Shadows",
+                        "description": "You can cast mage armor on yourself at will, without expending a spell slot or material components."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "ascendant-step",
+                  "featureId": "eldritch-invocation-ascendant-step",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-ascendant-step",
+                        "name": "Ascendant Step",
+                        "description": "Prerequisite: 9th level. You can cast levitate on yourself at will, without expending a spell slot or material components."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 9
+                },
+                {
+                  "optionId": "beast-speech",
+                  "featureId": "eldritch-invocation-beast-speech",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-beast-speech",
+                        "name": "Beast Speech",
+                        "description": "You can cast speak with animals at will, without expending a spell slot."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "beguiling-influence",
+                  "featureId": "eldritch-invocation-beguiling-influence",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-beguiling-influence",
+                        "name": "Beguiling Influence",
+                        "description": "You gain proficiency in the Deception and Persuasion skills."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "bewitching-whispers",
+                  "featureId": "eldritch-invocation-bewitching-whispers",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-bewitching-whispers",
+                        "name": "Bewitching Whispers",
+                        "description": "Prerequisite: 7th level. You can cast compulsion once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 7
+                },
+                {
+                  "optionId": "book-of-ancient-secrets",
+                  "featureId": "eldritch-invocation-book-of-ancient-secrets",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-book-of-ancient-secrets",
+                        "name": "Book of Ancient Secrets",
+                        "description": "Prerequisite: Pact of the Tome. You can now inscribe magical rituals in your Book of Shadows. Choose two 1st-level spells that have the ritual tag from any class's spell list (the two needn't be from the same list). The spells appear in the book and don't count against the number of spells you know. With your Book of Shadows in hand, you can cast the chosen spells as rituals. You can't cast the spells except as rituals, unless you've learned them by some other means. You can also cast a warlock spell you know as a ritual if it has the ritual tag.\n\nOn your adventures, you can add other ritual spells to your Book of Shadows. When you find such a spell, you can add it to the book if the spell's level is equal to or less than half your warlock level (rounded up) and if you can spare the time to transcribe the spell. For each level of the spell, the transcription process takes 2 hours and costs 50 gp for the rare inks needed to inscribe it."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "chains-of-carceri",
+                  "featureId": "eldritch-invocation-chains-of-carceri",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-chains-of-carceri",
+                        "name": "Chains of Carceri",
+                        "description": "Prerequisite: 15th level, Pact of the Chain. You can cast hold monster at will--targeting a celestial, fiend, or elemental--without expending a spell slot or material components. You must finish a long rest before you can use this invocation on the same creature again."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 15
+                },
+                {
+                  "optionId": "devils-sight",
+                  "featureId": "eldritch-invocation-devils-sight",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-devils-sight",
+                        "name": "Devil's Sight",
+                        "description": "You can see normally in darkness, both magical and nonmagical, to a distance of 120 feet."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "dreadful-word",
+                  "featureId": "eldritch-invocation-dreadful-word",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-dreadful-word",
+                        "name": "Dreadful Word",
+                        "description": "Prerequisite: 7th level. You can cast confusion once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 7
+                },
+                {
+                  "optionId": "eldritch-sight",
+                  "featureId": "eldritch-invocation-eldritch-sight",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-eldritch-sight",
+                        "name": "Eldritch Sight",
+                        "description": "You can cast detect magic at will, without expending a spell slot."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "eldritch-spear",
+                  "featureId": "eldritch-invocation-eldritch-spear",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-eldritch-spear",
+                        "name": "Eldritch Spear",
+                        "description": "Prerequisite: the Eldritch Blast cantrip. When you cast eldritch blast, its range is 300 feet."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "eyes-of-the-rune-keeper",
+                  "featureId": "eldritch-invocation-eyes-of-the-rune-keeper",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-eyes-of-the-rune-keeper",
+                        "name": "Eyes of the Rune Keeper",
+                        "description": "You can read all writing."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "fiendish-vigor",
+                  "featureId": "eldritch-invocation-fiendish-vigor",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-fiendish-vigor",
+                        "name": "Fiendish Vigor",
+                        "description": "You can cast false life on yourself at will as a 1st-level spell, without expending a spell slot or material components."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "gaze-of-two-minds",
+                  "featureId": "eldritch-invocation-gaze-of-two-minds",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-gaze-of-two-minds",
+                        "name": "Gaze of Two Minds",
+                        "description": "You can use your action to touch a willing humanoid and perceive through its senses until the end of your next turn. As long as the creature is on the same plane of existence as you, you can use your action on subsequent turns to maintain this connection, extending the duration until the end of your next turn. While perceiving through the other creature's senses, you benefit from any special senses possessed by that creature, and you are blinded and deafened to your own surroundings."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "lifedrinker",
+                  "featureId": "eldritch-invocation-lifedrinker",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-lifedrinker",
+                        "name": "Lifedrinker",
+                        "description": "Prerequisite: 12th level, Pact of the Blade. When you hit a creature with your pact weapon, the creature takes extra necrotic damage equal to your Charisma modifier (minimum 1)."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 12
+                },
+                {
+                  "optionId": "mask-of-many-faces",
+                  "featureId": "eldritch-invocation-mask-of-many-faces",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-mask-of-many-faces",
+                        "name": "Mask of Many Faces",
+                        "description": "You can cast disguise self at will, without expending a spell slot."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "master-of-myriad-forms",
+                  "featureId": "eldritch-invocation-master-of-myriad-forms",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-master-of-myriad-forms",
+                        "name": "Master of Myriad Forms",
+                        "description": "Prerequisite: 15th level. You can cast alter self at will, without expending a spell slot."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 15
+                },
+                {
+                  "optionId": "minions-of-chaos",
+                  "featureId": "eldritch-invocation-minions-of-chaos",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-minions-of-chaos",
+                        "name": "Minions of Chaos",
+                        "description": "Prerequisite: 9th level. You can cast conjure elemental once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 9
+                },
+                {
+                  "optionId": "mire-the-mind",
+                  "featureId": "eldritch-invocation-mire-the-mind",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-mire-the-mind",
+                        "name": "Mire the Mind",
+                        "description": "Prerequisite: 5th level. You can cast slow once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 5
+                },
+                {
+                  "optionId": "misty-visions",
+                  "featureId": "eldritch-invocation-misty-visions",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-misty-visions",
+                        "name": "Misty Visions",
+                        "description": "You can cast silent image at will, without expending a spell slot or material components."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "one-with-shadows",
+                  "featureId": "eldritch-invocation-one-with-shadows",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-one-with-shadows",
+                        "name": "One with Shadows",
+                        "description": "Prerequisite: 5th level. When you are in an area of dim light or darkness, you can use your action to become invisible until you move or take an action or a reaction."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 5
+                },
+                {
+                  "optionId": "otherworldly-leap",
+                  "featureId": "eldritch-invocation-otherworldly-leap",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-otherworldly-leap",
+                        "name": "Otherworldly Leap",
+                        "description": "Prerequisite: 9th level. You can cast jump on yourself at will, without expending a spell slot or material components."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 9
+                },
+                {
+                  "optionId": "repelling-blast",
+                  "featureId": "eldritch-invocation-repelling-blast",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-repelling-blast",
+                        "name": "Repelling Blast",
+                        "description": "Prerequisite: the Eldritch Blast cantrip. When you hit a creature with eldritch blast, you can push the creature up to 10 feet away from you in a straight line."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "sculptor-of-flesh",
+                  "featureId": "eldritch-invocation-sculptor-of-flesh",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-sculptor-of-flesh",
+                        "name": "Sculptor of Flesh",
+                        "description": "Prerequisite: 7th level. You can cast polymorph once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 7
+                },
+                {
+                  "optionId": "sign-of-ill-omen",
+                  "featureId": "eldritch-invocation-sign-of-ill-omen",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-sign-of-ill-omen",
+                        "name": "Sign of Ill Omen",
+                        "description": "Prerequisite: 5th level. You can cast bestow curse once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 5
+                },
+                {
+                  "optionId": "thief-of-five-fates",
+                  "featureId": "eldritch-invocation-thief-of-five-fates",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-thief-of-five-fates",
+                        "name": "Thief of Five Fates",
+                        "description": "You can cast bane once using a warlock spell slot. You can't do so again until you finish a long rest."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "thirsting-blade",
+                  "featureId": "eldritch-invocation-thirsting-blade",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-thirsting-blade",
+                        "name": "Thirsting Blade",
+                        "description": "Prerequisite: 5th level, Pact of the Blade. You can attack with your pact weapon twice, instead of once, whenever you take the Attack action on your turn."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 5
+                },
+                {
+                  "optionId": "visions-of-distant-realms",
+                  "featureId": "eldritch-invocation-visions-of-distant-realms",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-visions-of-distant-realms",
+                        "name": "Visions of Distant Realms",
+                        "description": "Prerequisite: 15th level. You can cast arcane eye at will, without expending a spell slot."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 15
+                },
+                {
+                  "optionId": "voice-of-the-chain-master",
+                  "featureId": "eldritch-invocation-voice-of-the-chain-master",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-voice-of-the-chain-master",
+                        "name": "Voice of the Chain Master",
+                        "description": "Prerequisite: Pact of the Chain. You can communicate telepathically with your familiar and perceive through your familiar's senses as long as you are on the same plane of existence.\n\nAdditionally, while perceiving through your familiar's senses, you can also speak through your familiar in your own voice, even if your familiar is normally incapable of speech."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "whispers-of-the-grave",
+                  "featureId": "eldritch-invocation-whispers-of-the-grave",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-whispers-of-the-grave",
+                        "name": "Whispers of the Grave",
+                        "description": "Prerequisite: 9th level. You can cast speak with dead at will, without expending a spell slot."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 9
+                },
+                {
+                  "optionId": "witch-sight",
+                  "featureId": "eldritch-invocation-witch-sight",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "eldritch-invocation-witch-sight",
+                        "name": "Witch Sight",
+                        "description": "Prerequisite: 15th level. You can see the true form of any shapechanger or creature concealed by illusion or transmutation magic while the creature is within 30 feet of you and within line of sight."
+                      }
+                    }
+                  ],
+                  "minClassLevel": 15
+                }
+              ]
             }
           ]
         },
@@ -2852,11 +4122,103 @@
                 "name": "Pact Boon",
                 "description": "At 3rd level, your otherworldly patron bestows a gift upon you for your loyal service. You gain one of the following features of your choice."
               }
+            },
+            {
+              "type": "feature-choice",
+              "key": "feature-choice:class:warlock:0",
+              "options": [
+                {
+                  "optionId": "chain",
+                  "featureId": "pact-of-the-chain",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "pact-of-the-chain",
+                        "name": "Pact of the Chain",
+                        "description": "You learn the find familiar spell and can cast it as a ritual. The spell doesn't count against your number of spells known.\n\nWhen you cast the spell, you can choose one of the normal forms for your familiar or one of the following special forms: imp, pseudodragon, quasit, or sprite.\n\nAdditionally, when you take the Attack action, you can forgo one of your own attacks to allow your familiar to make one attack of its own with its reaction.\n\nYour familiar is more cunning than a typical familiar. Its default form can be a reflection of your patron, with imps and quasits tied to the Fiend."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "blade",
+                  "featureId": "pact-of-the-blade",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "pact-of-the-blade",
+                        "name": "Pact of the Blade",
+                        "description": "You can use your action to create a pact weapon in your empty hand. You can choose the form that this melee weapon takes each time you create it. You are proficient with it while you wield it. This weapon counts as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.\n\nYour pact weapon disappears if it is more than 5 feet away from you for 1 minute or more. It also disappears if you use this feature again, if you dismiss the weapon (no action required), or if you die.\n\nYou can transform one magic weapon into your pact weapon by performing a special ritual while you hold the weapon. You perform the ritual over the course of 1 hour, which can be done during a short rest. You can then dismiss the weapon, shunting it into an extradimensional space, and it appears whenever you create your pact weapon thereafter. You can't affect an artifact or a sentient weapon in this way. The weapon ceases being your pact weapon if you die, if you perform the 1-hour ritual on a different weapon, or if you use a 1-hour ritual to break your bond to it. The weapon appears at your feet if it is in the extradimensional space when the bond breaks.\n\nIf you serve the Fiend, your weapon could be an axe made of black metal and adorned with decorative flames."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "optionId": "tome",
+                  "featureId": "pact-of-the-tome",
+                  "grants": [
+                    {
+                      "type": "feature",
+                      "feature": {
+                        "id": "pact-of-the-tome",
+                        "name": "Pact of the Tome",
+                        "description": "Your patron gives you a grimoire called a Book of Shadows. When you gain this feature, choose three cantrips from any class's spell list (the three needn't be from the same list). While the book is on your person, you can cast those cantrips at will. They don't count against your number of cantrips known. If they don't appear on the warlock spell list, they are nonetheless warlock spells for you.\n\nIf you lose your Book of Shadows, you can perform a 1-hour ceremony to receive a replacement from your patron. This ceremony can be performed during a short or long rest, and it destroys the previous book. The book turns to ash when you die.\n\nYour Book of Shadows could be a weighty tome bound in demon hide studded with iron, holding spells of conjuration and a wealth of forbidden lore about the sinister regions of the cosmos, a gift of the Fiend."
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:3",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:warlock:0", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:warlock:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:4",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:5",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:6",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:1",
+              "poolId": "warlock-invocations",
+              "count": 1
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2866,12 +4228,66 @@
                 "name": "Otherworldly Patron feature",
                 "description": "At 1st level, you have struck a bargain with an otherworldly being of your choice, such as the Fiend. Your choice grants you features at 1st level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:7",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:warlock:1", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:8",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:2",
+              "poolId": "warlock-invocations",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:warlock:1", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:9",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:10",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:3",
+              "poolId": "warlock-invocations",
+              "count": 1
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2881,6 +4297,13 @@
                 "name": "Otherworldly Patron feature",
                 "description": "At 1st level, you have struck a bargain with an otherworldly being of your choice, such as the Fiend. Your choice grants you features at 1st level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:11",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 0
             }
           ]
         },
@@ -2893,10 +4316,35 @@
                 "name": "Mystic Arcanum (6th level)",
                 "description": "At 11th level, your patron bestows upon you a magical secret called an arcanum. Choose one 6th- level spell from the warlock spell list as this arcanum.\n\nYou can cast your arcanum spell once without expending a spell slot. You must finish a long rest before you can do so again.\n\nAt higher levels, you gain more warlock spells of your choice that can be cast in this way: one 7th- level spell at 13th level, one 8th-level spell at 15th level, and one 9th-level spell at 17th level. You regain all uses of your Mystic Arcanum when you finish a long rest."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:12",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:13",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 6
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:warlock:2", "points": 2, "from": null }] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:warlock:2", "points": 2, "from": null },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:4",
+              "poolId": "warlock-invocations",
+              "count": 1
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -2906,6 +4354,21 @@
                 "name": "Mystic Arcanum (7th level)",
                 "description": "At 11th level, your patron bestows upon you a magical secret called an arcanum. Choose one 6th- level spell from the warlock spell list as this arcanum.\n\nYou can cast your arcanum spell once without expending a spell slot. You must finish a long rest before you can do so again.\n\nAt higher levels, you gain more warlock spells of your choice that can be cast in this way: one 7th- level spell at 13th level, one 8th-level spell at 15th level, and one 9th-level spell at 17th level. You regain all uses of your Mystic Arcanum when you finish a long rest."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:14",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:15",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 7
             }
           ]
         },
@@ -2930,6 +4393,27 @@
                 "name": "Mystic Arcanum (8th level)",
                 "description": "At 11th level, your patron bestows upon you a magical secret called an arcanum. Choose one 6th- level spell from the warlock spell list as this arcanum.\n\nYou can cast your arcanum spell once without expending a spell slot. You must finish a long rest before you can do so again.\n\nAt higher levels, you gain more warlock spells of your choice that can be cast in this way: one 7th- level spell at 13th level, one 8th-level spell at 15th level, and one 9th-level spell at 17th level. You regain all uses of your Mystic Arcanum when you finish a long rest."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:16",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:17",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 8
+            },
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:5",
+              "poolId": "warlock-invocations",
+              "count": 1
             }
           ]
         },
@@ -2943,11 +4427,47 @@
                 "name": "Mystic Arcanum (9th level)",
                 "description": "At 11th level, your patron bestows upon you a magical secret called an arcanum. Choose one 6th- level spell from the warlock spell list as this arcanum.\n\nYou can cast your arcanum spell once without expending a spell slot. You must finish a long rest before you can do so again.\n\nAt higher levels, you gain more warlock spells of your choice that can be cast in this way: one 7th- level spell at 13th level, one 8th-level spell at 15th level, and one 9th-level spell at 17th level. You regain all uses of your Mystic Arcanum when you finish a long rest."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:18",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:19",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 9
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:warlock:4", "points": 2, "from": null }] },
+        {
+          "grants": [
+            {
+              "type": "feature-picks",
+              "key": "feature-picks:class:warlock:6",
+              "poolId": "warlock-invocations",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:warlock:4", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:warlock:20",
+              "count": 1,
+              "spellList": "warlock",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3036,6 +4556,47 @@
                 "usesPerRest": "long",
                 "usesCount": 1
               }
+            },
+            { "type": "spellcasting", "ability": "int", "source": "class", "prepared": { "levelDivisor": 1 } },
+            {
+              "type": "spell-slots",
+              "table": [
+                [2],
+                [3],
+                [4, 2],
+                [4, 3],
+                [4, 3, 2],
+                [4, 3, 3],
+                [4, 3, 3, 1],
+                [4, 3, 3, 2],
+                [4, 3, 3, 3, 1],
+                [4, 3, 3, 3, 2],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 2, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 1, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 1, 1, 1],
+                [4, 3, 3, 3, 3, 2, 2, 1, 1]
+              ]
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:0",
+              "count": 3,
+              "spellList": "wizard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:1",
+              "count": 6,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
             }
           ]
         },
@@ -3049,12 +4610,61 @@
                 "description": "When you reach 2nd level, you choose an arcane tradition, shaping your practice of magic through one of eight schools, such as Evocation.\n\nYour choice grants you features at 2nd level and again at 6th, 10th, and 14th level."
               }
             },
-            { "type": "subclass", "classId": "wizard", "key": "subclass:class:wizard:0" }
+            { "type": "subclass", "classId": "wizard", "key": "subclass:class:wizard:0" },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:2",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 1
+            }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:wizard:0", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:3",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:wizard:0", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:4",
+              "count": 1,
+              "spellList": "wizard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:5",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 2
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:6",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3064,12 +4674,54 @@
                 "name": "Arcane Tradition feature",
                 "description": "When you reach 2nd level, you choose an arcane tradition, shaping your practice of magic through one of eight schools, such as Evocation.\n\nYour choice grants you features at 2nd level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:7",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 3
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:wizard:1", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:8",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:wizard:1", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:9",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 4
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:10",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3079,12 +4731,61 @@
                 "name": "Arcane Tradition feature",
                 "description": "When you reach 2nd level, you choose an arcane tradition, shaping your practice of magic through one of eight schools, such as Evocation.\n\nYour choice grants you features at 2nd level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:11",
+              "count": 1,
+              "spellList": "wizard",
+              "spellLevel": 0
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:12",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 5
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:wizard:2", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:13",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 6
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:wizard:2", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:14",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 6
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:15",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 7
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3094,12 +4795,54 @@
                 "name": "Arcane Tradition feature",
                 "description": "When you reach 2nd level, you choose an arcane tradition, shaping your practice of magic through one of eight schools, such as Evocation.\n\nYour choice grants you features at 2nd level and again at 6th, 10th, and 14th level."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:16",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 7
             }
           ]
         },
-        { "grants": [] },
-        { "grants": [{ "type": "asi", "key": "asi:class:wizard:3", "points": 2, "from": null }] },
-        { "grants": [] },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:17",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 8
+            }
+          ]
+        },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:wizard:3", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:18",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 8
+            }
+          ]
+        },
+        {
+          "grants": [
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:19",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3109,10 +4852,30 @@
                 "name": "Spell Mastery",
                 "description": "At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.\n\nBy spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:20",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
             }
           ]
         },
-        { "grants": [{ "type": "asi", "key": "asi:class:wizard:4", "points": 2, "from": null }] },
+        {
+          "grants": [
+            { "type": "asi", "key": "asi:class:wizard:4", "points": 2, "from": null },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:21",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
+            }
+          ]
+        },
         {
           "grants": [
             {
@@ -3122,6 +4885,14 @@
                 "name": "Signature Spell",
                 "description": "When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.\n\nIf you want to cast either spell at a higher level, you must expend a spell slot as normal."
               }
+            },
+            {
+              "type": "spell-choice",
+              "key": "spell-choice:class:wizard:22",
+              "count": 2,
+              "spellList": "wizard",
+              "spellLevel": 1,
+              "maxSpellLevel": 9
             }
           ]
         }

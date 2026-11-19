@@ -16,7 +16,7 @@ import {
 } from '@/lib/dnd-helpers';
 import { getItemDef, getItemNameKey, WEAPON_CATALOG } from '@/lib/sources/items';
 import { getBundleDef, getBundleNameKey, getItemsForSlot, resolveBundleRef } from '@/lib/sources/bundles';
-import { spellsForList } from '@/lib/rules/ruleset';
+import { spellChoicePool } from '@/lib/rules/ruleset';
 import { ruleKey, type FeatRule } from '@/lib/rules/types';
 import { localizedName } from '@/lib/rules/display';
 import { useActiveRuleSet, useRuleName, useRuleSummary } from '@/hooks/useRuleSet';
@@ -409,8 +409,9 @@ export function ChoicePicker({
             const radioId = `choice-feature-${choice.choiceKey}-${option.optionId}`;
             const labelKey = `features.${option.featureId}.name` as `features.${string}.name`;
             const descKey = `features.${option.featureId}.description` as `features.${string}.description`;
-            const label = t(labelKey, { defaultValue: option.featureId });
-            const description = t(descKey, { defaultValue: '' });
+            // Own text of an SRD or library option (plain text, never a translation key), else the gamedata keys.
+            const label = option.name ?? t(labelKey, { defaultValue: option.featureId });
+            const description = option.description ?? t(descKey, { defaultValue: '' });
             return (
               <div
                 key={option.optionId}
@@ -435,6 +436,71 @@ export function ChoicePicker({
           })}
         </div>
         {currentOptionId !== undefined && (
+          <Button variant="ghost" size="sm" onClick={() => onClear(choice.choiceKey)}>
+            {tc('characterBuilder.equipment.clearSelection')}
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (choice.type === 'feature-picks') {
+    const current = currentDecision?.type === 'feature-picks' ? currentDecision.optionIds : [];
+    const atMax = current.length >= choice.count;
+    const offered = choice.options.filter((o) => (o.minClassLevel ?? 1) <= choice.classLevel);
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            {tc('characterBuilder.pendingChoices.featurePicks', { count: choice.count })}
+          </p>
+          <Badge variant="outline" className="text-xs">
+            {current.length} / {choice.count}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          {offered.map((option) => {
+            const checkId = `choice-picks-${choice.choiceKey}-${option.optionId}`;
+            const isSelected = current.includes(option.optionId);
+            const taken = choice.alreadyChosen.includes(option.optionId) && !isSelected;
+            const label =
+              option.name ??
+              t(`features.${option.featureId}.name` as `features.${string}.name`, {
+                defaultValue: option.featureId,
+              });
+            const description =
+              option.description ??
+              t(`features.${option.featureId}.description` as `features.${string}.description`, { defaultValue: '' });
+            return (
+              <div
+                key={option.optionId}
+                className="flex items-start gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-muted/50"
+              >
+                <Checkbox
+                  id={checkId}
+                  className="mt-1"
+                  checked={isSelected}
+                  disabled={taken || (atMax && !isSelected)}
+                  onCheckedChange={(checked) => {
+                    const next = checked
+                      ? [...current, option.optionId]
+                      : current.filter((id) => id !== option.optionId);
+                    if (next.length === 0) onClear(choice.choiceKey);
+                    else onDecide(choice.choiceKey, { type: 'feature-picks', optionIds: next });
+                  }}
+                />
+                <Label htmlFor={checkId} className="flex-1 cursor-pointer">
+                  <span className="font-medium">{label}</span>
+                  {description ? (
+                    <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+                  ) : null}
+                </Label>
+              </div>
+            );
+          })}
+        </div>
+        {current.length > 0 && (
           <Button variant="ghost" size="sm" onClick={() => onClear(choice.choiceKey)}>
             {tc('characterBuilder.equipment.clearSelection')}
           </Button>
@@ -583,14 +649,16 @@ export function ChoicePicker({
   }
 
   if (choice.type === 'spell-choice') {
-    const pool = spellsForList(rules, choice.spellList, choice.spellLevel);
+    const pool = [...spellChoicePool(rules, choice)].sort((a, b) => a.level - b.level);
     const current = currentDecision?.type === 'spell-choice' ? currentDecision.spellIds : [];
     const atMax = current.length >= choice.count;
 
     const choiceLabel =
-      choice.spellLevel === 0
-        ? tc('characterBuilder.pendingChoices.spellChoice', { count: choice.count })
-        : tc('characterBuilder.pendingChoices.spellChoiceLeveled', { count: choice.count, level: choice.spellLevel });
+      choice.maxSpellLevel !== undefined && choice.maxSpellLevel > choice.spellLevel
+        ? tc('characterBuilder.pendingChoices.spellChoiceUpTo', { count: choice.count, level: choice.maxSpellLevel })
+        : choice.spellLevel === 0
+          ? tc('characterBuilder.pendingChoices.spellChoice', { count: choice.count })
+          : tc('characterBuilder.pendingChoices.spellChoiceLeveled', { count: choice.count, level: choice.spellLevel });
 
     if (pool.length === 0) {
       return (
@@ -610,7 +678,6 @@ export function ChoicePicker({
           {pool.map((spell) => {
             const isSelected = (current as readonly string[]).includes(spell.id);
             const isDisabled = atMax && !isSelected;
-            const nameKey = `spells.${spell.id}.name` as `spells.${string}.name`;
             return (
               <div
                 key={spell.id}
@@ -632,7 +699,12 @@ export function ChoicePicker({
                   }}
                 />
                 <Label htmlFor={`choice-spell-${choice.choiceKey}-${spell.id}`} className="flex-1 cursor-pointer">
-                  {t(nameKey, { defaultValue: spell.id })}
+                  {ruleName('spell', spell.id)}
+                  {choice.maxSpellLevel !== undefined && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {tc('characterSheet.fields.spellLevelLabel', { level: spell.level })}
+                    </span>
+                  )}
                 </Label>
               </div>
             );

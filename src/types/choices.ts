@@ -28,6 +28,7 @@ const CHOICE_CATEGORIES = [
   'lineage-choice',
   'feat-choice',
   'feature-choice',
+  'feature-picks',
   'spell-choice',
 ] as const;
 export type ChoiceCategory = (typeof CHOICE_CATEGORIES)[number];
@@ -98,6 +99,7 @@ export type ChoiceDecision =
   | { readonly type: 'lineage-choice'; readonly lineageId: string }
   | { readonly type: 'feat-choice'; readonly featId: string }
   | { readonly type: 'feature-choice'; readonly optionId: string }
+  | { readonly type: 'feature-picks'; readonly optionIds: readonly string[] }
   | { readonly type: 'spell-choice'; readonly spellIds: readonly string[] };
 
 export interface BuildLevel {

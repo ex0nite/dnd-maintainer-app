@@ -9,7 +9,7 @@ DM creates and edits through the MCP. It is the reference for stories 9.3 to 9.9
 The engine (`src/lib/sources`, `src/lib/resolver`) is a pure pipeline: `collectBundles(build)` assembles `GrantBundle[]` from
 `SpeciesSource`, `ClassSource`, `SubclassSource`, `BackgroundSource`, `FeatSource` and `ItemSource` objects, then
 `resolveCharacter(bundles, choices)` turns them into a `ResolvedCharacter`. Everything those objects contain is a `Grant`
-(a discriminated union of 29 variants in `src/types/grants.ts`), which is plain serializable data.
+(a discriminated union of 33 variants in `src/types/grants.ts`), which is plain serializable data.
 
 Two things make the rules code today, not data:
 
@@ -159,7 +159,7 @@ Guards in the database (the DM is trusted but the MCP writes on their behalf, so
 
 The database cannot run the full Zod schema. **The SQL guard is a structural floor, not the validation**: it checks the
 envelope, the body keys per kind, that every element of a `grants` list (at any depth) is an object whose `type` is one of the
-29 grant types, that names and summaries are strings, bounds, and dangerous text (markup, links, scripts, control and invisible
+33 grant types, that names and summaries are strings, bounds, and dangerous text (markup, links, scripts, control and invisible
 formatting characters). It does not check the inside of a grant (an unknown key in a grant passes the SQL). **Zod is the
 complete check**: the app and the MCP run it before writing, and **the app runs it again when reading**: an entry that fails is
 ignored and reported to the DM, never resolved.
@@ -453,8 +453,8 @@ Recovery, Stroke of Luck, Eldritch Master and the paladin's Channel Divinity. Th
 `-nonmetal` proficiencies (SRD: "Druids will not wear armor or use shields made of metal."). `alchemistssupplies` joined the
 tool vocabulary (the monk's choice of artisan's tools lists it); the 2024 lists are unchanged.
 
-Text only (listed by the generator at each run): spellcasting (slots, spells known and prepared, pact magic, invocations,
-pact boon, Mystic Arcanum, metamagic, domain, oath and circle spells: story 9.8), resource pools (rage, ki, sorcery points,
+Text only (listed by the generator at each run; spellcasting, pact magic, invocations, pact boon, Mystic Arcanum, metamagic, domain,
+oath and circle spells came with story 9.8, section 13): resource pools (rage, ki, sorcery points,
 Wild Shape, Action Surge, Indomitable, Channel Divinity of the cleric: they come as one SRD feature per number of uses, which
 a sheet would list side by side), speed bonuses, advantage and resistance effects, the Draconic sorcerer's AC (13 + Dex has
 no engine formula) and Primal Champion's score cap.
@@ -535,7 +535,7 @@ the refusal for an edition without an engine.
 
 ### 12.6 Limits kept on purpose
 
-- Spells, spell slots, pact magic and invocations are 9.8: a 2014 caster finalizes with its spellcasting as feature text.
+- Spells, spell slots, pact magic and invocations came with story 9.8 (section 13).
 - Starting gold per class (PHB) is not in the SRD: typed by the player.
 - "(if proficient)" in the cleric's equipment is a text condition, not a rule.
 - Personality traits, ideals, bonds and flaws of the background stay free text of the sheet.
@@ -546,3 +546,86 @@ the refusal for an edition without an engine.
 cleric from typed scores), `src/lib/character-builder/steps.test.ts`, `AbilitiesStep.test.tsx` (manual entry), pgTAP `00550`,
 BDD `features/characters/builder-2014.feature`, e2e `2014 builder` in `e2e/player-journeys.e2e.ts` (360 px, English and French),
 and the MCP smoke (a 2014 character created, answered, finalized, compared with the sheet).
+
+## 13. As implemented in story 9.8
+
+### 13.1 The 319 SRD 5.1 spells
+
+- **Generator.** `scripts/srd-2014/convert.ts` (`convertSpells`) converts the snapshot file `spells` (`5e-SRD-Spells.json` of the
+  pinned `5e-database` commit) into `src/lib/rules/srd-2014/spell.json`: 319 entries of kind `spell`, each validated by
+  `parseRuleEntry` (level 0 to 9, school, ritual, concentration, casting time, range, duration, V/S/M components with the
+  material text, classes). The classes are the ones the data set lists for the spell (the spell lists of the SRD); `spellsForList`
+  reads them. The SRD text is the entry's `summary.en`, the "At Higher Levels" paragraph appended; names are English only (no
+  French name yet: open point).
+- **Limits moved.** A spell text goes up to 3825 characters: `RULE_LIMITS.summaryMax` is 4000 (was 2000), `materialMax` 400 for the
+  material component (the longest is 344 characters). Both are application limits only (the database does not check them).
+- **Not in the 2014 SRD layer**: nothing outside the SRD 5.1. The 2014 rule set holds no 2024 spell.
+
+### 13.2 What a caster class gets (all generated from the SRD class tables)
+
+New and extended `Grant` variants (the schemas count 33; each has its resolver and tests):
+
+| Grant                                         | Meaning                                                                                                                                                                                                                              |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spellcasting` + `prepared: { levelDivisor }` | the ability, and for the cleric, druid, wizard (1) and paladin (2) the number of prepared spells: ability modifier + class level / divisor, at least 1. Without `prepared` (bard, ranger, sorcerer, warlock) the class prepares none |
+| `spell-slots` `{ table }`                     | `table[classLevel - 1]` = slots of spell levels 1 to 9 (SRD column "Spell Slots per Spell Level"); placed at the class level where spellcasting starts (1, or 2 for the paladin and ranger)                                          |
+| `pact-magic` `{ table }`                      | `table[classLevel - 1]` = `{ count, slotLevel }` (warlock; the slots return on a short or long rest, already handled by `rest.ts`)                                                                                                   |
+| `spell-choice` + `maxSpellLevel`              | free picks among the spells of the list of levels `spellLevel` to `maxSpellLevel` (the highest level the class has slots for at that level); `spell-choice` without it keeps its exact level (2024, Mystic Arcanum)                  |
+| `spell-list-extension`                        | spells added to a class list for the picks (the Fiend's expanded list); they are learned, not known                                                                                                                                  |
+| `feature-picks`                               | several picks among shared options, added level by level (see 13.3)                                                                                                                                                                  |
+
+- **Resolver.** A class with a `spell-slots` or `pact-magic` grant is "data driven": slots, pact magic and prepared count come from
+  its table at its class level; a class without one (every 2024 class) keeps the built-in tables of `dnd-helpers.ts`. So 2024
+  is unchanged. `ResolvedSpellcasting` gains `knownTotal` (total of the free picks, `null` when none) and `listExtensions`.
+- **Cantrips and spells known** are the NEW picks of each level (`spell-choice` grants numbered per class, like 2024): the
+  difference of the SRD "Cantrips Known" and "Spells Known" columns between two levels. The wizard's spellbook (6 spells at level 1,
+  2 more at every other level, any level up to the slots) is not a column of the data set: the numbers are the SRD text, quoted in
+  the converter. Mystic Arcanum is a fixed-level pick of the warlock list at levels 11, 13, 15 and 17 (6th to 9th level).
+- **Prepared spells are a count, not a list**: the app shows how many the character prepares (sheet: "Spells prepared"); it does
+  not record which ones (the 2024 engine does not either). Ritual casting, spellcasting focus and the swap of a known spell at
+  level-up are text.
+- **Domain, oath and circle spells** are `spell` grants (`alwaysPrepared`) in the subclass at the class level the SRD gives
+  (Life: 1, 3, 5, 7, 9; Devotion: 3, 5, 9, 13, 17); the Circle of the Land puts them in each terrain's option with `minClassLevel` 3, 5,
+  7, 9 (so the terrain chosen at level 2 gives its spells from level 3). The Fiend uses `spell-list-extension`.
+
+### 13.3 Invocations, Pact Boon, Metamagic
+
+- **`feature-picks`**: `{ key, poolId, count, options? }`. Every grant of a pool carries its own key and the number of NEW picks
+  (`count`), so a level-up asks only for the new ones; only the FIRST grant of a pool lists the `options` (the others name the
+  pool), so the invocation texts are stored once (a warlock entry is 27 KB). An option is picked once per pool (a later duplicate
+  is refused, with a warning) and may ask for a class level (`minClassLevel`, from the SRD prerequisite; the other prerequisites,
+  Pact of the Blade and the Eldritch Blast cantrip, are written at the start of the option's text and not enforced).
+- **Decision**: `{ type: 'feature-picks', optionIds: string[] }` (choice category `feature-picks`, stored on the row of the class
+  level that carries the grant, like every choice). A picked option becomes a bundle (`feature` + the option's grants).
+- **Numbers.** The SRD 5.1 tables give invocations known 2 at level 2, 3 at 5, 4 at 7, 5 at 9, 6 at 12, 7 at 15, 8 at 18; Metamagic
+  2 at 3, then 3 at 10 and 4 at 17. The data set's `invocations_known` and `metamagic_known` columns disagree (3 at level 4, 4 at
+  level 6; metamagic at level 16): the converter writes the SRD numbers (`PICK_POOLS`) and checks only the level where each pool
+  starts. A unit test pins them.
+- **Pact Boon** is a `feature-choice` (chain, blade, tome) at warlock level 3, with the SRD text of each pact as the option's
+  feature. The Pact of the Tome's three cantrips "from any class" are text (a `spell-choice` has one list).
+- **PendingChoice** options carry the entry's own `name` / `description` (plain text, never a `gamedata` key) so the builder and
+  the MCP can show them; `feature-choice` options gain the same fields.
+
+### 13.4 Screens and tools
+
+- **Builder and sheet**: the class step lists the pending `feature-picks` and the spell choices (cantrips, spells of any level up to
+  the slots with their level, the patron's expanded spells); the sheet panel shows the prepared count, the free picks as
+  "chosen / total" and the always-prepared spells; slots and pact slots come from the resolved tables (`SpellSlotsPanel`).
+- **Level-up dialog**: it now reads the campaign's rule set (`getGrantsForLevel(classId, level, subclass, rules)`; before it read
+  the 2024 sources only), and receives the character's bundles to offer the right pools and expanded lists.
+- **MCP**: `describePending` / `validateDecision` / `randomDecision` know `feature-picks`; the spell pool follows `maxSpellLevel`
+  and the expanded list; the sheet shows slots, pact magic, prepared count, spells to learn and always-prepared spells, with the
+  option labels.
+
+### 13.5 Limits kept on purpose
+
+- **Prepared spells** are counted, not chosen; the cleric, druid and paladin prepare from the whole list and the wizard from the
+  spellbook at the table.
+- **Species spells**: the High Elf cantrip and the Tiefling's Infernal Legacy stay text (a `spell-choice` or timed spell of a species has
+  no screen yet, and a species grant can not be gated by character level).
+- **Multiclass slots** are not combined (the engine is single-class for spells, as in 2024: `TODO(#93)`); the tables are read at the
+  level of the class that carries them.
+- **Pact of the Tome cantrips**, invocation prerequisites other than the level, Mystic Arcanum "once per long rest" and the swap of a
+  spell or invocation at level-up are text.
+- **French names** of the spells and invocations are missing (English text only), like the rest of the SRD text.
+- **Spell texts** are not shown in the sheet panel (they are in the entry's `summary`, used by the library card).

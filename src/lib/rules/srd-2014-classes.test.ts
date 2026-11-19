@@ -397,31 +397,35 @@ describe('SRD 2014 subclasses', () => {
   const FIRST_LEVELS: Record<string, readonly number[]> = {
     berserker: [3, 6, 10, 14],
     lore: [3, 6, 14],
-    life: [1, 2, 6, 8, 17],
+    // Domain, oath and expanded-list spells add the levels they come with (story 9.8).
+    life: [1, 2, 3, 5, 6, 7, 8, 9, 17],
     land: [2, 3, 5, 6, 7, 9, 10, 14],
     champion: [3, 7, 10, 15, 18],
     'open-hand': [3, 6, 11, 17],
-    devotion: [3, 7, 15, 20],
+    devotion: [3, 5, 7, 9, 13, 15, 17, 20],
     hunter: [3, 7, 11, 15],
     thief: [3, 9, 13, 17],
     draconic: [1, 6, 14, 18],
-    fiend: [1, 6, 10, 14],
+    fiend: [1, 3, 5, 6, 7, 9, 10, 14],
     evocation: [2, 6, 10, 14],
   };
 
-  it.each(Object.entries(FIRST_LEVELS))('%s gets its features at the SRD class levels', (subclassId, levels) => {
-    const entry = (
-      SRD_2014_ENTRIES as readonly {
-        kind: string;
-        id: string;
-        body: { class: ClassId; chosenAtClassLevel: number; features: { classLevel: number }[] };
-      }[]
-    ).find((e) => e.kind === 'subclass' && e.id === subclassId)!;
-    expect(entry.body.features.map((f) => f.classLevel)).toEqual(levels);
-    const classId = entry.body.class;
-    expect(entry.body.chosenAtClassLevel).toBe(FACTS[classId].subclassAt);
-    expect(levels[0]).toBe(FACTS[classId].subclassAt);
-  });
+  it.each(Object.entries(FIRST_LEVELS))(
+    '%s gets its features and spells at the SRD class levels',
+    (subclassId, levels) => {
+      const entry = (
+        SRD_2014_ENTRIES as readonly {
+          kind: string;
+          id: string;
+          body: { class: ClassId; chosenAtClassLevel: number; features: { classLevel: number }[] };
+        }[]
+      ).find((e) => e.kind === 'subclass' && e.id === subclassId)!;
+      expect(entry.body.features.map((f) => f.classLevel)).toEqual(levels);
+      const classId = entry.body.class;
+      expect(entry.body.chosenAtClassLevel).toBe(FACTS[classId].subclassAt);
+      expect(levels[0]).toBe(FACTS[classId].subclassAt);
+    }
+  );
 
   it('applies a chosen subclass at its levels only', () => {
     const choices = { 'subclass:class:fighter:0': { type: 'subclass', subclassId: 'champion' } } as const;

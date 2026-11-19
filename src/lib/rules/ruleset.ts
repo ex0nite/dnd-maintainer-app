@@ -403,6 +403,34 @@ export function spellsForList(rules: RuleSet, classId: string, level?: number): 
   return out;
 }
 
+/** What a `spell-choice` offers: the grant (or its pending choice) and the spells the character's features add to the list. */
+export interface SpellChoiceScope {
+  readonly spellList: string;
+  readonly spellLevel: number;
+  readonly maxSpellLevel?: number;
+  readonly extraSpellIds?: readonly string[];
+}
+
+/**
+ * The spells a `spell-choice` can pick (story 9.8): the list's spells of level `spellLevel` (to `maxSpellLevel` for the
+ * 2014 free picks), plus the spells added to the list by features (`spell-list-extension`) inside the same levels.
+ */
+export function spellChoicePool(rules: RuleSet, scope: SpellChoiceScope): readonly SpellRule[] {
+  const max = scope.maxSpellLevel ?? scope.spellLevel;
+  const inRange = (level: number) => level >= scope.spellLevel && level <= max;
+  const out = new Map<string, SpellRule>();
+  for (const spell of rules.spells.values()) {
+    if ((spell.nativeClasses as readonly string[]).includes(scope.spellList) && inRange(spell.level)) {
+      out.set(spell.id, spell);
+    }
+  }
+  for (const id of scope.extraSpellIds ?? []) {
+    const spell = rules.spells.get(id);
+    if (spell && inRange(spell.level)) out.set(id, spell);
+  }
+  return [...out.values()];
+}
+
 /**
  * Subspecies ids offered for a species (story 9.5), in rule set order (SRD by id, then the library). Only those attached
  * as lineages of the species (see `attachSubspecies`).

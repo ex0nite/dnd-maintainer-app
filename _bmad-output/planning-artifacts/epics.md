@@ -1534,6 +1534,8 @@ So that ma fiche soit juste.
 **When** elle est chargée
 **Then** chaque sort est validé par un schéma et rattaché à ses classes
 
+**Résultat de la 9.8 (2026-11-19) :** les 319 sorts du SRD 5.1 sont des entrées `spell` générées (validées par le schéma, rattachées à leurs classes) ; chaque classe lanceuse de sorts reçoit ses emplacements, sa magie de pacte (Occultiste), ses sorts mineurs et sorts connus (ou livre de sorts du magicien), son nombre de sorts préparés, ses sorts de domaine, de serment et de cercle, la liste étendue du Fiélon, l'Arcanum mystique, ses invocations, son don de pacte et la métamagie de l'ensorceleur, d'après les tables du SRD (D-37, `docs/rules-as-data.md` section 13). Le jeu de données source se trompe sur les invocations (niveaux 4 et 6) et la métamagie (niveau 16) : les nombres du SRD sont écrits dans le convertisseur et figés par test. Restes : sorts préparés comptés mais non listés, sorts d'espèce en texte, noms français des sorts à fournir.
+
 ### Story 9.9 : Fiche PDF et export 2014
 
 As a joueur,

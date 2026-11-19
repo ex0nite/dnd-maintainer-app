@@ -183,6 +183,8 @@
       "lineageChoice": "Choose your lineage",
       "featChoice": "Choose an origin feat",
       "featureChoice": "Choose an option",
+      "featurePicks": "Choose {{count}} option(s)",
+      "spellChoiceUpTo": "Choose {{count}} spell(s) of level 1 to {{level}}",
       "unsupported": "Choice not yet supported: {{type}}",
       "remaining": "remaining",
       "fromSource": "from {{source}}"
@@ -483,6 +485,7 @@
       "spellAttackBonus": "Spell Attack Bonus",
       "spellLevelLabel": "Level {{level}}",
       "spellLevelUnknown": "Unknown level",
+      "preparedSpells": "Spells prepared",
       "chosenOfTarget": "{{chosen}}/{{target}}",
       "source": "Source: {{source}}",
       "maxHp": "Max HP",
