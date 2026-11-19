@@ -621,6 +621,9 @@ export default function CampaignDashboard() {
                   {!canBuildCharacters(campaign.ruleset) && (
                     <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
                   )}
+                  {campaign.ruleset === '2014' && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.spellsLater')}</p>
+                  )}
                 </div>
                 {updateMutation.isError &&
                   !rulesetRefusedByDb &&

@@ -141,15 +141,17 @@ describe('CampaignDashboard: rules edition card', () => {
     expect(screen.getByText('locked')).toBeInTheDocument();
   });
 
-  it('warns that 2014 sheets are not available yet', () => {
+  it('says that 2014 spells come later, without claiming the sheets are unavailable', () => {
     mockCampaign = makeCampaign({ ruleset: '2014' });
     renderDashboard();
-    expect(screen.getByText('notReady')).toBeInTheDocument();
+    expect(screen.getByText('spellsLater')).toBeInTheDocument();
+    expect(screen.queryByText('notReady')).not.toBeInTheDocument();
   });
 
-  it('does not show the warning on a 2024 campaign', () => {
+  it('shows neither note on a 2024 campaign', () => {
     renderDashboard();
     expect(screen.queryByText('notReady')).not.toBeInTheDocument();
+    expect(screen.queryByText('spellsLater')).not.toBeInTheDocument();
   });
 
   it('shows a generic error when the change fails', () => {

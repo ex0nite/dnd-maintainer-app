@@ -261,6 +261,9 @@ export function EquipmentStep({
                   <span className="text-sm text-muted-foreground">{tc('characterBuilder.equipment.gpUnit')}</span>
                 </div>
               </div>
+              {classStartingGold === 0 && (
+                <p className="text-xs text-muted-foreground">{tc('characterBuilder.equipment.goldManualHint')}</p>
+              )}
             </section>
 
             {/* Currency tracker */}
@@ -355,7 +358,7 @@ export function EquipmentStep({
                   {tc('characterBuilder.equipment.catalogGear')}
                 </h3>
                 <div className="grid gap-1">
-                  {GEAR_CATALOG.map((item) => (
+                  {GEAR_CATALOG.filter((item) => !item.notForSale).map((item) => (
                     <div key={item.id} className="flex items-center gap-2 text-sm">
                       <span className="flex-1">{t(getItemNameKey('gear', item.id), { defaultValue: item.id })}</span>
                       <span className="text-muted-foreground w-16 text-right">

@@ -234,6 +234,18 @@ const BACKGROUND_EQUIPMENT: Readonly<Record<string, string>> = {
     'A holy symbol (a gift to you when you entered the priesthood), a prayer book or prayer wheel, 5 sticks of incense, vestments, a set of common clothes, and a pouch containing 15 gp.',
 };
 
+/** The items of the background's equipment line (the gold stays in the text). */
+const BACKGROUND_ITEMS: Readonly<Record<string, readonly (readonly [string, number])[]>> = {
+  acolyte: [
+    ['holy-symbol', 1],
+    ['prayer-book', 1],
+    ['incense-sticks-5', 1],
+    ['vestments', 1],
+    ['common-clothes', 1],
+    ['pouch', 1],
+  ],
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -516,7 +528,7 @@ const convertBackgrounds: Converter = (snapshot, unexpressed) =>
     unexpressed.push({
       kind: 'background',
       id: bg.index,
-      what: 'starting equipment: text only (SRD items arrive with story 9.7)',
+      what: 'the 15 gp pouch: text only (the app tracks no starting gold)',
     });
     unexpressed.push({
       kind: 'background',
@@ -540,6 +552,9 @@ const convertBackgrounds: Converter = (snapshot, unexpressed) =>
           ]
         : []),
       { type: 'feature', feature: { id: `${bg.index}-equipment`, name: 'Equipment', description: equipment } },
+      ...(BACKGROUND_ITEMS[bg.index] ?? fail(`${bg.index}: no equipment items`)).map(
+        ([itemId, quantity]): Grant => ({ type: 'equipment', itemId, quantity })
+      ),
     ];
     return {
       schema: 1,
@@ -713,7 +728,177 @@ function classProficiencies(record: SrdRecord): Grant[] {
   });
 }
 
-/** Starting equipment as text: items become grants with story 9.7 (SRD equipment). */
+/**
+ * Starting equipment of the SRD 5.1 classes as grants (story 9.7): fixed items become `equipment` grants, each "(a) ... or
+ * (b) ..." line a `bundle-choice` whose options are bundles of the item catalog (`src/lib/sources/bundles.ts`). `text` is
+ * the SRD sentence the data set yields; the converter fails when the snapshot says something else, so a change of the
+ * data set is reviewed rather than ignored. Where the SRD says "(if proficient)" (cleric: warhammer, chain mail) the option
+ * stays offered and the feature text keeps the condition.
+ */
+interface StartingKit {
+  readonly text: string;
+  readonly fixed: readonly (readonly [string, number])[];
+  readonly choices: readonly { readonly category: string; readonly bundles: readonly string[] }[];
+}
+
+const PACKS_DE = ['dungeoneers-pack', 'explorers-pack'] as const;
+
+const STARTING_KITS: Readonly<Record<string, StartingKit>> = {
+  barbarian: {
+    text: "You start with the following equipment: Explorer's Pack; 4 Javelin; (a) a greataxe or (b) any martial melee weapon; (a) two handaxes or (b) any simple weapon.",
+    fixed: [
+      ['explorers-pack', 1],
+      ['javelin', 4],
+    ],
+    choices: [
+      { category: 'melee-weapon', bundles: ['single-greataxe', 'any-martial-melee-weapon'] },
+      { category: 'melee-weapon', bundles: ['two-handaxes', 'any-simple-weapon'] },
+    ],
+  },
+  bard: {
+    text: 'You start with the following equipment: Leather Armor; Dagger; (a) a rapier, (b) a longsword, or (c) any simple weapon; (a) a diplomat’s pack or (b) an entertainer’s pack; (a) a lute or (b) any other musical instrument.',
+    fixed: [
+      ['leather', 1],
+      ['dagger', 1],
+    ],
+    choices: [
+      { category: 'melee-weapon', bundles: ['single-rapier', 'single-longsword', 'any-simple-weapon'] },
+      { category: 'pack', bundles: ['diplomats-pack', 'entertainers-pack'] },
+      { category: 'gear', bundles: ['single-lute', 'single-musical-instrument'] },
+    ],
+  },
+  cleric: {
+    text: 'You start with the following equipment: Shield; (a) a mace or (b) a warhammer (if proficient); (a) scale mail, (b) leather armor, or (c) chain mail (if proficient); (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a priest’s pack or (b) an explorer’s pack; holy symbol.',
+    fixed: [
+      ['shield', 1],
+      ['holy-symbol', 1],
+    ],
+    choices: [
+      { category: 'melee-weapon', bundles: ['single-mace', 'single-warhammer'] },
+      { category: 'armor', bundles: ['single-scale-mail', 'single-leather-armor', 'single-chain-mail'] },
+      { category: 'ranged-weapon', bundles: ['light-crossbow-kit', 'any-simple-weapon'] },
+      { category: 'pack', bundles: ['priests-pack', 'explorers-pack'] },
+    ],
+  },
+  druid: {
+    text: "You start with the following equipment: Leather Armor; Explorer's Pack; (a) a wooden shield or (b) any simple weapon; (a) a scimitar or (b) any simple melee weapon; druidic focus.",
+    fixed: [
+      ['leather', 1],
+      ['explorers-pack', 1],
+      ['druidic-focus', 1],
+    ],
+    choices: [
+      { category: 'armor', bundles: ['single-shield', 'any-simple-weapon'] },
+      { category: 'melee-weapon', bundles: ['single-scimitar', 'any-simple-melee-weapon'] },
+    ],
+  },
+  fighter: {
+    text: 'You start with the following equipment: (a) chain mail or (b) leather armor, longbow, and 20 arrows; (a) a martial weapon and a shield or (b) two martial weapons; (a) a light crossbow and 20 bolts or (b) two handaxes; (a) a dungeoneer’s pack or (b) an explorer’s pack.',
+    fixed: [],
+    choices: [
+      { category: 'loadout', bundles: ['fighter-chainmail', 'fighter-archer-kit'] },
+      { category: 'melee-weapon', bundles: ['martial-weapon-and-shield', 'two-martial-weapons'] },
+      { category: 'ranged-weapon', bundles: ['light-crossbow-kit', 'two-handaxes'] },
+      { category: 'pack', bundles: PACKS_DE },
+    ],
+  },
+  monk: {
+    text: 'You start with the following equipment: 10 Dart; (a) a shortsword or (b) any simple weapon; (a) a dungeoneer’s pack or (b) an explorer’s pack.',
+    fixed: [['dart', 10]],
+    choices: [
+      { category: 'melee-weapon', bundles: ['single-shortsword', 'any-simple-weapon'] },
+      { category: 'pack', bundles: PACKS_DE },
+    ],
+  },
+  paladin: {
+    text: 'You start with the following equipment: Chain Mail; (a) a martial weapon and a shield or (b) two martial weapons; (a) five javelins or (b) any simple melee weapon; (a) a priest’s pack or (b) an explorer’s pack; holy symbol.',
+    fixed: [
+      ['chain-mail', 1],
+      ['holy-symbol', 1],
+    ],
+    choices: [
+      { category: 'melee-weapon', bundles: ['martial-weapon-and-shield', 'two-martial-weapons'] },
+      { category: 'ranged-weapon', bundles: ['five-javelins', 'any-simple-melee-weapon'] },
+      { category: 'pack', bundles: ['priests-pack', 'explorers-pack'] },
+    ],
+  },
+  ranger: {
+    text: 'You start with the following equipment: Longbow; 20 Arrow; (a) scale mail or (b) leather armor; (a) two shortswords or (b) two simple melee weapons; (a) a dungeoneer’s pack or (b) an explorer’s pack.',
+    fixed: [
+      ['longbow', 1],
+      ['arrows-20', 1],
+    ],
+    choices: [
+      { category: 'armor', bundles: ['single-scale-mail', 'single-leather-armor'] },
+      { category: 'melee-weapon', bundles: ['two-shortswords', 'two-simple-melee-weapons'] },
+      { category: 'pack', bundles: PACKS_DE },
+    ],
+  },
+  rogue: {
+    text: "You start with the following equipment: Leather Armor; 2 Dagger; Thieves' Tools; (a) a rapier or (b) a shortsword; (a) a shortbow and quiver of 20 arrows or (b) a shortsword; (a) a burglar’s pack, (b) a dungeoneer’s pack, or (c) an explorer’s pack.",
+    fixed: [
+      ['leather', 1],
+      ['dagger', 2],
+      ['thieves-tools', 1],
+    ],
+    choices: [
+      { category: 'melee-weapon', bundles: ['rogue-rapier', 'rogue-shortsword-melee'] },
+      { category: 'ranged-weapon', bundles: ['rogue-shortbow-kit', 'rogue-shortsword-ranged'] },
+      { category: 'pack', bundles: ['burglars-pack', 'dungeoneers-pack', 'explorers-pack'] },
+    ],
+  },
+  sorcerer: {
+    text: 'You start with the following equipment: 2 Dagger; (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a component pouch or (b) an arcane focus; (a) a dungeoneer’s pack or (b) an explorer’s pack.',
+    fixed: [['dagger', 2]],
+    choices: [
+      { category: 'ranged-weapon', bundles: ['light-crossbow-kit', 'any-simple-weapon'] },
+      { category: 'gear', bundles: ['single-component-pouch', 'single-arcane-focus'] },
+      { category: 'pack', bundles: PACKS_DE },
+    ],
+  },
+  warlock: {
+    text: 'You start with the following equipment: 2 Dagger; Leather Armor; (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a component pouch or (b) an arcane focus; (a) a scholar’s pack or (b) a dungeoneer’s pack; any simple weapon.',
+    fixed: [
+      ['dagger', 2],
+      ['leather', 1],
+    ],
+    choices: [
+      { category: 'ranged-weapon', bundles: ['light-crossbow-kit', 'any-simple-weapon'] },
+      { category: 'gear', bundles: ['single-component-pouch', 'single-arcane-focus'] },
+      { category: 'pack', bundles: ['scholars-pack', 'dungeoneers-pack'] },
+      { category: 'melee-weapon', bundles: ['any-simple-weapon'] },
+    ],
+  },
+  wizard: {
+    text: 'You start with the following equipment: Spellbook; (a) a quarterstaff or (b) a dagger; (a) a component pouch or (b) an arcane focus; (a) a scholar’s pack or (b) an explorer’s pack.',
+    fixed: [['spellbook', 1]],
+    choices: [
+      { category: 'melee-weapon', bundles: ['single-quarterstaff', 'single-dagger'] },
+      { category: 'gear', bundles: ['single-component-pouch', 'single-arcane-focus'] },
+      { category: 'pack', bundles: ['scholars-pack', 'explorers-pack'] },
+    ],
+  },
+};
+
+function startingEquipmentGrants(classId: string, text: string, keys: ChoiceKeys): Grant[] {
+  const kit = STARTING_KITS[classId] ?? fail(`${classId}: no starting equipment table`);
+  if (kit.text !== text) {
+    fail(`${classId}: the SRD starting equipment changed.\n  expected: ${kit.text}\n  data set: ${text}`);
+  }
+  return [
+    ...kit.fixed.map(([itemId, quantity]): Grant => ({ type: 'equipment', itemId, quantity })),
+    ...kit.choices.map(
+      (c): Grant => ({
+        type: 'bundle-choice',
+        key: keys.key('bundle-choice'),
+        category: c.category,
+        bundleIds: [...c.bundles],
+      })
+    ),
+  ];
+}
+
+/** Starting equipment as the SRD sentence (kept as a feature next to the grants, with its conditions). */
 function startingEquipmentText(record: SrdRecord): string {
   const fixed = ((record.starting_equipment as readonly { equipment: Ref; quantity: number }[] | undefined) ?? []).map(
     (e) => {
@@ -813,11 +998,7 @@ const convertClasses: Converter = (snapshot, unexpressed) =>
             description: startingEquipmentText(cls),
           },
         });
-        unexpressed.push({
-          kind: 'class',
-          id: classId,
-          what: 'starting equipment: text only (SRD items arrive with story 9.7)',
-        });
+        grants.push(...startingEquipmentGrants(classId, startingEquipmentText(cls), keys));
       }
       for (const ref of row.features) {
         if (isAsiFeature(ref.index)) continue;

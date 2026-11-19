@@ -17,6 +17,7 @@ import { builtin2024RuleSet, classOfSubclass } from '@/lib/rules/ruleset';
 import type { RuleSet } from '@/lib/rules/types';
 import { useActiveRuleSet } from '@/hooks/useRuleSet';
 import { resolveCharacter, type PersistedItem } from '@/lib/resolver/index';
+import type { AbilityMethod } from '@/lib/ability-scores';
 import { toast } from 'sonner';
 import i18next from 'i18next';
 
@@ -26,7 +27,7 @@ import i18next from 'i18next';
 
 export interface CreationUpdates {
   base_abilities?: AbilityScores;
-  ability_method?: 'standard-array' | 'point-buy' | 'rolling';
+  ability_method?: AbilityMethod;
   choices?: Record<ChoiceKey, ChoiceDecision>;
 }
 

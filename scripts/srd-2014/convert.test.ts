@@ -65,9 +65,11 @@ describe('SRD 2014 generator', () => {
     expect(entries.class).toHaveLength(12);
     expect(entries.subclass).toHaveLength(12);
     expect(unexpressed.some((u) => u.kind === 'class' && u.id === 'wizard' && /text only/.test(u.what))).toBe(true);
-    expect(unexpressed.some((u) => u.kind === 'class' && u.id === 'fighter' && /starting equipment/.test(u.what))).toBe(
-      true
-    );
+    // Starting equipment is grants since story 9.7: no longer reported as text only.
+    expect(unexpressed.some((u) => u.kind === 'class' && /starting equipment/.test(u.what))).toBe(false);
+    const fighter = entries.class?.find((e) => e.id === 'fighter');
+    const grants = (fighter?.body as { levels: { grants: { type: string }[] }[] }).levels[0].grants;
+    expect(grants.filter((g) => g.type === 'bundle-choice')).toHaveLength(4);
   });
 
   it('refuses a class whose Ability Score Improvement features disagree with the level table', () => {
