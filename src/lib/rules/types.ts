@@ -23,7 +23,7 @@ export interface SpeciesRule {
 
 export interface SubspeciesRule {
   readonly id: string;
-  /** Parent species id. Consumed by the 2014 engine (story 9.5); stored and validated from 9.3. */
+  /** Parent species id: the subspecies is offered as a lineage of that species, its grants added to the species grants (9.5). */
   readonly parent: string;
   readonly grants: readonly Grant[];
 }
@@ -86,7 +86,7 @@ export interface RuleSet {
   readonly ruleset: RulesetId;
   readonly species: ReadonlyMap<string, SpeciesRule>;
   readonly lineages: ReadonlyMap<string, LineageGrants>;
-  /** Own names of the lineages of SRD and library species (built-in lineages use `gamedata`). */
+  /** Own names of the lineages of SRD and library species, subspecies included (built-in lineages use `gamedata`). */
   readonly lineageNames: ReadonlyMap<string, ReadonlyMap<string, LocalizedName>>;
   readonly subspecies: ReadonlyMap<string, SubspeciesRule>;
   readonly classes: ReadonlyMap<string, ClassRule>;

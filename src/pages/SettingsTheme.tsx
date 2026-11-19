@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Sun, Moon, Monitor, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/components/ThemeProvider';
+import { LicensesSection } from '@/components/LicensesSection';
 import { ThemePicker } from '@/components/ThemePicker';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -130,6 +131,8 @@ export default function SettingsTheme(): React.JSX.Element {
             </div>
           )}
         </section>
+
+        <LicensesSection />
       </div>
     </div>
   );

@@ -39,6 +39,8 @@ import { ITEM_SOURCES } from '@/lib/sources/items';
 import { LINEAGE_GRANTS_REGISTRY, SPECIES_SOURCES } from '@/lib/sources/species';
 import { SPELL_CATALOG } from '@/lib/sources/spells';
 import { SUBCLASS_IDS_BY_CLASS, SUBCLASS_SOURCES } from '@/lib/sources/subclasses';
+import { createChoiceKey } from '@/types/choices';
+import type { LineageChoiceGrant } from '@/types/grants';
 import type { SpellDef } from '@/types/spells';
 
 const logger = getLogger('rules');
@@ -268,6 +270,33 @@ function addLayer(
 }
 
 /**
+ * Story 9.5: a subspecies is offered as a lineage of its parent species. Its grants join the parent's lineages (a new
+ * object: the built-in lineage maps are shared and never mutated) and its own name joins `lineageNames`, so the engine,
+ * the lineage picker and the sheet treat it like any lineage. A subspecies whose parent is not in the rule set, or whose id
+ * is already a lineage of the parent, is left out (logged): it stays listed in `subspecies` but is offered to nobody.
+ */
+function attachSubspecies(d: Draft): void {
+  for (const sub of d.subspecies.values()) {
+    if (!d.species.has(sub.parent)) {
+      logger.warn(`Subspecies ${sub.id} is offered to nobody: no species "${sub.parent}" in the ${d.ruleset} rules`);
+      continue;
+    }
+    const lineages = d.lineages.get(sub.parent) ?? {};
+    if (Object.prototype.hasOwnProperty.call(lineages, sub.id)) {
+      logger.warn(`Subspecies ${sub.id} is offered to nobody: "${sub.parent}" already has a lineage with that id`);
+      continue;
+    }
+    d.lineages.set(sub.parent, Object.freeze({ ...lineages, [sub.id]: sub.grants }));
+    const name = d.entries.get(ruleKey('subspecies', sub.id))?.name;
+    if (name) {
+      const names = new Map(d.lineageNames.get(sub.parent) ?? []);
+      names.set(sub.id, name);
+      d.lineageNames.set(sub.parent, names);
+    }
+  }
+}
+
+/**
  * The rule set handed to the engine. Invariant: nobody mutates it. The maps are typed `ReadonlyMap` and the built-in
  * values are the shared objects of `src/lib/sources/*` (one `builtin2024RuleSet()` for the whole app): the object and
  * its lists are frozen, the maps are not (a frozen Map still accepts `set`), so the invariant is kept by the types.
@@ -332,6 +361,7 @@ export function buildRuleSet(
     return false;
   });
   addLayer(d, 'library', own);
+  attachSubspecies(d);
   return freeze(d);
 }
 
@@ -371,6 +401,50 @@ export function spellsForList(rules: RuleSet, classId: string, level?: number): 
     }
   }
   return out;
+}
+
+/**
+ * Subspecies ids offered for a species (story 9.5), in rule set order (SRD by id, then the library). Only those attached
+ * as lineages of the species (see `attachSubspecies`).
+ */
+export function subspeciesOf(rules: RuleSet, speciesId: string): readonly string[] {
+  const lineages = rules.lineages.get(speciesId);
+  if (!lineages) return [];
+  const out: string[] = [];
+  for (const sub of rules.subspecies.values()) {
+    // Same grants object: attached by `attachSubspecies`, not a lineage of the species that merely shares the id.
+    if (
+      sub.parent === speciesId &&
+      Object.prototype.hasOwnProperty.call(lineages, sub.id) &&
+      lineages[sub.id] === sub.grants
+    ) {
+      out.push(sub.id);
+    }
+  }
+  return out;
+}
+
+/**
+ * The choice of subspecies of a species, or null when it has none (story 9.5). It is a `lineage-choice` grant: the
+ * decision is stored like any lineage (`{ type: 'lineage-choice', lineageId: <subspecies id> }` in the creation row) and
+ * expands into the subspecies grants, on top of the species grants. Its key is
+ * `lineage-choice:species:<species>:<n>`, n being the first index the species' own lineage choices do not use (0 for
+ * every SRD species with subspecies; a species with its own lineage choice, such as the dragonborn, would get 1).
+ */
+export function subspeciesChoice(rules: RuleSet, speciesId: string): LineageChoiceGrant | null {
+  const from = subspeciesOf(rules, speciesId);
+  if (from.length === 0) return null;
+  const used = new Set(
+    (rules.species.get(speciesId)?.grants ?? []).flatMap((g) => (g.type === 'lineage-choice' ? [g.key as string] : []))
+  );
+  let index = 0;
+  while (used.has(createChoiceKey('lineage-choice', 'species', speciesId, index))) index++;
+  return {
+    type: 'lineage-choice',
+    key: createChoiceKey('lineage-choice', 'species', speciesId, index),
+    speciesId,
+    from,
+  };
 }
 
 /** Class owning a subclass id in this rule set, or undefined. */
