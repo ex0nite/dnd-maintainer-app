@@ -415,3 +415,39 @@ describe('downloadFile', () => {
     expect(removeChildSpy).toHaveBeenCalledWith(fakeAnchor);
   });
 });
+
+describe('generateSeedSql: the rules of the campaigns (story 9.9)', () => {
+  const data: ExportData = {
+    campaigns: [{ id: 'camp-1', name: 'Ravenloft', ruleset: '2014' }],
+    campaign_dm: [],
+    character_private: [],
+    session_dm: [],
+    characters: [],
+    sessions: [],
+    encounters: [],
+    notes: [],
+    character_build_levels: [],
+    character_items: [],
+    rule_entries: [
+      { ruleset: '2014', kind: 'feat', id: 'grim-resolve', content: { id: 'grim-resolve', note: "d'or" }, revision: 3 },
+    ],
+  };
+
+  it('carries the rules edition of the campaign', () => {
+    expect(generateSeedSql(data)).toMatch(/INSERT INTO campaigns \(.*ruleset.*\) VALUES \(.*'2014'.*\)/);
+  });
+
+  it('carries the library entries, restored on their own key and before the campaigns', () => {
+    const sql = generateSeedSql(data);
+    expect(sql).toContain('INSERT INTO rule_entries (ruleset, kind, id, content, revision, overrides_builtin,');
+    expect(sql).toContain('\'grim-resolve\', \'{"id":"grim-resolve","note":"d\'\'or"}\'::jsonb, 3');
+    expect(sql).toContain('ON CONFLICT (ruleset, kind, id) DO NOTHING');
+    expect(sql.indexOf('INSERT INTO rule_entries')).toBeLessThan(sql.indexOf('INSERT INTO campaigns'));
+  });
+
+  it('still exports without a library (older callers)', () => {
+    const { rule_entries: _omitted, ...without } = data;
+    void _omitted;
+    expect(generateSeedSql(without)).not.toContain('rule_entries');
+  });
+});

@@ -11,6 +11,8 @@ export type ExportData = Readonly<{
   notes: readonly Record<string, unknown>[];
   character_build_levels: readonly Record<string, unknown>[];
   character_items: readonly Record<string, unknown>[];
+  /** The DM rules library of the editions of the exported campaigns (story 9.9). Optional: older callers omit it. */
+  rule_entries?: readonly Record<string, unknown>[];
 }>;
 
 interface ColumnDef {
@@ -160,12 +162,23 @@ const TABLE_COLUMNS = {
     { name: 'created_at', type: 'timestamptz' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
+  rule_entries: [
+    { name: 'ruleset', type: 'text' },
+    { name: 'kind', type: 'text' },
+    { name: 'id', type: 'text' },
+    { name: 'content', type: 'jsonb' },
+    { name: 'revision', type: 'integer' },
+    { name: 'overrides_builtin', type: 'boolean' },
+    { name: 'created_at', type: 'timestamptz' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
 } as const satisfies Readonly<Record<string, readonly ColumnDef[]>>;
 
 type TableName = keyof typeof TABLE_COLUMNS;
 
 // Order matters: parent tables before children for foreign key constraints
 const TABLE_ORDER: readonly TableName[] = [
+  'rule_entries',
   'campaigns',
   'campaign_dm',
   'characters',
@@ -184,6 +197,7 @@ const CONFLICT_TARGETS: Partial<Record<TableName, string>> = {
   character_private: '(character_id)',
   session_dm: '(session_id)',
   character_build_levels: '(character_id, sequence)',
+  rule_entries: '(ruleset, kind, id)',
 };
 
 // Rows a trigger creates on its own (the empty `campaign_dm` row of a new campaign) must not hide the

@@ -3,7 +3,12 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import type { ExportData as ExportDataType } from '@/lib/export-sql';
 import { downloadFile, generateSeedSql } from '@/lib/export-sql';
 import { getLogger } from '@/lib/logger';
-import { fetchExportCharacterTables, fetchExportSessionTables, fetchExportTables } from '@/hooks/dataAccess';
+import {
+  fetchExportCharacterTables,
+  fetchExportRuleEntries,
+  fetchExportSessionTables,
+  fetchExportTables,
+} from '@/hooks/dataAccess';
 import { AlertCircle, CheckSquare, Download, Loader2, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -128,6 +133,23 @@ export default function ExportData() {
         sessionDmData = (sessionDmRes.data ?? []) as Record<string, unknown>[];
       }
 
+      // The rules of the campaigns: the edition is a column of the campaign (exported above), the library of its edition
+      // follows it (story 9.9).
+      const rulesets = Array.from(
+        new Set(
+          (campaignsRes.data as Record<string, unknown>[]).map((c) => c.ruleset).filter((r) => typeof r === 'string')
+        )
+      ) as string[];
+      let ruleEntriesData: Record<string, unknown>[] = [];
+      if (rulesets.length > 0) {
+        const ruleEntriesRes = await fetchExportRuleEntries(rulesets);
+        if (ruleEntriesRes.error) {
+          logger.error('Export fetch failed (rule_entries):', ruleEntriesRes.error);
+          throw new Error(t('export.fetchFailed'));
+        }
+        ruleEntriesData = (ruleEntriesRes.data ?? []) as Record<string, unknown>[];
+      }
+
       const data: ExportDataType = {
         campaigns: campaignsRes.data,
         campaign_dm: campaignDmRes.data ?? [],
@@ -139,6 +161,7 @@ export default function ExportData() {
         notes: notesRes.data ?? [],
         character_build_levels: buildLevelsData,
         character_items: itemsData,
+        rule_entries: ruleEntriesData,
       };
 
       const sql = generateSeedSql(data);

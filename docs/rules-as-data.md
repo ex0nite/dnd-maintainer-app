@@ -629,3 +629,47 @@ New and extended `Grant` variants (the schemas count 33; each has its resolver a
   spell or invocation at level-up are text.
 - **French names** of the spells and invocations are missing (English text only), like the rest of the SRD text.
 - **Spell texts** are not shown in the sheet panel (they are in the entry's `summary`, used by the library card).
+
+## 14. As implemented in story 9.9
+
+### 14.1 The 2014 sheet, drawn
+
+- **No template.** The 2014 character sheet of Wizards of the Coast is not part of the SRD 5.1 and can not be redistributed, so the
+  2014 export does not fill a PDF form: `src/lib/pdf-sheet-2014.ts` draws the sheet with `pdf-lib` (A4, Helvetica). Nothing to
+  supply, nothing to keep out of the repository. The 2024 export is unchanged (it still fills the official 2024 form when the
+  player supplies it, `public/assets/README.md`).
+- **Which export runs.** `exportCharacterPdf` takes the 2014 path when `opts.rules.ruleset` is `2014` (the campaign's rule set,
+  as passed by the character sheet); it then needs `opts.labels` (`pdfLabels2014(tc)`, the `characterSheet.pdf2014.*` keys of the
+  `common` namespace, French and English; a test checks both languages for every key).
+- **Two layers**, like the 2024 export: `buildSheet2014` is a pure function from the resolved character to the text of every field
+  (unit tested); `renderSheet2014` draws it. Names come from the rule-aware `gamedata` translator (SRD and library entries print
+  their own names).
+- **Fields of the 2014 sheet**: name; class (and subclass) and level; background; player name; race; alignment; experience points
+  (blank box); inspiration; proficiency bonus; the six abilities (modifier and score); saving throws and the 18 skills with their
+  proficiency marks (expertise marked "x2"); passive Wisdom (Perception); armor class; initiative; speed; hit point maximum; hit
+  dice; attacks; then text blocks that flow over as many pages as needed: features and traits (class, subclass, species,
+  background, feats), other proficiencies and languages, equipment, personality traits, ideals, bonds, flaws, appearance,
+  backstory, and the spellcasting block (class, ability, save DC, attack bonus, slots or pact slots, cantrips and spells by
+  level). 2024 concepts (weapon mastery, heroic inspiration wording) are not printed.
+- **SRD attribution.** When the species, class, subclass, background, a spell, a feat or an item of the sheet is an entry of the
+  `srd-2014` layer, every page carries the CC-BY 4.0 notice of section 7 in its footer (`SRD_ATTRIBUTION_2014`, English as the
+  SRD). A sheet made only of library or built-in content carries no notice.
+- **Text.** Helvetica holds WinAnsi only: typographic dashes are folded to `-`, any other character the font can not encode is
+  printed as `?` (never an exception).
+
+### 14.2 The DM's data export
+
+- `ExportData` now also exports `rule_entries` (the DM library) of the editions of the selected campaigns, restored on
+  `(ruleset, kind, id)` before the campaigns. The campaign row already carried its edition (`campaigns.ruleset`), so the file
+  holds both the rules field and the campaign's own rules. The library of an edition the selected campaigns do not follow is not
+  exported. The insert trigger of `rule_entries` resets `revision` to 1 on restore (the value of the file is informative).
+- SRD 2014 entries are code (the generated JSON), not rows: they are not exported.
+
+### 14.3 Limits kept on purpose
+
+- Hit dice: the resolver grants one hit die per class, not per level; the sheet prints the character level times the die when the
+  character has one die size, and the resolver's own count (one per class) when dice differ (multiclass with different dice).
+- Current hit points, spent hit dice, spent slots and experience points are not part of the build: the sheet prints the maximum
+  and leaves the experience box blank, like a sheet to fill at the table.
+- The layout is one page of boxes plus flowing text; it was checked by construction and by tests (page count, no encoding error),
+  not against a print of the official sheet.
