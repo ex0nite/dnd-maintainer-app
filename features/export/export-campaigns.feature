@@ -21,3 +21,12 @@ Feature: Export selected campaigns as a SQL seed file
     Given a campaign named "Dragon's Lair" exists
     And the Dungeon Master is on the export page
     Then the export button is disabled
+
+  Scenario: Exporting a 2014 campaign carries its rules edition and its own rules
+    Given a 2014 campaign named "Ravenloft" exists with the library feat "grim-resolve"
+    And the Dungeon Master is on the export page
+    When the Dungeon Master selects "Ravenloft" for export
+    And the Dungeon Master exports the selected campaigns
+    Then the generated SQL contains INSERT statements for the campaigns table
+    And the generated SQL records the 2014 rules for the campaign
+    And the generated SQL contains the library entry "grim-resolve"

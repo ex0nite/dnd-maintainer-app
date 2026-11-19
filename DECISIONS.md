@@ -224,6 +224,16 @@ Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
   tieffelin) restent en texte : un choix de sort d'espèce n'a pas d'écran et un octroi d'espèce ne se déclenche pas par niveau.
 - **Limites relevées** : `summaryMax` 4000 (un sort va jusqu'à 3825 caractères), `materialMax` 400.
 
+### D-38 · 2026-11-19 · La fiche 2014 est dessinée, sans modèle ; l'export du MJ emporte la bibliothèque de règles (story 9.9)
+
+- **Fiche PDF 2014 dessinée.** La fiche officielle 2014 n'est pas dans le SRD 5.1 : on ne peut ni la livrer, ni la remplir sans que
+  le joueur la fournisse. Le PDF 2014 est donc dessiné par `pdf-lib` (`src/lib/pdf-sheet-2014.ts`), avec les champs de la fiche
+  2014 et la mention CC-BY 4.0 du SRD 5.1 au pied de chaque page quand du contenu SRD y figure. L'export 2024 (formulaire officiel
+  fourni par le joueur) est inchangé.
+- **Export du MJ.** Il porte la colonne `campaigns.ruleset` (déjà exportée) et, en plus, les entrées `rule_entries` des éditions
+  des campagnes choisies : le champ de règles et les règles propres de la campagne. Les entrées du SRD ne sont pas exportées
+  (ce sont des données du code). Détails : `docs/rules-as-data.md` section 14.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

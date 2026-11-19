@@ -1552,6 +1552,8 @@ So that je la joue à la table.
 **When** il porte sur une campagne 2014
 **Then** il contient le champ de règles et les règles propres de la campagne
 
+**Résultat de la 9.9 (2026-11-19) :** la fiche d'un personnage 2014 est dessinée en PDF (champs de la fiche 2014, sorts compris), sans modèle à fournir, avec la mention du SRD 5.1 (CC-BY 4.0) quand du contenu SRD y figure ; l'export de données du MJ contient le champ de règles de la campagne (`campaigns.ruleset`) et les entrées de la bibliothèque de règles de son édition (D-38, `docs/rules-as-data.md` section 14). Restes : dés de vie par niveau, points de vie actuels et points d'expérience non portés par la fiche.
+
 ### Story 9.10 : Recette de la table Affaires Draconiques
 
 As a MJ,

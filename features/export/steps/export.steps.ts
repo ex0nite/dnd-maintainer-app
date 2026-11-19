@@ -201,3 +201,72 @@ Then('no export error is shown', function (this: DndWorld) {
     throw new Error('Expected no export error banner, but one is present');
   }
 });
+
+// --- Rules of a 2014 campaign (story 9.9) -----------------------------------
+
+Given(
+  'a 2014 campaign named {string} exists with the library feat {string}',
+  function (this: DndWorld, name: string, featId: string) {
+    this.db.seed('campaigns', [
+      ...this.db.rows('campaigns'),
+      {
+        id: 'c-2014',
+        slug: name.toLowerCase(),
+        previous_slugs: [],
+        name,
+        description: null,
+        setting: null,
+        status: 'active',
+        theme: null,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        archived_at: null,
+        allowed_source_books: ['phb-2014'],
+        ruleset: '2014',
+      },
+    ]);
+    this.db.seed('rule_entries', [
+      {
+        ruleset: '2014',
+        kind: 'feat',
+        id: featId,
+        content: { id: featId, kind: 'feat', name: { en: 'Grim Resolve', fr: 'Résolution sombre' } },
+        revision: 1,
+        overrides_builtin: false,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      },
+      // The library of the other edition is not part of this campaign's rules.
+      {
+        ruleset: '2024',
+        kind: 'feat',
+        id: 'other-edition-feat',
+        content: { id: 'other-edition-feat', kind: 'feat', name: { en: 'Other', fr: 'Autre' } },
+        revision: 1,
+        overrides_builtin: false,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      },
+    ]);
+  }
+);
+
+async function lastSql(): Promise<string> {
+  if (capturedBlobs.length === 0) throw new Error('No export Blob was captured — the download did not occur');
+  return capturedBlobs[capturedBlobs.length - 1].text();
+}
+
+Then('the generated SQL records the 2014 rules for the campaign', async function (this: DndWorld) {
+  const sql = await lastSql();
+  const line = sql.split('\n').find((l) => l.startsWith('INSERT INTO campaigns'));
+  if (!line || !line.includes("'2014'")) throw new Error('Expected the campaign row to carry its 2014 rules edition');
+});
+
+Then('the generated SQL contains the library entry {string}', async function (this: DndWorld, featId: string) {
+  const sql = await lastSql();
+  const entries = sql.split('\n').filter((l) => l.startsWith('INSERT INTO rule_entries'));
+  if (!entries.some((l) => l.includes(`'${featId}'`))) throw new Error(`Expected the library entry "${featId}"`);
+  if (entries.some((l) => l.includes('other-edition-feat'))) {
+    throw new Error('The library of another edition must not be exported');
+  }
+});

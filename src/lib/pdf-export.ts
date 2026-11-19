@@ -20,6 +20,7 @@ import {
   type GamedataT,
 } from '@/lib/pdf-field-map';
 import type { RuleSet } from '@/lib/rules/types';
+import { buildSheet2014, renderSheet2014, type PdfLabels2014 } from '@/lib/pdf-sheet-2014';
 
 export class PdfTemplateError extends Error {
   constructor(
@@ -115,6 +116,8 @@ export interface ExportOptions {
   readonly filename?: string;
   /** The campaign's rule set (story 9.3). Built-in 2024 by default. */
   readonly rules?: RuleSet;
+  /** Labels of the 2014 sheet (story 9.9), in the language of the reader. Required when the rules are those of 2014. */
+  readonly labels?: PdfLabels2014;
 }
 
 const DEFAULT_TEMPLATE_URL = '/assets/character-sheet.pdf';
@@ -131,6 +134,14 @@ export async function exportCharacterPdf(
   featSources: ReadonlyMap<string, FeatGrantInfo>,
   opts: ExportOptions = {}
 ): Promise<{ missingFields: readonly string[] }> {
+  // The 2014 sheet is drawn, not filled: no template to fetch (story 9.9).
+  if (opts.rules?.ruleset === '2014') {
+    if (!opts.labels) throw new Error('The labels of the 2014 sheet are required.');
+    const sheet = buildSheet2014(resolved, character, t, featSources, opts.rules, opts.labels);
+    downloadPdf(await renderSheet2014(sheet), `${opts.filename ?? characterDisplayName(character)}.pdf`);
+    return { missingFields: [] };
+  }
+
   const templateUrl = opts.templateUrl ?? DEFAULT_TEMPLATE_URL;
 
   let response: Response;

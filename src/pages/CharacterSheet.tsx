@@ -26,6 +26,7 @@ import { EditTextDialog } from '@/components/character-sheet/edit-dialogs/EditTe
 import { buildRestUpdate } from '@/lib/rest';
 import { exportCharacterPdf, PdfTemplateError } from '@/lib/pdf-export';
 import { collectFeatSources } from '@/lib/pdf-field-map';
+import { pdfLabels2014 } from '@/lib/pdf-sheet-2014';
 import { useCharacter, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCharacterPermissions } from '@/hooks/usePermissions';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
@@ -233,7 +234,10 @@ function CharacterSheetInner({
     setExportingPdf(true);
     try {
       const featSources = collectFeatSources(bundles, build?.choices ?? {});
-      const { missingFields } = await exportCharacterPdf(resolved, character, rt, featSources, { rules });
+      const { missingFields } = await exportCharacterPdf(resolved, character, rt, featSources, {
+        rules,
+        labels: pdfLabels2014(tc),
+      });
       if (missingFields.length > 0) {
         toast.warning(tc('characterSheet.export.successWithMissing', { count: missingFields.length }));
         logger.warn('PDF template missing mapped fields:', missingFields);

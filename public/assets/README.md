@@ -1,4 +1,6 @@
-# Character-sheet PDF template
+# Character-sheet PDF template (2024 rules)
+
+> The 2014 rules need no template: their sheet is drawn by the app (`src/lib/pdf-sheet-2014.ts`, story 9.9).
 
 The **Export PDF** button on a character sheet fills a fillable PDF and downloads it.
 The blank template is **not bundled** with this project because the official Wizards of
