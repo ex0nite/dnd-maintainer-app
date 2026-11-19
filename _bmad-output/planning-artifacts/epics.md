@@ -1516,6 +1516,8 @@ So that je crée ma fiche sans erreur et sans ressaisir mes calculs.
 **When** il est affiché sur 360 px
 **Then** il tient sans défilement horizontal, en français et en anglais, sous la CSP stricte
 
+**Résultat de la 9.7 (2026-11-19) :** constructeur 2014 dans le même parcours (ordre : espèce, classe, caractéristiques avec bonus d'espèce, historique, équipement), méthode « saisie manuelle » (3 à 20) et contrôle de chaque méthode (tableau standard, achat de 27 points, tirage 3 à 18) bloquant la finalisation ; équipement de départ des classes du SRD en choix, équipement de l'acolyte en objets ; richesse de départ saisie à la main (absente du SRD) ; MCP ouvert au 2014 (création, choix, niveau, finalisation) avec la même fiche ; migration `20261122000000` (`ruleset_has_engine('2014')`). Les sorts restent à la 9.8.
+
 ### Story 9.8 : Sorts et incantation 2014
 
 As a joueur lanceur de sorts d'une campagne 2014,

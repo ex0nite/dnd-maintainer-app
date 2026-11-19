@@ -34,6 +34,20 @@
                 "description": "You start with the following equipment: Explorer's Pack; 4 Javelin; (a) a greataxe or (b) any martial melee weapon; (a) two handaxes or (b) any simple weapon."
               }
             },
+            { "type": "equipment", "itemId": "explorers-pack", "quantity": 1 },
+            { "type": "equipment", "itemId": "javelin", "quantity": 4 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:barbarian:0",
+              "category": "melee-weapon",
+              "bundleIds": ["single-greataxe", "any-martial-melee-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:barbarian:1",
+              "category": "melee-weapon",
+              "bundleIds": ["two-handaxes", "any-simple-weapon"]
+            },
             {
               "type": "feature",
               "feature": {
@@ -307,6 +321,26 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: Leather Armor; Dagger; (a) a rapier, (b) a longsword, or (c) any simple weapon; (a) a diplomat’s pack or (b) an entertainer’s pack; (a) a lute or (b) any other musical instrument."
               }
+            },
+            { "type": "equipment", "itemId": "leather", "quantity": 1 },
+            { "type": "equipment", "itemId": "dagger", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:bard:0",
+              "category": "melee-weapon",
+              "bundleIds": ["single-rapier", "single-longsword", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:bard:1",
+              "category": "pack",
+              "bundleIds": ["diplomats-pack", "entertainers-pack"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:bard:2",
+              "category": "gear",
+              "bundleIds": ["single-lute", "single-musical-instrument"]
             },
             {
               "type": "feature",
@@ -591,6 +625,32 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: Shield; (a) a mace or (b) a warhammer (if proficient); (a) scale mail, (b) leather armor, or (c) chain mail (if proficient); (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a priest’s pack or (b) an explorer’s pack; holy symbol."
               }
+            },
+            { "type": "equipment", "itemId": "shield", "quantity": 1 },
+            { "type": "equipment", "itemId": "holy-symbol", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:cleric:0",
+              "category": "melee-weapon",
+              "bundleIds": ["single-mace", "single-warhammer"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:cleric:1",
+              "category": "armor",
+              "bundleIds": ["single-scale-mail", "single-leather-armor", "single-chain-mail"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:cleric:2",
+              "category": "ranged-weapon",
+              "bundleIds": ["light-crossbow-kit", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:cleric:3",
+              "category": "pack",
+              "bundleIds": ["priests-pack", "explorers-pack"]
             },
             {
               "type": "feature",
@@ -886,6 +946,21 @@
                 "description": "You start with the following equipment: Leather Armor; Explorer's Pack; (a) a wooden shield or (b) any simple weapon; (a) a scimitar or (b) any simple melee weapon; druidic focus."
               }
             },
+            { "type": "equipment", "itemId": "leather", "quantity": 1 },
+            { "type": "equipment", "itemId": "explorers-pack", "quantity": 1 },
+            { "type": "equipment", "itemId": "druidic-focus", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:druid:0",
+              "category": "armor",
+              "bundleIds": ["single-shield", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:druid:1",
+              "category": "melee-weapon",
+              "bundleIds": ["single-scimitar", "any-simple-melee-weapon"]
+            },
             {
               "type": "feature",
               "feature": {
@@ -1077,6 +1152,30 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: (a) chain mail or (b) leather armor, longbow, and 20 arrows; (a) a martial weapon and a shield or (b) two martial weapons; (a) a light crossbow and 20 bolts or (b) two handaxes; (a) a dungeoneer’s pack or (b) an explorer’s pack."
               }
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:fighter:0",
+              "category": "loadout",
+              "bundleIds": ["fighter-chainmail", "fighter-archer-kit"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:fighter:1",
+              "category": "melee-weapon",
+              "bundleIds": ["martial-weapon-and-shield", "two-martial-weapons"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:fighter:2",
+              "category": "ranged-weapon",
+              "bundleIds": ["light-crossbow-kit", "two-handaxes"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:fighter:3",
+              "category": "pack",
+              "bundleIds": ["dungeoneers-pack", "explorers-pack"]
             },
             {
               "type": "feature",
@@ -1335,6 +1434,19 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: 10 Dart; (a) a shortsword or (b) any simple weapon; (a) a dungeoneer’s pack or (b) an explorer’s pack."
               }
+            },
+            { "type": "equipment", "itemId": "dart", "quantity": 10 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:monk:0",
+              "category": "melee-weapon",
+              "bundleIds": ["single-shortsword", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:monk:1",
+              "category": "pack",
+              "bundleIds": ["dungeoneers-pack", "explorers-pack"]
             },
             {
               "type": "feature",
@@ -1650,6 +1762,26 @@
                 "description": "You start with the following equipment: Chain Mail; (a) a martial weapon and a shield or (b) two martial weapons; (a) five javelins or (b) any simple melee weapon; (a) a priest’s pack or (b) an explorer’s pack; holy symbol."
               }
             },
+            { "type": "equipment", "itemId": "chain-mail", "quantity": 1 },
+            { "type": "equipment", "itemId": "holy-symbol", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:paladin:0",
+              "category": "melee-weapon",
+              "bundleIds": ["martial-weapon-and-shield", "two-martial-weapons"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:paladin:1",
+              "category": "ranged-weapon",
+              "bundleIds": ["five-javelins", "any-simple-melee-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:paladin:2",
+              "category": "pack",
+              "bundleIds": ["priests-pack", "explorers-pack"]
+            },
             {
               "type": "feature",
               "feature": {
@@ -1903,6 +2035,26 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: Longbow; 20 Arrow; (a) scale mail or (b) leather armor; (a) two shortswords or (b) two simple melee weapons; (a) a dungeoneer’s pack or (b) an explorer’s pack."
               }
+            },
+            { "type": "equipment", "itemId": "longbow", "quantity": 1 },
+            { "type": "equipment", "itemId": "arrows-20", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:ranger:0",
+              "category": "armor",
+              "bundleIds": ["single-scale-mail", "single-leather-armor"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:ranger:1",
+              "category": "melee-weapon",
+              "bundleIds": ["two-shortswords", "two-simple-melee-weapons"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:ranger:2",
+              "category": "pack",
+              "bundleIds": ["dungeoneers-pack", "explorers-pack"]
             },
             {
               "type": "feature",
@@ -2173,6 +2325,27 @@
                 "description": "You start with the following equipment: Leather Armor; 2 Dagger; Thieves' Tools; (a) a rapier or (b) a shortsword; (a) a shortbow and quiver of 20 arrows or (b) a shortsword; (a) a burglar’s pack, (b) a dungeoneer’s pack, or (c) an explorer’s pack."
               }
             },
+            { "type": "equipment", "itemId": "leather", "quantity": 1 },
+            { "type": "equipment", "itemId": "dagger", "quantity": 2 },
+            { "type": "equipment", "itemId": "thieves-tools", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:rogue:0",
+              "category": "melee-weapon",
+              "bundleIds": ["rogue-rapier", "rogue-shortsword-melee"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:rogue:1",
+              "category": "ranged-weapon",
+              "bundleIds": ["rogue-shortbow-kit", "rogue-shortsword-ranged"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:rogue:2",
+              "category": "pack",
+              "bundleIds": ["burglars-pack", "dungeoneers-pack", "explorers-pack"]
+            },
             {
               "type": "feature",
               "feature": {
@@ -2417,6 +2590,25 @@
                 "description": "You start with the following equipment: 2 Dagger; (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a component pouch or (b) an arcane focus; (a) a dungeoneer’s pack or (b) an explorer’s pack."
               }
             },
+            { "type": "equipment", "itemId": "dagger", "quantity": 2 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:sorcerer:0",
+              "category": "ranged-weapon",
+              "bundleIds": ["light-crossbow-kit", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:sorcerer:1",
+              "category": "gear",
+              "bundleIds": ["single-component-pouch", "single-arcane-focus"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:sorcerer:2",
+              "category": "pack",
+              "bundleIds": ["dungeoneers-pack", "explorers-pack"]
+            },
             {
               "type": "feature",
               "feature": {
@@ -2593,6 +2785,32 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: 2 Dagger; Leather Armor; (a) a light crossbow and 20 bolts or (b) any simple weapon; (a) a component pouch or (b) an arcane focus; (a) a scholar’s pack or (b) a dungeoneer’s pack; any simple weapon."
               }
+            },
+            { "type": "equipment", "itemId": "dagger", "quantity": 2 },
+            { "type": "equipment", "itemId": "leather", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:warlock:0",
+              "category": "ranged-weapon",
+              "bundleIds": ["light-crossbow-kit", "any-simple-weapon"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:warlock:1",
+              "category": "gear",
+              "bundleIds": ["single-component-pouch", "single-arcane-focus"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:warlock:2",
+              "category": "pack",
+              "bundleIds": ["scholars-pack", "dungeoneers-pack"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:warlock:3",
+              "category": "melee-weapon",
+              "bundleIds": ["any-simple-weapon"]
             },
             {
               "type": "feature",
@@ -2781,6 +2999,25 @@
                 "name": "Starting equipment",
                 "description": "You start with the following equipment: Spellbook; (a) a quarterstaff or (b) a dagger; (a) a component pouch or (b) an arcane focus; (a) a scholar’s pack or (b) an explorer’s pack."
               }
+            },
+            { "type": "equipment", "itemId": "spellbook", "quantity": 1 },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:wizard:0",
+              "category": "melee-weapon",
+              "bundleIds": ["single-quarterstaff", "single-dagger"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:wizard:1",
+              "category": "gear",
+              "bundleIds": ["single-component-pouch", "single-arcane-focus"]
+            },
+            {
+              "type": "bundle-choice",
+              "key": "bundle-choice:class:wizard:2",
+              "category": "pack",
+              "bundleIds": ["scholars-pack", "explorers-pack"]
             },
             {
               "type": "feature",

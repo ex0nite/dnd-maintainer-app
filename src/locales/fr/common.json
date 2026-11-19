@@ -115,6 +115,7 @@
       "basics": "Bases",
       "class": "Classe",
       "origin": "Origine",
+      "background": "Historique",
       "abilities": "Caractéristiques",
       "details": "Détails",
       "skills": "Compétences",
@@ -193,6 +194,7 @@
       "missingClass": "La classe est obligatoire",
       "missingBackground": "L'historique est obligatoire",
       "missingAlignment": "L'alignement est obligatoire",
+      "invalidAbilities": "Les caractéristiques ne correspondent pas à la méthode choisie",
       "pendingChoice": "Choix en attente : {{type}} ({{key}})"
     },
     "status": {
@@ -256,6 +258,13 @@
       "standardArray": "Série standard",
       "pointBuy": "Achat de points",
       "rolling": "Lancers de dés",
+      "manual": "Saisie manuelle",
+      "manualInstructions": "Saisissez les valeurs obtenues ou convenues, avant les bonus d'espèce ({{min}} à {{max}}).",
+      "manualScoreLabel": "Valeur de base : {{ability}}",
+      "speciesBonusSuffix": "espèce",
+      "issueRange": "Chaque valeur doit être comprise entre {{min}} et {{max}}.",
+      "issuePointBuyTotal": "L'achat de points coûte {{cost}} points, la limite est de {{limit}}.",
+      "issueNotInteger": "Chaque valeur doit être un nombre entier.",
       "assignEachValue": "Attribuez chaque valeur à une caractéristique. Chaque valeur une seule fois.",
       "spendPoints": "Dépensez des points pour augmenter les scores à partir de 8.",
       "points": "Points :",
@@ -338,6 +347,7 @@
       "selectBackgroundInBasics": "Choisissez un historique à l'étape Bases pour voir ses choix secondaires."
     },
     "equipment": {
+      "goldManualHint": "Lancez la richesse de départ de votre classe (ou prenez le montant convenu à votre table) et saisissez le résultat.",
       "equipped": "Équipé",
       "quantity": "Qté",
       "weight": "Poids (lb)",
@@ -811,7 +821,8 @@
         "2024": "D&D 5.5e (2024)"
       },
       "locked": "Un personnage est déjà finalisé : l'édition des règles ne peut plus changer.",
-      "notReady": "Les fiches de personnage des règles 2014 ne sont pas encore disponibles.",
+      "notReady": "Les fiches de personnage de cette édition des règles ne sont pas encore disponibles.",
+      "spellsLater": "Les personnages 2014 peuvent être construits et finalisés. Les sorts et emplacements de sorts des règles 2014 arrivent dans une prochaine mise à jour : l'incantation d'un lanceur de sorts est pour l'instant indiquée en texte.",
       "saveFailed": "L'édition des règles n'a pas pu être changée."
     },
     "rulesLibrary": {

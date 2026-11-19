@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ABILITY_METHODS } from '@/lib/ability-scores';
 import {
   ABILITY_KEYS,
   DND_SKILLS,
@@ -92,7 +93,7 @@ export const CharacterBuildSchema = z.object({
   speciesId: z.string().min(1),
   backgroundId: z.string().min(1).nullable(),
   baseAbilities: AbilityScoresSchema,
-  abilityMethod: z.enum(['standard-array', 'point-buy', 'rolling']),
+  abilityMethod: z.enum(ABILITY_METHODS),
   levels: z.array(BuildLevelSchema).readonly(),
   choices: z.record(z.string(), ChoiceDecisionSchema),
   feats: z

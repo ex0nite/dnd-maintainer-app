@@ -1,4 +1,5 @@
 import type { AbilityKey, FightingStyleId, SkillId, ToolProficiencyId, LanguageId, ClassId } from '@/lib/dnd-helpers';
+import type { AbilityMethod } from '@/lib/ability-scores';
 import type { AbilityScores } from '@/types/database';
 import type { DamageTypeId } from '@/types/grants';
 
@@ -109,7 +110,7 @@ export interface CharacterBuild {
   readonly speciesId: string;
   readonly backgroundId: string | null;
   readonly baseAbilities: AbilityScores;
-  readonly abilityMethod: 'standard-array' | 'point-buy' | 'rolling';
+  readonly abilityMethod: AbilityMethod;
   readonly levels: readonly BuildLevel[];
   readonly choices: Readonly<Record<ChoiceKey, ChoiceDecision>>;
   readonly feats: readonly string[];

@@ -461,13 +461,13 @@ no engine formula) and Primal Champion's score cap.
 
 ### 11.3 Limits kept on purpose
 
-- **Subclass of another class.** `collectBundles` applies a chosen subclass whatever its class (existing behavior, 2024
-  included); the 2014 builder (9.7) will offer only the subclasses of the class.
+- **Subclass of another class.** Until 9.7 `collectBundles` applied a chosen subclass whatever its class. Since 9.7 it ignores
+  (with a warning) a subclass that does not belong to the class that asks for it (section 12.4).
 - **Hit points** use the single-class formula of the engine (maximum die at level 1, average after), identical in 2014.
   Draconic Resilience counts on the character level: exact for a single class.
 - **One class entry per class.** A DM entry of kind `class` for a 2014 class replaces the SRD one and is flagged `overrides`;
   keep its `asi` and `subclass` grants at the same levels as the SRD class, or stored builds move.
-- **`ruleset_has_engine('2014')` stays false**: a 2014 character still can not be finalized (builder 9.7, spells 9.8).
+- **`ruleset_has_engine('2014')`** was false until 9.7; it is true since migration `20261122000000` (section 12.5).
 
 ### 11.4 Tests
 
@@ -475,3 +475,74 @@ no engine formula) and Primal Champion's score cap.
 (hit die, saves, skills, proficiencies, ASI levels, subclass level, starting equipment) and checks the subclass levels, the
 absence of weapon mastery and feat choices, and that the 2024 rule set is untouched. `scripts/srd-2014/convert.test.ts`
 keeps the generated JSON in step with the snapshot. BDD: `features/rules/srd-2014-classes.feature`.
+
+## 12. As implemented in story 9.7
+
+### 12.1 The 2014 builder
+
+- **Same builder, 2014 order.** `src/lib/character-builder/steps.ts` (`builderSteps(ruleset)`): 2014 follows species and class
+  (`basics`, `class`), the ability scores with the species bonus (`abilities`), the background (`origin`, labelled "Background" in
+  2014: no ability bonus and no feat there), then `details` (proficiencies), `equipment`, `backstory`. 2024 keeps its order (the
+  background comes first because it carries the ability bonus). Autosave is unchanged (`useBuilderAutosave`).
+- **Species and subspecies.** The lineage picker lists every lineage choice of the species (a dragonborn with a library
+  subspecies shows its ancestry and its subspecies); the ability step shows the species bonus next to the score it raises.
+- **Subclass of its class.** `collectBundles` leaves out the features of a subclass that does not belong to the class that
+  asks for it, and warns. The builder already offered only the subclasses of the class (`rules.subclassesByClass`); the MCP
+  validates the option list the same way.
+
+### 12.2 Ability scores
+
+- **Four methods** (`src/lib/ability-scores.ts`): `standard-array`, `point-buy`, `rolling`, and the new `manual` (values
+  rolled or agreed at the table and typed in, 3 to 20 each, before any species bonus). The method is stored in
+  `character_build_levels.ability_method` (free text column: no migration).
+- **`validateBaseAbilities(method, scores)`** is the one check, used by the builder (a message under the tabs for point buy
+  and manual entry, a finalize blocker for every method: a standard array not fully assigned, a point buy over 27 points, a
+  score out of its bounds) and by the MCP (`dnd_create_character` refuses invalid scores). The database does not check the
+  scores (a jsonb column): a player writing the API directly can store any score, which only changes their own sheet.
+- **Species bonuses** are added by the resolver (`ability-bonus` grants of the species and of the subspecies), whatever the
+  method.
+
+### 12.3 Starting equipment
+
+- **Class.** The converter (`scripts/srd-2014/convert.ts`, `STARTING_KITS`) turns the SRD sentence of each class into `equipment`
+  grants (fixed items) and one `bundle-choice` per "(a) ... or (b) ..." line, whose options are bundles of the code catalog
+  (`src/lib/sources/bundles.ts`: `single-*`, `any-simple-weapon`, `any-simple-melee-weapon`, `any-martial-melee-weapon`,
+  `two-simple-melee-weapons`, `five-javelins`, `two-shortswords`, plus the 2024 ones that were identical). The converter fails
+  when the snapshot sentence differs from the one the table quotes. The sentence stays as the `<class>-starting-equipment`
+  feature (it keeps the "(if proficient)" conditions, which are not enforced: the cleric is offered the warhammer and the
+  chain mail).
+- **Background.** The acolyte's equipment line becomes `equipment` grants (holy symbol, prayer book, incense, vestments, common
+  clothes, pouch); the 15 gp stay in the text (the app tracks no starting gold).
+- **Catalog.** Gear added for the SRD: holy symbol, component pouch, arcane focus, druidic focus, spellbook, lute, generic
+  instrument, prayer book and the parts of four packs (priest's, scholar's, diplomat's, entertainer's). Items the SRD only lists
+  inside a pack or a kit carry `notForSale` and stay out of the buy-with-gold list. Names are in `gamedata.json` (English).
+- **Gold instead of equipment.** The SRD 5.1 has no starting wealth table (it is in the PHB), so the repository holds none:
+  in a 2014 campaign the gold mode has no preset amount ("use class gold" is disabled) and the player types the amount rolled
+  at the table. In gold mode the class equipment lines are not asked (they kept the finalize button disabled; fixed for both editions).
+
+### 12.4 What the MCP does
+
+The character tools no longer refuse a 2014 campaign (`assertCharacterRules` follows `canBuildCharacters`); `dnd_create_character`
+accepts `abilities.method = 'manual'`. `dnd_generate_npc` still refuses 2014 (the generator knows the 2024 quick builds only).
+A character finalized by the MCP has the same stored values (hit points, armor class, proficiency bonus) as the app's, since
+both run the same engine on the same rule set.
+
+### 12.5 The database
+
+`ruleset_has_engine()` returns true for `'2014'` since migration `20261122000000_ruleset_engine_2014.sql` (a new migration:
+`20261120000000` is deployed). The pgTAP test `00550` replaces the function by a stand-in inside its transaction to keep testing
+the refusal for an edition without an engine.
+
+### 12.6 Limits kept on purpose
+
+- Spells, spell slots, pact magic and invocations are 9.8: a 2014 caster finalizes with its spellcasting as feature text.
+- Starting gold per class (PHB) is not in the SRD: typed by the player.
+- "(if proficient)" in the cleric's equipment is a text condition, not a rule.
+- Personality traits, ideals, bonds and flaws of the background stay free text of the sheet.
+
+### 12.7 Tests
+
+`src/lib/ability-scores.test.ts`, `src/lib/rules/srd-2014-equipment.test.ts` (options per SRD line, fixed items, a whole hill dwarf
+cleric from typed scores), `src/lib/character-builder/steps.test.ts`, `AbilitiesStep.test.tsx` (manual entry), pgTAP `00550`,
+BDD `features/characters/builder-2014.feature`, e2e `2014 builder` in `e2e/player-journeys.e2e.ts` (360 px, English and French),
+and the MCP smoke (a 2014 character created, answered, finalized, compared with the sheet).

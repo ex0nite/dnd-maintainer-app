@@ -8,8 +8,11 @@ export type RulesetId = (typeof RULESET_IDS)[number];
 
 export const DEFAULT_RULESET: RulesetId = '2024';
 
-/** Editions whose character engine is implemented. Grows as epic 9 lands (9.5 to 9.8). */
-export const SUPPORTED_CHARACTER_RULESETS: readonly RulesetId[] = ['2024'];
+/**
+ * Editions whose character engine is implemented. 2014 joined in story 9.7 (species, classes and backgrounds of the
+ * SRD 5.1 and the builder); its spells and spellcasting come with 9.8. Keep `ruleset_has_engine()` (SQL) in step.
+ */
+export const SUPPORTED_CHARACTER_RULESETS: readonly RulesetId[] = ['2014', '2024'];
 
 export function isRulesetId(value: unknown): value is RulesetId {
   return typeof value === 'string' && (RULESET_IDS as readonly string[]).includes(value);

@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RollingNumber } from '@/components/ui/rolling-number';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +17,13 @@ import {
   rollAbilityScores,
   STANDARD_ARRAY,
 } from '@/lib/dnd-helpers';
+import {
+  ABILITY_METHODS,
+  MANUAL_SCORE_MAX,
+  MANUAL_SCORE_MIN,
+  validateBaseAbilities,
+  type AbilityMethod,
+} from '@/lib/ability-scores';
 import type { AbilityKey } from '@/lib/dnd-helpers';
 import type { AbilityScores } from '@/types/database';
 import { Check, ChevronDown, ChevronUp, Dices, TrendingDown, TrendingUp } from 'lucide-react';
@@ -31,8 +39,7 @@ const DEFAULT_ASSIGNMENTS: Record<keyof AbilityScores, number | null> = {
   wis: null,
   cha: null,
 };
-const VALID_METHODS = ['standard-array', 'point-buy', 'rolling'] as const;
-type AbilityMethod = (typeof VALID_METHODS)[number];
+const VALID_METHODS = ABILITY_METHODS;
 
 // Background ASI constraints (2024 PHB): 3 total points, max 2 per ability.
 // Those bounds naturally permit both +2/+1 and +1/+1/+1 shapes without a separate mode toggle.
@@ -80,6 +87,9 @@ export function AbilitiesStep() {
     return assignments;
   });
   const [rolledValues, setRolledValues] = useState<number[]>([]);
+  // Text being typed in a manual score field (so a field can be emptied while typing); the stored score follows
+  // as soon as the text is a whole number.
+  const [manualDrafts, setManualDrafts] = useState<Partial<Record<keyof AbilityScores, string>>>({});
   const [isRolling, setIsRolling] = useState<boolean>(false);
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -293,6 +303,12 @@ export function AbilitiesStep() {
                   </Button>
                 </div>
               )}
+              {raceBonus !== 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {raceBonus > 0 ? '+' : ''}
+                  {raceBonus} {tc('characterBuilder.abilities.speciesBonusSuffix')}
+                </Badge>
+              )}
               {!isAsiEligible && bgBonus > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   +{bgBonus} {tc('characterBuilder.abilities.backgroundBonusSuffix')}
@@ -352,6 +368,7 @@ export function AbilitiesStep() {
   };
 
   const abilityKeys = Object.keys(baseAbilities) as Array<keyof AbilityScores>;
+  const abilityIssues = validateBaseAbilities(abilityMethod, baseAbilities);
   const pointsSpent = Object.values(baseAbilities).reduce((sum, s) => sum + getPointBuyCost(s), 0);
   const pointsRemaining = POINT_BUY_TOTAL - pointsSpent;
   const pointBuyEquiv = rolledValues.length > 0 ? getPointBuyEquivalent(rolledValues) : null;
@@ -384,15 +401,18 @@ export function AbilitiesStep() {
         </div>
       )}
       <Tabs value={abilityMethod} onValueChange={handleMethodChange}>
-        <TabsList className="w-full">
-          <TabsTrigger value="standard-array" className="flex-1">
+        <TabsList className="grid h-auto! w-full grid-cols-2 sm:grid-cols-4">
+          <TabsTrigger value="standard-array" className="whitespace-normal py-1.5">
             {tc('characterBuilder.abilities.standardArray')}
           </TabsTrigger>
-          <TabsTrigger value="point-buy" className="flex-1">
+          <TabsTrigger value="point-buy" className="whitespace-normal py-1.5">
             {tc('characterBuilder.abilities.pointBuy')}
           </TabsTrigger>
-          <TabsTrigger value="rolling" className="flex-1">
+          <TabsTrigger value="rolling" className="whitespace-normal py-1.5">
             {tc('characterBuilder.abilities.rolling')}
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="whitespace-normal py-1.5">
+            {tc('characterBuilder.abilities.manual')}
           </TabsTrigger>
         </TabsList>
 
@@ -556,7 +576,55 @@ export function AbilitiesStep() {
             )}
           </div>
         </TabsContent>
+
+        <TabsContent value="manual" className="space-y-3 mt-3">
+          <p className="text-muted-foreground text-sm">
+            {tc('characterBuilder.abilities.manualInstructions', { min: MANUAL_SCORE_MIN, max: MANUAL_SCORE_MAX })}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {abilityKeys.map((ability) =>
+              renderAbilityCard(
+                ability,
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={MANUAL_SCORE_MIN}
+                  max={MANUAL_SCORE_MAX}
+                  step={1}
+                  className="w-20 text-center font-bold"
+                  value={manualDrafts[ability] ?? String(baseAbilities[ability])}
+                  aria-label={tc('characterBuilder.abilities.manualScoreLabel', { ability: t(`abilities.${ability}`) })}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setManualDrafts((prev) => ({ ...prev, [ability]: text }));
+                    if (/^\d{1,2}$/.test(text)) updateAbility(ability, Number(text));
+                  }}
+                  onBlur={() =>
+                    setManualDrafts((prev) => {
+                      const { [ability]: _done, ...rest } = prev;
+                      return rest;
+                    })
+                  }
+                />
+              )
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
+      {abilityIssues.length > 0 && abilityMethod !== 'standard-array' && abilityMethod !== 'rolling' && (
+        <p role="alert" className="text-sm text-destructive">
+          {abilityIssues[0].code === 'point-buy-total'
+            ? tc('characterBuilder.abilities.issuePointBuyTotal', {
+                cost: abilityIssues[0].cost,
+                limit: abilityIssues[0].limit,
+              })
+            : abilityIssues[0].code === 'point-buy-range'
+              ? tc('characterBuilder.abilities.issueRange', { min: abilityIssues[0].min, max: abilityIssues[0].max })
+              : abilityIssues[0].code === 'range'
+                ? tc('characterBuilder.abilities.issueRange', { min: abilityIssues[0].min, max: abilityIssues[0].max })
+                : tc('characterBuilder.abilities.issueNotInteger')}
+        </p>
+      )}
     </div>
   );
 }

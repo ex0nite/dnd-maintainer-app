@@ -20,7 +20,7 @@ describe('ruleset', () => {
 
   it('builds characters only for editions whose engine exists, and never for an unknown one', () => {
     expect(canBuildCharacters('2024')).toBe(true);
-    expect(canBuildCharacters('2014')).toBe(false);
+    expect(canBuildCharacters('2014')).toBe(true);
     expect(canBuildCharacters('2020' as never)).toBe(false);
   });
 });

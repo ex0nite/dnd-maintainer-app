@@ -3,7 +3,7 @@
 --   characters_check_ruleset: a character can not be finalized (or moved) against the rules of its campaign.
 begin;
 
-select plan(55);
+select plan(57);
 
 insert into auth.users (id, email)
 select tests.uid(i), i || '@table.invalid'
@@ -43,7 +43,7 @@ select ok(
   and not has_function_privilege('anon', 'public.characters_check_ruleset()', 'EXECUTE')
   and not has_function_privilege('authenticated', 'public.ruleset_has_engine(text)', 'EXECUTE'),
   'the trigger functions are callable by no API role');
-select ok(public.ruleset_has_engine('2024') and not public.ruleset_has_engine('2014'), 'only the 2024 edition has a sheet engine today');
+select ok(public.ruleset_has_engine('2024') and public.ruleset_has_engine('2014') and not public.ruleset_has_engine('2020'), 'the 2014 and 2024 editions have a sheet engine (story 9.7)');
 
 -- anon ----------------------------------------------------------------------------------------------------------------
 select tests.set_identity('anon');
@@ -175,7 +175,21 @@ select lives_ok(
   'dm: C is back to 2024 for the next tests');
 select tests.reset_identity();
 
--- Finalizing, or moving, against the rules of the campaign (B is 2014: no sheet engine) -------------------------------------
+-- Finalizing, or moving, against the rules of the campaign ------------------------------------------------------------------
+-- B is 2014, which has a sheet engine since story 9.7: a character is finalized there.
+select tests.set_identity('dm');
+select lives_ok(
+  $$insert into public.characters (id, campaign_id, name, character_type, status)
+    values ('c7000000-0000-4000-8000-000000000007', 'bbbbbbbb-0000-4000-8000-00000000000b', 'Ready in 2014', 'pc', 'ready')$$,
+  'dm: a character can be finalized in a 2014 campaign');
+select tests.reset_identity();
+
+-- The refusal itself (an edition with no engine) is tested with a stand-in of the function: every edition the check
+-- constraint allows has an engine now. The stand-in is the 9.1 definition, and is rolled back with the test.
+select lives_ok(
+  $$create or replace function public.ruleset_has_engine(p_ruleset text) returns boolean language sql immutable set search_path = ''
+    as 'select p_ruleset = ''2024'''$$,
+  'a stand-in makes 2014 an edition without engine for the next checks');
 select tests.set_identity('dm');
 select lives_ok(
   $$insert into public.characters (id, campaign_id, name, character_type)

@@ -18,6 +18,12 @@ vi.mock('react-i18next', () => ({
 
 const mockRuleset: RulesetId = '2014';
 
+// Both editions have an engine since story 9.7: the guard is exercised with an edition whose engine is pretended absent.
+vi.mock('@/lib/ruleset', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/ruleset')>()),
+  canBuildCharacters: (ruleset: string) => ruleset === '2024',
+}));
+
 vi.mock('@/hooks/useCampaigns', () => ({
   useCampaign: () => ({ data: { id: 'camp-1', slug: 'camp', ruleset: mockRuleset }, isLoading: false }),
 }));
@@ -49,7 +55,7 @@ function renderBuilder() {
 }
 
 describe('CharacterBuilder: rules edition guard', () => {
-  it('shows the not-available notice, and no builder, on a 2014 campaign', () => {
+  it('shows the not-available notice, and no builder, on an edition without a sheet engine', () => {
     renderBuilder();
     expect(screen.getByRole('status')).toHaveTextContent('characterBuilder.errors.rulesetNotReady:2014');
   });

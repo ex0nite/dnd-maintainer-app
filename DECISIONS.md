@@ -197,6 +197,18 @@ Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
 - **Source du SRD :** le jeu de données SRD 5.1 ouvert (un JSON par entité), converti par un script du dépôt ; rien n'est lu à
   l'exécution. Le paquet PyPI `dnd-5e-core` est examiné et écarté (moteur de jeu Python, mêmes données SRD, hors périmètre).
 
+### D-36 · 2026-11-19 · Le moteur 2014 est ouvert avant les sorts (story 9.7)
+
+- `canBuildCharacters('2014')` et `ruleset_has_engine('2014')` deviennent vrais avec le constructeur : le critère de la 9.7 demande
+  qu'un personnage 2014 créé par le MCP soit finalisé avec une fiche juste. Les sorts et emplacements de 2014 sont la 9.8 : en
+  attendant, l'incantation d'un lanceur de sorts est en texte, et le tableau de bord le dit au MJ.
+- Méthode de caractéristiques **« saisie manuelle »** (3 à 20, avant bonus) en plus des trois autres ; chaque méthode est contrôlée
+  (`validateBaseAbilities`), à la finalisation dans l'app et à la création dans le MCP. La base ne contrôle pas les valeurs.
+- **Richesse de départ 2014** : le SRD 5.1 n'a pas de table (elle est dans le PHB) ; le dépôt public n'en contient pas, le joueur
+  saisit le montant tiré.
+- Équipement de départ des classes en choix `bundle-choice` (objets et paquets du SRD ajoutés au catalogue en code) ; ce qui n'a
+  pas de prix dans le SRD est marqué `notForSale`.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

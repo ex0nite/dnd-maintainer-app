@@ -31,7 +31,13 @@
             "name": "Equipment",
             "description": "A holy symbol (a gift to you when you entered the priesthood), a prayer book or prayer wheel, 5 sticks of incense, vestments, a set of common clothes, and a pouch containing 15 gp."
           }
-        }
+        },
+        { "type": "equipment", "itemId": "holy-symbol", "quantity": 1 },
+        { "type": "equipment", "itemId": "prayer-book", "quantity": 1 },
+        { "type": "equipment", "itemId": "incense-sticks-5", "quantity": 1 },
+        { "type": "equipment", "itemId": "vestments", "quantity": 1 },
+        { "type": "equipment", "itemId": "common-clothes", "quantity": 1 },
+        { "type": "equipment", "itemId": "pouch", "quantity": 1 }
       ]
     }
   }

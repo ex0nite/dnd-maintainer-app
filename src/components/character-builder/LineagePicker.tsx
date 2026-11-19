@@ -20,32 +20,36 @@ export function LineagePicker({ race, bundles, build, makeChoice, clearChoice }:
 
   if (!rules.lineages.has(race)) return null;
 
+  // Every lineage choice of the species: a 2014 species that has its own lineage (dragonborn ancestry) and a
+  // subspecies adds a second one (story 9.7).
   const lineageGrantTags = collectGrantsByType(bundles, 'lineage-choice').filter(
     (tg) => tg.source.origin === 'species'
   );
-  const lineageTag = lineageGrantTags[0];
-
-  if (!lineageTag) {
+  if (lineageGrantTags.length === 0) {
     return <p className="text-sm text-muted-foreground">{tc('characterBuilder.hints.loadingLineage')}</p>;
   }
 
-  const lineageChoice: PendingChoice & { type: 'lineage-choice' } = {
-    type: 'lineage-choice',
-    choiceKey: lineageTag.grant.key,
-    source: lineageTag.source,
-    speciesId: race,
-    from: lineageTag.grant.from,
-  };
-  const decision = build?.choices[lineageTag.grant.key];
-
   return (
-    <div className="mt-2">
-      <ChoicePicker
-        choice={lineageChoice}
-        currentDecision={decision as ChoiceDecision | undefined}
-        onDecide={(key, d) => makeChoice(key, d)}
-        onClear={(key) => clearChoice(key)}
-      />
+    <div className="mt-2 space-y-4">
+      {lineageGrantTags.map((lineageTag) => {
+        const lineageChoice: PendingChoice & { type: 'lineage-choice' } = {
+          type: 'lineage-choice',
+          choiceKey: lineageTag.grant.key,
+          source: lineageTag.source,
+          speciesId: race,
+          from: lineageTag.grant.from,
+        };
+        const decision = build?.choices[lineageTag.grant.key];
+        return (
+          <ChoicePicker
+            key={lineageTag.grant.key}
+            choice={lineageChoice}
+            currentDecision={decision as ChoiceDecision | undefined}
+            onDecide={(key, d) => makeChoice(key, d)}
+            onClear={(key) => clearChoice(key)}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -115,6 +115,7 @@
       "basics": "Basics",
       "class": "Class",
       "origin": "Origin",
+      "background": "Background",
       "abilities": "Abilities",
       "details": "Details",
       "skills": "Skills",
@@ -193,6 +194,7 @@
       "missingClass": "Class is required",
       "missingBackground": "Background is required",
       "missingAlignment": "Alignment is required",
+      "invalidAbilities": "The ability scores do not match the chosen method",
       "pendingChoice": "Pending {{type}} ({{key}})"
     },
     "status": {
@@ -256,6 +258,13 @@
       "standardArray": "Standard Array",
       "pointBuy": "Point-Buy",
       "rolling": "Rolling",
+      "manual": "Manual entry",
+      "manualInstructions": "Type the scores you rolled or agreed on, before species bonuses ({{min}} to {{max}}).",
+      "manualScoreLabel": "Base score: {{ability}}",
+      "speciesBonusSuffix": "species",
+      "issueRange": "Each score must be between {{min}} and {{max}}.",
+      "issuePointBuyTotal": "Point buy costs {{cost}} points, the limit is {{limit}}.",
+      "issueNotInteger": "Every score must be a whole number.",
       "assignEachValue": "Assign each value to an ability. Each value used once.",
       "spendPoints": "Spend points to increase scores from 8.",
       "points": "Points:",
@@ -338,6 +347,7 @@
       "selectBackgroundInBasics": "Pick a background in the Basics step to see its sub-choices."
     },
     "equipment": {
+      "goldManualHint": "Roll the starting wealth of your class (or use the amount your table agreed on) and type the result.",
       "equipped": "Equipped",
       "quantity": "Qty",
       "weight": "Weight (lb)",
@@ -811,7 +821,8 @@
         "2024": "D&D 5.5e (2024)"
       },
       "locked": "A character is already finalized: the rules edition can no longer change.",
-      "notReady": "Character sheets for the 2014 rules are not available yet.",
+      "notReady": "Character sheets for this rules edition are not available yet.",
+      "spellsLater": "2014 characters can be built and finalized. Spells and spell slots of the 2014 rules come in a later update: a caster's spellcasting is listed as text for now.",
       "saveFailed": "The rules edition could not be changed."
     },
     "rulesLibrary": {

@@ -1,4 +1,5 @@
 import { DND_CLASSES, isBackgroundId, isFeatId, isSpeciesId } from '@/lib/dnd-helpers';
+import { ABILITY_METHODS, type AbilityMethod } from '@/lib/ability-scores';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('build-reconstruction');
@@ -70,8 +71,7 @@ const DEFAULT_ABILITIES: AbilityScores = {
   cha: 10,
 };
 
-const VALID_ABILITY_METHODS = ['standard-array', 'point-buy', 'rolling'] as const;
-type AbilityMethod = (typeof VALID_ABILITY_METHODS)[number];
+const VALID_ABILITY_METHODS = ABILITY_METHODS;
 
 export function reconstructBuild(
   character: CharacterIdentity,

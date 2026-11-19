@@ -205,7 +205,13 @@ export function collectBundles(build: CharacterBuild, rules: RuleSet = builtin20
       const subclassDecision = build.choices[subclassGrant.key];
       if (subclassDecision?.type === 'subclass') {
         const subclassSource = rules.subclasses.get(subclassDecision.subclassId);
-        if (subclassSource) {
+        if (subclassSource && !(rules.subclassesByClass.get(classId) ?? []).includes(subclassDecision.subclassId)) {
+          // A subclass chosen for the wrong class (stale stored choice, or a client that skipped the check): its
+          // features belong to another class and are not applied.
+          const msg = `Subclass "${subclassDecision.subclassId}" does not belong to class "${classId}" � its features are left out`;
+          warnings.push(msg);
+          logger.warn(msg);
+        } else if (subclassSource) {
           for (const feature of subclassSource.features) {
             if (feature.classLevel <= levelCount) {
               const tag: SourceTag = {
