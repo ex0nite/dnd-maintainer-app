@@ -104,7 +104,7 @@
       "description": "Contenu de règles fourni avec l'application, et sa licence.",
       "srdTitle": "System Reference Document 5.1",
       "srdNotice": "Cette application contient du contenu tiré du System Reference Document 5.1 (« SRD 5.1 ») de Wizards of the Coast LLC. Le SRD 5.1 est distribué sous la licence Creative Commons Attribution 4.0 International.",
-      "srdScope": "Les règles de 2014 intégrées à l'application (espèces, sous-espèces, historiques) viennent du SRD 5.1. Leurs descriptions sont en anglais, seule langue du SRD.",
+      "srdScope": "Les règles de 2014 intégrées à l'application (espèces, sous-espèces, historiques, classes, sous-classes) viennent du SRD 5.1. Leurs descriptions sont en anglais, seule langue du SRD.",
       "srdLink": "SRD 5.1",
       "licenseLink": "Licence CC BY 4.0"
     }

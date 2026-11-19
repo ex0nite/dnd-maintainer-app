@@ -23,6 +23,10 @@ export const SNAPSHOT_FILES = {
   subraces: '5e-SRD-Subraces.json',
   traits: '5e-SRD-Traits.json',
   backgrounds: '5e-SRD-Backgrounds.json',
+  classes: '5e-SRD-Classes.json',
+  levels: '5e-SRD-Levels.json',
+  subclasses: '5e-SRD-Subclasses.json',
+  features: '5e-SRD-Features.json',
 } as const;
 
 export type SnapshotName = keyof typeof SNAPSHOT_FILES;
