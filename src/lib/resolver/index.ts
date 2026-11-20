@@ -114,8 +114,16 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   // Build hitDie array from hit-die grants
   const hitDieGrants = collectGrantsByType(bundles, 'hit-die');
   const hitDieMap = new Map<HitDie, number>();
-  for (const { grant } of hitDieGrants) {
-    hitDieMap.set(grant.die, (hitDieMap.get(grant.die) ?? 0) + 1);
+  // The grant sits on class level 1 only; the class owns one die per level it has in the build.
+  const classLevelCount = new Map<string, number>();
+  for (const bundle of bundles) {
+    if (bundle.source.origin === 'class') {
+      classLevelCount.set(bundle.source.id, Math.max(classLevelCount.get(bundle.source.id) ?? 0, bundle.source.level));
+    }
+  }
+  for (const { grant, source } of hitDieGrants) {
+    const dice = source.origin === 'class' ? (classLevelCount.get(source.id) ?? 1) : 1;
+    hitDieMap.set(grant.die, (hitDieMap.get(grant.die) ?? 0) + dice);
   }
   const hitDie = Array.from(hitDieMap.entries()).map(([die, count]) => ({ die, count }));
 

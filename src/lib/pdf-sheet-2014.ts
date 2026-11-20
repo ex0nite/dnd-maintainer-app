@@ -305,10 +305,7 @@ export function buildSheet2014(
     initiative: signed(resolved.initiative),
     speed: speedParts.join(', '),
     hitPointMax: String(resolved.hitPoints.max),
-    // The resolver grants one hit die per class (level 1): with a single die size, every level adds one die.
-    hitDice: resolved.hitDie
-      .map((hd) => `${resolved.hitDie.length === 1 ? character.level : hd.count}d${hd.die}`)
-      .join(' + '),
+    hitDice: resolved.hitDie.map((hd) => `${hd.count}d${hd.die}`).join(' + '),
     attacks,
     sections,
     attribution: srdUsed ? SRD_ATTRIBUTION_2014 : null,
