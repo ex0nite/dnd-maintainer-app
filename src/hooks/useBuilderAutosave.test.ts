@@ -697,6 +697,7 @@ describe('useBuilderAutosave', () => {
     // to fall back on, so resume-then-abandon (delete before any save) works ONLY because the init
     // arg seeds characterIdRef. If that wiring regresses, abandon silently no-ops on a resumed draft.
     it('deletes the row seeded from the init arg, even before any save (resume-then-abandon, #247)', async () => {
+      mockQueryResult.data = [{ id: 'seeded-id' }];
       const { result } = renderHook(() => useBuilderAutosave('seeded-id'), { wrapper: createWrapper() });
 
       await act(async () => {
@@ -734,6 +735,7 @@ describe('useBuilderAutosave', () => {
 
     it('invalidates campaign-drafts on abandon so the resume banner reflects the deleted draft', async () => {
       const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+      mockQueryResult.data = [{ id: 'seeded-id' }];
 
       const { result } = renderHook(() => useBuilderAutosave('seeded-id'), { wrapper: createWrapper() });
 
@@ -742,6 +744,15 @@ describe('useBuilderAutosave', () => {
       });
 
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['campaign-drafts', 'camp-1'] });
+    });
+
+    it('fails when the delete touched 0 rows (a player cannot delete): the draft is not reported as abandoned', async () => {
+      mockQueryResult.data = [];
+      const { result } = renderHook(() => useBuilderAutosave('seeded-id'), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await expect(result.current.abandon('camp-1')).rejects.toThrow(/0 rows/);
+      });
     });
   });
 });

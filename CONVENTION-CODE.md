@@ -103,11 +103,43 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   RLS ou la policy `access_active` (hors `profiles`), s'il existe une policy `true` ou applicable à `anon`/`public` (schémas
   `public` et `storage`), un droit de `anon` sur une table, une séquence ou une fonction de `public`, une vue qui n'est pas
   `security_invoker`, ou un bucket public. Une nouvelle table se crée donc fermée, avec ses policies et sa matrice.
-- Les portraits sont dans un bucket privé : la base garde le chemin (`<id>/portrait.jpg`), le navigateur demande une URL
+- Les portraits sont dans un bucket privé (1 Mo, images) : la base garde le chemin (`<id-personnage>/<uuid-aléatoire>.<ext>`, l'ancien `<id>/portrait.jpg` reste valide ; CHECK sur le format et sur l'id du personnage ; un remplacement crée un nouvel objet puis supprime l'ancien). Écriture : propriétaire d'un personnage actif ou MJ ; lecture : qui lit le personnage (`can_read_character`), donc jamais le portrait d'un PNJ pour un joueur, le navigateur demande une URL
   signée (`usePortraitSrc`, `PortraitImage`), jamais d'URL publique.
+- Personnages (story 3.1, AD-6) : le propriétaire (`owner_user_id = auth.uid()` et membre de la campagne) lit, crée et
+  modifie ses `characters`, et écrit son inventaire et ses niveaux (`owns_character`) ; jamais de DELETE pour un joueur.
+  Les colonnes qu'un joueur ne doit pas fixer (propriétaire, campagne, type, activation, `archived_with_owner`, slug,
+  `previous_slugs`, id) sont gardées par le trigger `characters_guard_ownership` (INSERT et UPDATE), pas par des policies :
+  il échoue fermé : seuls le MJ, `service_role`, `postgres`/`supabase_admin` (migrations, fonctions `SECURITY DEFINER` comme `archive_player`) et le serveur d'authentification passent. Un joueur ne choisit pas l'`id` d'un nouveau personnage (le serveur le remplace : le slug en dépend). Un personnage désactivé par le MJ est gelé pour son propriétaire (lecture seule, `owns_active_character` pour les écritures sur inventaire et niveaux). L'ordre alphabétique
+  des triggers compte (`guard` avant `manage_slug` avant `zz_clear_archive_mark`) et il est testé.
+- Lecture des personnages (stories 3.6, 3.7, 3.9) : `can_read_character(id)` est la définition unique de « visible pour
+  moi » (le propriétaire membre, ou n'importe quel membre quand c'est un PJ) ; les PJ de ma campagne sont lisibles (fiche,
+  inventaire, niveaux), jamais les PNJ ni une autre campagne, un PJ archivé avec son propriétaire reste lisible en lecture seule, un PJ désactivé à la main par le MJ est retiré de la table (seuls son propriétaire, gelé, et le MJ le lisent).
+  `character_private` (historique, notes) : propriétaire et MJ seulement, le propriétaire modifie mais ne crée ni ne supprime
+  la ligne. Une réassignation par le MJ est immédiate (les policies relisent `owner_user_id` à chaque requête) ; la partie privée suit la fiche chez le nouveau propriétaire (le MJ la vide avant si besoin). Les autres joueurs lisent toutes les colonnes d'un PJ lisible, `owner_user_id` et `player_name` compris (accepté).
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
+
+## Interface selon le rôle (epic 3)
+
+- L'interface cache ce que la base refuserait de toute façon (`useRole`, `useCharacterPermissions` dans
+  `src/hooks/usePermissions.ts`) : c'est cosmétique, la sécurité est dans les policies. Tant que le profil n'est pas connu,
+  personne n'est traité en joueur (rien n'est caché), pour ne pas casser les écrans du MJ.
+- Les routes du MJ (tableau de bord de campagne, séances, notes, joueurs, export) sont sous `RequireDm` (qui retransmet le
+  contexte du `Layout`). Un joueur arrive sur `PlayerHome` (« Mes personnages » par campagne) ; la fiche d'un autre PJ ou
+  d'un personnage désactivé est en lecture seule (`<fieldset disabled>`, pas d'autosave, pas de dialogues d'édition).
+- Un joueur crée un PJ à lui (`ownerFieldsForNewCharacter` ajoute `owner_user_id` et le type à l'INSERT) ; les brouillons
+  des autres joueurs ne sont ni listés ni reprenables.
+
+## Reconstruire une fiche (story 3.5, constaté dans le constructeur)
+
+- Passer une fiche finalisée en brouillon (`status = 'draft'`, permis au propriétaire) ne supprime rien : l'historique de niveaux
+  (`character_build_levels`, qui porte aussi les choix) et l'inventaire (`character_items`) restent ; le constructeur relit les
+  niveaux, les choix reviennent pré-remplis. La finalisation n'écrit des objets que s'il n'y en a aucun (garde d'idempotence) :
+  l'équipement de départ n'est donc PAS recalculé si le joueur change de classe ou de historique pendant la reconstruction
+  (écart connu, voir TO-DO). Le bouton « Rebuild » demande une confirmation et n'existe que pour le propriétaire et le MJ.
+- Réassigner (story 3.9) : le MJ ouvre « Assign to a player » sur la fiche (joueurs actifs de la campagne, ou personne) ; la partie
+  privée de la fiche suit le personnage chez le nouveau propriétaire.
 
 ## Dépôt MCP
 

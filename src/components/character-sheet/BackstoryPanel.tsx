@@ -8,8 +8,8 @@ export function BackstoryPanel({
   onEditAppearance,
 }: {
   character: Character;
-  onEditBackstory: () => void;
-  onEditAppearance: () => void;
+  onEditBackstory?: () => void;
+  onEditAppearance?: () => void;
 }) {
   const { t: tc } = useTranslation('common');
 

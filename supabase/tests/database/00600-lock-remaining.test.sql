@@ -180,7 +180,7 @@ select is(
       and (roles && array['public'::name, 'anon'::name] or qual = 'true' or with_check = 'true')),
   0, 'no storage policy applies to anon/public or is open'
 );
-select policies_are('storage', 'objects', array['storage_dm_all', 'access_active'], 'storage.objects: exactly the DM policy and the active-user rule');
+select policies_are('storage', 'objects', array['storage_dm_all', 'portraits_member_select', 'portraits_owner_insert', 'portraits_owner_update', 'portraits_owner_delete', 'access_active'], 'storage.objects: the DM policy, the portrait policies (story 3.8) and the active-user rule');
 insert into storage.objects (bucket_id, name, owner_id) values ('character-portraits', 'seed/portrait.jpg', tests.uid('dm')::text);
 select tests.set_identity('anon');
 select is((select count(*)::int from storage.objects), 0, 'anon: no storage object visible');

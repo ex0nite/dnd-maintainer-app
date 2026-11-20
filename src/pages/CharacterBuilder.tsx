@@ -16,7 +16,7 @@ import { CharacterProvider, useCharacterContext } from '@/hooks/useCharacterCont
 import { useBuilderAutosave } from '@/hooks/useBuilderAutosave';
 import type { AutosavePayload } from '@/hooks/useBuilderAutosave';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
-import { useCharacter, useCampaignDrafts } from '@/hooks/useCharacters';
+import { useCharacter, useCampaignDrafts, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import type { Character } from '@/types/database';
@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { DND_SPECIES, DND_CLASSES, isBackgroundId } from '@/lib/dnd-helpers';
 import { collectClassBundleKeys } from '@/lib/gold-equipment';
 import type { StepType } from '@/types/character-builder';
+import { useRole } from '@/hooks/usePermissions';
 
 const logger = getLogger('character-builder');
 
@@ -44,11 +45,12 @@ const STEPS: { id: StepType }[] = [
 function renderStep(
   step: StepType,
   goToStep: (s: StepType) => void,
-  equipmentProps: EquipmentStepEquipmentProps
+  equipmentProps: EquipmentStepEquipmentProps,
+  allowNpc: boolean
 ): ReactElement {
   switch (step) {
     case 'basics':
-      return <BasicsStep onRequestAdvance={goToStep} />;
+      return <BasicsStep onRequestAdvance={goToStep} allowNpc={allowNpc} />;
     case 'class':
       return <ClassStep />;
     case 'origin':
@@ -116,11 +118,19 @@ function buildSeedCharacter(campaignId: string): Character {
   };
 }
 
-function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: string }) {
+function CharacterBuilderInner({
+  existingCharacterId,
+  wasFinalized = false,
+}: {
+  existingCharacterId?: string;
+  /** The sheet was finalized once (it has an inventory): it is being rebuilt, never abandoned. */
+  wasFinalized?: boolean;
+}) {
   const { t } = useTranslation('common');
   const { t: tg } = useTranslation('gamedata');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const { campaignId } = useCampaignContext();
+  const { isPlayer } = useRole();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<StepType>('basics');
   // Tracks the furthest step the user has reached. We use this to defer "Before you
@@ -235,6 +245,23 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
   };
   const goPrevStep = () => {
     if (currentStepIndex > 0) goToStep(STEPS[currentStepIndex - 1].id);
+  };
+
+  const { update: updateCharacter } = useCharacterMutations();
+  const [isCancellingRebuild, setIsCancellingRebuild] = useState(false);
+  // Cancel a rebuild: the sheet is simply finalized again as it was saved (nothing is deleted).
+  const handleCancelRebuild = async () => {
+    if (!existingCharacterId) return;
+    setIsCancellingRebuild(true);
+    try {
+      const updated = await updateCharacter.mutateAsync({ id: existingCharacterId, status: 'ready' });
+      navigate(`/campaign/${campaignSlug}/character/${updated.slug}`);
+    } catch (err) {
+      logger.error('Cancel rebuild failed:', err);
+      toast.error(t('characterBuilder.errors.cancelRebuildFailed'));
+    } finally {
+      setIsCancellingRebuild(false);
+    }
   };
 
   const handleAbandon = async () => {
@@ -385,7 +412,7 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
         <Card className="mb-8">
           <CardContent className="p-8">
             <h2 className="text-2xl font-bold mb-6">{t(`characterBuilder.steps.${STEPS[currentStepIndex].id}`)}</h2>
-            {renderStep(currentStep, goToStep, equipmentProps)}
+            {renderStep(currentStep, goToStep, equipmentProps, !isPlayer)}
           </CardContent>
         </Card>
 
@@ -470,10 +497,26 @@ function CharacterBuilderInner({ existingCharacterId }: { existingCharacterId?: 
             <Save className="size-4" />
             {isFinalizing ? t('buttons.finalizing') : t('buttons.finalizeCharacter')}
           </Button>
-          <Button variant="destructive" onClick={() => setConfirmAbandon(true)} className="order-2">
-            <Trash2 className="size-4" />
-            {t('buttons.abandonCharacter')}
-          </Button>
+          {wasFinalized ? (
+            // A rebuilt sheet is a played character: it is never deleted from here, the rebuild is cancelled.
+            <Button variant="outline" onClick={handleCancelRebuild} pending={isCancellingRebuild} className="order-2">
+              {t('buttons.cancelRebuild')}
+            </Button>
+          ) : isPlayer ? (
+            // A player cannot delete: the draft stays (listed and resumable in "My characters").
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/campaign/${campaignSlug}/characters`)}
+              className="order-2"
+            >
+              {t('buttons.leaveBuilder')}
+            </Button>
+          ) : (
+            <Button variant="destructive" onClick={() => setConfirmAbandon(true)} className="order-2">
+              <Trash2 className="size-4" />
+              {t('buttons.abandonCharacter')}
+            </Button>
+          )}
         </div>
 
         {confirmAbandon && (
@@ -511,6 +554,7 @@ export default function CharacterBuilder() {
   const { t } = useTranslation('common');
 
   const navigate = useNavigate();
+  const { userId, isPlayer } = useRole();
   const isNew = !characterSlug;
   const {
     data: existingCharacter,
@@ -530,7 +574,8 @@ export default function CharacterBuilder() {
   // never points at the new draft autosave creates for this build. Disabled when not new.
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const { data: campaignDrafts } = useCampaignDrafts(isNew ? (campaignId ?? '') : '');
-  const resumableDraft = isNew ? campaignDrafts?.[0] : undefined;
+  // A player resumes THEIR drafts only (the others' drafts are readable, they are not theirs to continue).
+  const resumableDraft = isNew ? campaignDrafts?.find((d) => !isPlayer || d.owner_user_id === userId) : undefined;
 
   if (!campaignId || !campaignSlug) {
     return (
@@ -569,7 +614,11 @@ export default function CharacterBuilder() {
   // Guard: if the /edit route was reached but the character is no longer a draft (e.g. a stale
   // cached draft list navigated to a now-finalized character), redirect to the character sheet
   // instead of opening the builder and inadvertently autosaving over the finalized row.
-  if (!isNew && existingCharacter && existingCharacter.status !== 'draft') {
+  if (
+    !isNew &&
+    existingCharacter &&
+    (existingCharacter.status !== 'draft' || (isPlayer && existingCharacter.owner_user_id !== userId))
+  ) {
     return <Navigate to={`/campaign/${campaignSlug}/character/${existingCharacter.slug}`} replace />;
   }
 
@@ -609,7 +658,10 @@ export default function CharacterBuilder() {
         initialRows={initialRows}
         initialEquippedItems={initialEquippedItems}
       >
-        <CharacterBuilderInner existingCharacterId={initialCharacter.id || undefined} />
+        <CharacterBuilderInner
+          existingCharacterId={initialCharacter.id || undefined}
+          wasFinalized={!isNew && itemsData.length > 0}
+        />
       </CharacterProvider>
     </>
   );

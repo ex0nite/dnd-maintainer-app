@@ -16,9 +16,12 @@ function makeImageFile(name = 'portrait.png'): File {
   return new File(['img'], name, { type: 'image/png' });
 }
 
+const NEW_PATH =
+  /^c1000000-0000-4000-8000-000000000001\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$/;
+
 describe('usePortraitUpload', () => {
-  const characterId = 'char-1';
-  const publicUrl = 'https://example.com/char-1/portrait.jpg';
+  const characterId = 'c1000000-0000-4000-8000-000000000001';
+  const publicUrl = 'https://example.com/c1000000-0000-4000-8000-000000000001/portrait.jpg';
 
   // Ensure the bucketRef spies are cleared between tests (setupMockReset handles storage.from,
   // but we also clear bucketRef methods directly here for safety).
@@ -42,13 +45,13 @@ describe('usePortraitUpload', () => {
       const bucketRef = supabase.storage.from('character-portraits');
       expect(supabase.storage.from).toHaveBeenCalledWith('character-portraits');
       expect(bucketRef.upload).toHaveBeenCalledWith(
-        `${characterId}/portrait.jpg`,
+        expect.stringMatching(NEW_PATH),
         expect.any(Blob),
-        expect.objectContaining({ contentType: 'image/jpeg', upsert: true })
+        expect.objectContaining({ contentType: 'image/jpeg', upsert: false })
       );
       expect(bucketRef.getPublicUrl).not.toHaveBeenCalled();
       // The update mutation destructures { id, ...updates } — id goes to .eq(), updates go to .update()
-      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: `${characterId}/portrait.jpg` });
+      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: expect.stringMatching(NEW_PATH) });
       expect(supabase.eq).toHaveBeenCalledWith('id', characterId);
       expect(result.current.error).toBeNull();
     });
@@ -70,7 +73,25 @@ describe('usePortraitUpload', () => {
       expect(supabase.update).not.toHaveBeenCalled();
     });
 
-    it('surfaces error and leaves the uploaded file when the DB update fails after a successful storage upload', async () => {
+    it('removes the previous object of this character once the new one is saved, and never a foreign one', async () => {
+      mockStorageResult.error = null;
+      mockQueryResult.data = { id: characterId, portrait_url: 'x' };
+      const { result } = renderHook(() => usePortraitUpload(), { wrapper: createWrapper() });
+      const bucketRef = supabase.storage.from('character-portraits');
+
+      await act(async () => {
+        await result.current.upload(makeImageFile(), characterId, `${characterId}/portrait.jpg`);
+      });
+      expect(bucketRef.remove).toHaveBeenCalledWith([`${characterId}/portrait.jpg`]);
+
+      vi.mocked(bucketRef.remove).mockClear();
+      await act(async () => {
+        await result.current.upload(makeImageFile(), characterId, 'c2000000-0000-4000-8000-000000000002/portrait.jpg');
+      });
+      expect(bucketRef.remove).not.toHaveBeenCalled();
+    });
+
+    it('surfaces error and removes the new object when the DB update fails after a successful storage upload', async () => {
       mockStorageResult.error = null;
       mockStorageResult.publicUrl = publicUrl;
       mockQueryResult.error = { message: 'DB update failed' };
@@ -90,11 +111,11 @@ describe('usePortraitUpload', () => {
       // Storage upload was called (storage succeeded)
       expect(bucketRef.upload).toHaveBeenCalled();
       // DB update was also called (distinguishes this from storage-failure case)
-      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: `${characterId}/portrait.jpg` });
+      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: expect.stringMatching(NEW_PATH) });
       // Hook surfaces the error
       expect(result.current.error).toBeInstanceOf(Error);
-      // Storage remove was NOT called — orphan file is a deliberate trade-off
-      expect(bucketRef.remove).not.toHaveBeenCalled();
+      // The sheet does not point to the new object: it is removed again (best effort)
+      expect(bucketRef.remove).toHaveBeenCalledWith([expect.stringMatching(NEW_PATH)]);
       // isUploading resets to false after failure
       expect(result.current.isUploading).toBe(false);
     });
@@ -128,12 +149,12 @@ describe('usePortraitUpload', () => {
       await act(async () => {
         await result.current.remove(
           characterId,
-          'http://127.0.0.1:54321/storage/v1/object/public/character-portraits/char-1/portrait.jpg'
+          'http://127.0.0.1:54321/storage/v1/object/public/character-portraits/c1000000-0000-4000-8000-000000000001/portrait.jpg'
         );
       });
 
       const bucketRef = supabase.storage.from('character-portraits');
-      expect(bucketRef.remove).toHaveBeenCalledWith(['char-1/portrait.jpg']);
+      expect(bucketRef.remove).toHaveBeenCalledWith(['c1000000-0000-4000-8000-000000000001/portrait.jpg']);
     });
 
     it('returns early without calling anything when currentPortraitUrl is null', async () => {
@@ -156,7 +177,7 @@ describe('usePortraitUpload', () => {
 
       await act(async () => {
         // Should NOT reject — storage errors are swallowed, DB update still proceeds
-        await result.current.remove(characterId, 'https://example.com/portrait.jpg');
+        await result.current.remove(characterId, `${characterId}/portrait.jpg`);
       });
 
       // DB update is still called with portrait_url: null despite storage failure

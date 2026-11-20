@@ -20,12 +20,14 @@ import { SpellcastingPanel } from '@/components/character-sheet/SpellcastingPane
 import { SpellSlotsPanel } from '@/components/character-sheet/SpellSlotsPanel';
 import { ConfirmActionDialog, type ConfirmAction } from '@/components/character-sheet/edit-dialogs/ConfirmActionDialog';
 import { EditHeaderDialog } from '@/components/character-sheet/edit-dialogs/EditHeaderDialog';
+import { AssignOwnerDialog } from '@/components/character-sheet/edit-dialogs/AssignOwnerDialog';
 import { EditPersonalityDialog } from '@/components/character-sheet/edit-dialogs/EditPersonalityDialog';
 import { EditTextDialog } from '@/components/character-sheet/edit-dialogs/EditTextDialog';
 import { buildRestUpdate } from '@/lib/rest';
 import { exportCharacterPdf, PdfTemplateError } from '@/lib/pdf-export';
 import { collectFeatSources } from '@/lib/pdf-field-map';
 import { useCharacter, useCharacterMutations } from '@/hooks/useCharacters';
+import { useCharacterPermissions } from '@/hooks/usePermissions';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { CharacterProvider, useCharacterContext } from '@/hooks/useCharacterContext';
@@ -61,8 +63,10 @@ function CharacterSheetInner({
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [cloneName, setCloneName] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   usePageTitle(character.name);
+  const { canEdit, canManage } = useCharacterPermissions(character);
 
   const { update: updateMutation, remove: removeMutation, clone: cloneMutation } = useCharacterMutations();
   const {
@@ -87,6 +91,7 @@ function CharacterSheetInner({
   });
 
   const doSave = useCallback(async () => {
+    if (!canEdit) return; // a read-only viewer never writes
     setSaveFailed(false);
     try {
       await saveDraft(latestPayloadRef.current);
@@ -96,7 +101,7 @@ function CharacterSheetInner({
       setSaveFailed(true);
       toast.error(tc('characterBuilder.errors.failedToSaveDraft'));
     }
-  }, [saveDraft, markSaved, tc]);
+  }, [saveDraft, markSaved, tc, canEdit]);
 
   const isDirtyRef = useRef(isDirty);
   const doSaveRef = useRef(doSave);
@@ -106,10 +111,10 @@ function CharacterSheetInner({
   });
 
   useEffect(() => {
-    if (!isDirty) return;
+    if (!isDirty || !canEdit) return;
     const timer = setTimeout(doSave, 500);
     return () => clearTimeout(timer);
-  }, [isDirty, doSave]);
+  }, [isDirty, doSave, canEdit]);
 
   // Flush a pending autosave on unmount so the last level-up isn't lost when the user navigates away within the debounce window.
   useEffect(() => {
@@ -121,6 +126,7 @@ function CharacterSheetInner({
   }, []);
 
   const handleUpdate = (updates: Partial<Character>) => {
+    if (!canEdit) return;
     updateMutation.mutate(
       { id: characterId, ...updates },
       {
@@ -150,6 +156,37 @@ function CharacterSheetInner({
           navigate(`/campaign/${campaignSlug}/characters`);
         },
         onError: () => toast.error(tc('characterSheet.errors.archiveFailed')),
+      }
+    );
+  };
+
+  // Rebuild (story 3.5): the sheet goes back to draft and the builder reopens on it. Nothing is erased: the level
+  // history and the inventory stay (finalizing again only materializes items when there are none), the choices come
+  // back pre-filled from the level history.
+  const handleRebuild = async () => {
+    // A pending autosave must land first: the builder reads the level history from the cache.
+    if (isDirtyRef.current) await doSaveRef.current();
+    updateMutation.mutate(
+      { id: characterId, status: 'draft' },
+      {
+        onSuccess: () => {
+          setConfirmAction(null);
+          navigate(`/campaign/${campaignSlug}/character/${character.slug}/edit`);
+        },
+        onError: () => toast.error(tc('characterSheet.errors.rebuildFailed')),
+      }
+    );
+  };
+
+  const handleAssign = (ownerId: string | null) => {
+    updateMutation.mutate(
+      { id: characterId, owner_user_id: ownerId },
+      {
+        onSuccess: () => {
+          setAssigning(false);
+          toast.success(tc('characterSheet.assign.success'));
+        },
+        onError: () => toast.error(tc('characterSheet.assign.failed')),
       }
     );
   };
@@ -264,16 +301,23 @@ function CharacterSheetInner({
             setConfirmAction('clone');
           }}
           onArchive={() => setConfirmAction('archive')}
+          onRebuild={() => setConfirmAction('rebuild')}
+          onAssign={() => setAssigning(true)}
           onDelete={() => setConfirmAction('delete')}
           onExportPdf={handleExportPdf}
           exportingPdf={exportingPdf}
+          canEdit={canEdit}
+          canManage={canManage}
         />
 
         {/* Pending Choices Panel */}
-        <div className="mb-6">
-          <PendingChoicesPanel />
-        </div>
+        {canEdit && (
+          <div className="mb-6">
+            <PendingChoicesPanel />
+          </div>
+        )}
 
+        {/* A read-only viewer sees the sheet but every control inside is disabled (the database refuses the writes too). */}
         {/* WotC-inspired layout: stats (left) / combat (center) / roleplay & gear (right) */}
         <div className="sheet-grid mb-6">
           {/* Left Column: Abilities, Saving Throws, Skills */}
@@ -309,22 +353,25 @@ function CharacterSheetInner({
               buildError={buildError}
             />
 
-            <ConditionsPanel character={character} onUpdate={handleUpdate} />
+            {/* Only what WRITES is disabled for a read-only viewer: the details (attacks, skills, bonuses) still open. */}
+            <fieldset disabled={!canEdit} className="m-0 min-w-0 space-y-4 border-0 p-0">
+              <ConditionsPanel character={character} onUpdate={handleUpdate} />
 
-            {resolved && (
-              <>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={handleShortRest}>
-                    {tc('characterSheet.actions.shortRest')}
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1" onClick={handleLongRest}>
-                    {tc('characterSheet.actions.longRest')}
-                  </Button>
-                </div>
-                <HitDicePanel resolved={resolved} character={character} onUpdate={handleUpdate} />
-                <SpellSlotsPanel resolved={resolved} character={character} onUpdate={handleUpdate} />
-              </>
-            )}
+              {resolved && (
+                <>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={handleShortRest}>
+                      {tc('characterSheet.actions.shortRest')}
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={handleLongRest}>
+                      {tc('characterSheet.actions.longRest')}
+                    </Button>
+                  </div>
+                  <HitDicePanel resolved={resolved} character={character} onUpdate={handleUpdate} />
+                  <SpellSlotsPanel resolved={resolved} character={character} onUpdate={handleUpdate} />
+                </>
+              )}
+            </fieldset>
 
             {resolved && <AttacksPanel attacks={resolved.attacks} weaponMasteries={resolved.weaponMasteries} />}
             {resolved && <ProficienciesPanel resolved={resolved} />}
@@ -336,25 +383,31 @@ function CharacterSheetInner({
           <div className="sheet-area-right">
             {itemsData.length > 0 && <EquipmentPanel itemsData={itemsData} />}
             {hasSpells && <SpellcastingPanel spellcasting={resolved.spellcasting!} />}
-            {hasPersonality && <PersonalityPanel character={character} onEdit={() => setEditSection('personality')} />}
+            {hasPersonality && (
+              <PersonalityPanel
+                character={character}
+                onEdit={canEdit ? () => setEditSection('personality') : undefined}
+              />
+            )}
           </div>
         </div>
 
         {/* Full Width Backstory & Appearance */}
         <BackstoryPanel
           character={character}
-          onEditBackstory={() => setEditSection('backstory')}
-          onEditAppearance={() => setEditSection('appearance')}
+          onEditBackstory={canEdit ? () => setEditSection('backstory') : undefined}
+          onEditAppearance={canEdit ? () => setEditSection('appearance') : undefined}
         />
       </div>
 
       {/* Edit Dialogs */}
-      {editSection === 'header' && (
+      {canEdit && editSection === 'header' && (
         <EditHeaderDialog
           character={character}
           onSave={handleUpdate}
           onClose={() => setEditSection(null)}
           saving={updateMutation.isPending}
+          canManage={canManage}
         />
       )}
       {editSection === 'personality' && (
@@ -389,7 +442,17 @@ function CharacterSheetInner({
         />
       )}
 
-      {/* Archive / Delete / Clone Confirmation */}
+      {canManage && assigning && (
+        <AssignOwnerDialog
+          campaignId={character.campaign_id}
+          currentOwnerId={character.owner_user_id}
+          saving={updateMutation.isPending}
+          onSave={handleAssign}
+          onClose={() => setAssigning(false)}
+        />
+      )}
+
+      {/* Archive / Delete / Clone / Rebuild Confirmation */}
       {confirmAction && (
         <ConfirmActionDialog
           action={confirmAction}
@@ -397,7 +460,13 @@ function CharacterSheetInner({
           cloneName={cloneName}
           onCloneNameChange={setCloneName}
           onConfirm={
-            confirmAction === 'archive' ? handleArchive : confirmAction === 'clone' ? handleClone : handleDelete
+            confirmAction === 'archive'
+              ? handleArchive
+              : confirmAction === 'clone'
+                ? handleClone
+                : confirmAction === 'rebuild'
+                  ? handleRebuild
+                  : handleDelete
           }
           onClose={() => setConfirmAction(null)}
           pending={updateMutation.isPending || removeMutation.isPending || cloneMutation.isPending}

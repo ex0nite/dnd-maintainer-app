@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/hooks/usePermissions';
 
 export interface SidebarProps {
   campaigns: CampaignSummary[];
@@ -52,6 +53,9 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation('common');
   const { signOut } = useAuth();
+  const { isPlayer } = useRole();
+  // A player's table: only the characters for now (notes and recaps come with their own epics).
+  const navItems = isPlayer ? NAV_ITEMS.filter((item) => item.labelKey === 'nav.characters') : NAV_ITEMS;
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const location = useLocation();
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
@@ -173,7 +177,7 @@ export function Sidebar({
 
         {/* Navigation Links */}
         <nav className="flex-1 px-2 py-4">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const disabled = !currentCampaign;
             const fullPath = currentCampaign ? `/campaign/${currentCampaign.slug}${item.path}` : '#';
@@ -251,15 +255,16 @@ export function Sidebar({
             <Settings className="size-5 shrink-0" />
             {!isCollapsed && <span className="font-medium text-sm">{t('nav.settings')}</span>}
           </NavLink>
-          <NavLink
-            to="/players"
-            onClick={() => {
-              if (window.innerWidth < 768) {
-                onToggleCollapse(true);
-              }
-            }}
-            className={({ isActive }) =>
-              `
+          {!isPlayer && (
+            <NavLink
+              to="/players"
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  onToggleCollapse(true);
+                }
+              }}
+              className={({ isActive }) =>
+                `
                 flex items-center gap-3 px-3 py-3 rounded-lg transition-colors duration-200
                 ${
                   isActive
@@ -267,21 +272,23 @@ export function Sidebar({
                     : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent'
                 }
               `
-            }
-            title={t('nav.players')}
-          >
-            <UserPlus className="size-5 shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">{t('nav.players')}</span>}
-          </NavLink>
-          <NavLink
-            to="/export"
-            onClick={() => {
-              if (window.innerWidth < 768) {
-                onToggleCollapse(true);
               }
-            }}
-            className={({ isActive }) =>
-              `
+              title={t('nav.players')}
+            >
+              <UserPlus className="size-5 shrink-0" />
+              {!isCollapsed && <span className="font-medium text-sm">{t('nav.players')}</span>}
+            </NavLink>
+          )}
+          {!isPlayer && (
+            <NavLink
+              to="/export"
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  onToggleCollapse(true);
+                }
+              }}
+              className={({ isActive }) =>
+                `
                 flex items-center gap-3 px-3 py-3 rounded-lg
                 transition-colors duration-200 group
                 ${
@@ -290,12 +297,13 @@ export function Sidebar({
                     : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent'
                 }
               `
-            }
-            title={t('nav.exportData')}
-          >
-            <Download className="size-5 shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">{t('nav.exportData')}</span>}
-          </NavLink>
+              }
+              title={t('nav.exportData')}
+            >
+              <Download className="size-5 shrink-0" />
+              {!isCollapsed && <span className="font-medium text-sm">{t('nav.exportData')}</span>}
+            </NavLink>
+          )}
           <NavLink
             to="/change-password"
             className="flex items-center gap-3 px-3 py-3 rounded-lg text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-200"
