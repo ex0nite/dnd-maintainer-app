@@ -83,7 +83,9 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                 return (
                   <div key={i} className="text-sm text-foreground">
                     &bull; {ruleName('spell', cantrip)}
-                    {meta && <span className="text-xs text-muted-foreground ml-2">{`(${t(`schools.${meta.school}`)})`}</span>}
+                    {meta && (
+                      <span className="text-xs text-muted-foreground ml-2">{`(${t(`schools.${meta.school}`)})`}</span>
+                    )}
                   </div>
                 );
               })}

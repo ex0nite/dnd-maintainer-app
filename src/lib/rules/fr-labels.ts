@@ -16,7 +16,10 @@ export const FR_TABLE_2014: Table = table;
 type Tree = { [key: string]: string | Tree };
 
 /** Table id -> `gamedata` ids, for the sections whose ids are spelled differently in `gamedata`. */
-const SKILL_KEY: Readonly<Record<string, string>> = { 'animal-handling': 'animalhandling', 'sleight-of-hand': 'sleightofhand' };
+const SKILL_KEY: Readonly<Record<string, string>> = {
+  'animal-handling': 'animalhandling',
+  'sleight-of-hand': 'sleightofhand',
+};
 const ALIGNMENT_KEY: Readonly<Record<string, string>> = {
   'lawful-good': 'lg',
   'neutral-good': 'ng',
