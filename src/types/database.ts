@@ -1,12 +1,5 @@
-import type {
-  AlignmentId,
-  ClassId,
-  DndGender,
-  ExhaustionLevel,
-  Proficiencies,
-  SpeciesId,
-  SizeId,
-} from '@/lib/dnd-helpers';
+import type { RulesetId } from '@/lib/ruleset';
+import type { AlignmentId, ClassId, DndGender, ExhaustionLevel, Proficiencies, SizeId } from '@/lib/dnd-helpers';
 import type { ThemeId } from '@/lib/theme';
 import type { ConditionId } from '@/lib/sources/conditions';
 import type { WeaponMasteryId } from '@/types/items';
@@ -41,6 +34,8 @@ export interface Campaign {
   theme: ThemeId | null;
   archived_at?: string | null;
   allowed_source_books: SourceBookId[];
+  /** Rules edition of the campaign (story 9.1). */
+  ruleset: RulesetId;
 }
 
 export interface Character {
@@ -53,7 +48,8 @@ export interface Character {
   name: string;
   player_name: string | null;
   character_type: 'pc' | 'npc';
-  species: SpeciesId | null;
+  /** Built-in species id or the id of a rule entry (story 9.3): open kebab-case string. */
+  species: string | null;
   class: ClassId | null;
   subclass: string | null;
   level: number;

@@ -1,4 +1,8 @@
 import { useTranslation } from 'react-i18next';
+import { RulesetPicker } from '@/components/RulesetPicker';
+import { RulesLibraryStatus } from '@/components/RulesLibraryStatus';
+import { useRuleAwareT, useRuleSet } from '@/hooks/useRuleSet';
+import { canBuildCharacters, isRulesetId } from '@/lib/ruleset';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { ValidationError } from '@/components/ui/validation-error';
 import { ThemePicker } from '@/components/ThemePicker';
 import { useCampaign, useCampaignMutations } from '@/hooks/useCampaigns';
-import { SOURCE_BOOKS, type SourceBookId } from '@/lib/source-books';
+import { booksOfEdition, SOURCE_BOOKS, type SourceBookId } from '@/lib/source-books';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useCharacters } from '@/hooks/useCharacters';
@@ -17,7 +21,9 @@ import {
   ChevronRight,
   Clock,
   Edit2,
+  Library,
   Palette,
+  Scale,
   Save,
   Scroll,
   Swords,
@@ -42,12 +48,13 @@ export default function CampaignDashboard() {
   const [nameError, setNameError] = useState<string>('');
 
   const { t } = useTranslation('common');
-  const { t: tg } = useTranslation('gamedata');
 
   const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignSlug);
+  const { rules } = useRuleSet(campaign && isRulesetId(campaign.ruleset) ? campaign.ruleset : undefined);
+  const tg = useRuleAwareT(rules);
   const { update: updateMutation } = useCampaignMutations();
 
-  const { data: charactersRaw = [], error: charactersError } = useCharacters(campaignId!);
+  const { data: charactersRaw = [], error: charactersError, isLoading: charactersLoading } = useCharacters(campaignId!);
   const characters = useMemo(
     () => [...charactersRaw].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
     [charactersRaw]
@@ -96,6 +103,10 @@ export default function CampaignDashboard() {
     handleUpdate({ setting: editedSetting });
   };
 
+  // The edition can change until a character is finalized (the database enforces it too).
+  const rulesetLocked = characters.some((c) => c.status === 'ready');
+  // The database is the real lock: a change made from a stale screen is refused with this code.
+  const rulesetRefusedByDb = (updateMutation.error as { code?: string } | null | undefined)?.code === '23514';
   const pcCount = characters.filter((c) => c.character_type === 'pc').length;
   const npcCount = characters.filter((c) => c.character_type === 'npc').length;
   const lastSession = sessions[0];
@@ -131,7 +142,7 @@ export default function CampaignDashboard() {
         <div className="max-w-7xl mx-auto px-8 py-6">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-4"
+            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors mb-4"
           >
             <ArrowLeft className="size-5" />
             {t('campaign.backToCampaigns')}
@@ -184,7 +195,8 @@ export default function CampaignDashboard() {
                       setNameError('');
                       setIsEditingName(true);
                     }}
-                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                    aria-label={t('buttons.edit')}
+                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   >
                     <Edit2 className="size-5" />
                   </button>
@@ -220,9 +232,11 @@ export default function CampaignDashboard() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group/setting mt-2">
-                  <p className="text-muted-foreground">
+                  <p className="text-foreground">
                     {campaign.setting || (
-                      <span className="italic text-muted-foreground">{t('campaign.noSetting')}</span>
+                      <span className="italic underline decoration-dotted underline-offset-4 text-foreground">
+                        {t('campaign.noSetting')}
+                      </span>
                     )}
                   </p>
                   <button
@@ -230,7 +244,8 @@ export default function CampaignDashboard() {
                       setEditedSetting(campaign.setting || '');
                       setIsEditingSetting(true);
                     }}
-                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/setting:opacity-100"
+                    aria-label={t('buttons.edit')}
+                    className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/setting:opacity-100 focus-visible:opacity-100"
                   >
                     <Edit2 className="size-3.5" />
                   </button>
@@ -287,7 +302,8 @@ export default function CampaignDashboard() {
                   setEditedDescription(campaign.description || '');
                   setIsEditingDescription(true);
                 }}
-                className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                aria-label={t('buttons.edit')}
+                className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <Edit2 className="size-4" />
               </button>
@@ -314,7 +330,11 @@ export default function CampaignDashboard() {
                     <Users className="size-5 text-primary" />
                     {t('campaign.stats.characters')}
                   </h3>
-                  <Link to={`/campaign/${campaignSlug}/characters`} className="text-primary hover:text-foreground">
+                  <Link
+                    to={`/campaign/${campaignSlug}/characters`}
+                    aria-label={t('campaign.stats.characters')}
+                    className="text-primary hover:text-foreground"
+                  >
                     <ChevronRight className="size-5" />
                   </Link>
                 </div>
@@ -345,7 +365,11 @@ export default function CampaignDashboard() {
                     <BookOpen className="size-5 text-primary" />
                     {t('campaign.stats.sessions')}
                   </h3>
-                  <Link to={`/campaign/${campaignSlug}/sessions`} className="text-primary hover:text-foreground">
+                  <Link
+                    to={`/campaign/${campaignSlug}/sessions`}
+                    aria-label={t('campaign.stats.sessions')}
+                    className="text-primary hover:text-foreground"
+                  >
                     <ChevronRight className="size-5" />
                   </Link>
                 </div>
@@ -368,7 +392,11 @@ export default function CampaignDashboard() {
                     <Scroll className="size-5 text-primary" />
                     {t('campaign.stats.notes')}
                   </h3>
-                  <Link to={`/campaign/${campaignSlug}/notes`} className="text-primary hover:text-foreground">
+                  <Link
+                    to={`/campaign/${campaignSlug}/notes`}
+                    aria-label={t('campaign.stats.notes')}
+                    className="text-primary hover:text-foreground"
+                  >
                     <ChevronRight className="size-5" />
                   </Link>
                 </div>
@@ -572,12 +600,64 @@ export default function CampaignDashboard() {
             <Card className="hover-lift">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
+                  <Scale className="size-5 text-muted-foreground" />
+                  <h3 className="font-semibold" id="ruleset-heading">
+                    {t('campaign.ruleset.title')}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{t('campaign.ruleset.description')}</p>
+                <RulesetPicker
+                  idPrefix="ruleset"
+                  labelledBy="ruleset-heading"
+                  value={campaign.ruleset}
+                  describedBy="ruleset-notes"
+                  disabled={updateMutation.isPending || rulesetLocked || Boolean(charactersLoading)}
+                  onChange={(ruleset) => updateMutation.mutate({ id: campaign.id, ruleset })}
+                />
+                <div id="ruleset-notes">
+                  {(rulesetLocked || rulesetRefusedByDb) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.locked')}</p>
+                  )}
+                  {!canBuildCharacters(campaign.ruleset) && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.notReady')}</p>
+                  )}
+                  {campaign.ruleset === '2014' && (
+                    <p className="text-xs text-muted-foreground mt-2">{t('campaign.ruleset.spellsLater')}</p>
+                  )}
+                </div>
+                {updateMutation.isError &&
+                  !rulesetRefusedByDb &&
+                  updateMutation.variables &&
+                  'ruleset' in updateMutation.variables && (
+                    <p className="text-sm text-destructive mt-1">{t('campaign.ruleset.saveFailed')}</p>
+                  )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4">
+            <Card className="hover-lift">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Library className="size-5 text-muted-foreground" />
+                  <h3 className="font-semibold">{t('campaign.rulesLibrary.title')}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{t('campaign.rulesLibrary.description')}</p>
+                <RulesLibraryStatus ruleset={campaign.ruleset} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4">
+            <Card className="hover-lift">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
                   <BookOpen className="size-5 text-muted-foreground" />
                   <h3 className="font-semibold">{t('campaign.sourceBooks.title')}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">{t('campaign.sourceBooks.description')}</p>
                 <div className="space-y-2">
-                  {SOURCE_BOOKS.map((book) => {
+                  {booksOfEdition(SOURCE_BOOKS, campaign.ruleset).map((book) => {
                     const allowed = campaign.allowed_source_books;
                     const isChecked = allowed.includes(book.id);
                     const isLastChecked = isChecked && allowed.length === 1;

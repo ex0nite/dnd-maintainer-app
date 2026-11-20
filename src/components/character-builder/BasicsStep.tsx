@@ -17,9 +17,10 @@ import {
   type AlignmentId,
   type ClassId,
   type DndGender,
-  type SpeciesId,
+  isBackgroundId,
+  isSpeciesId,
 } from '@/lib/dnd-helpers';
-import { SPECIES_SOURCES } from '@/lib/sources/species';
+import { useActiveRuleSet, useRuleName } from '@/hooks/useRuleSet';
 import {
   generateRandomNpcBasicsDetailed,
   getQuickNpcClassIds,
@@ -29,7 +30,6 @@ import type { StepType } from '@/types/character-builder';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MoreHorizontal, Wand2 } from 'lucide-react';
 import { CLASS_ICONS } from '@/lib/class-icons';
-import type { BackgroundId } from '@/lib/dnd-helpers';
 import {
   backgroundHasLaterChoices,
   classHasLaterChoices,
@@ -73,6 +73,8 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
   const { t: tc } = useTranslation('common');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const gameData = useGameData(campaignSlug);
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
   const { data: playerNames = [], isError: playerNamesError } = usePlayerNames();
   const context = useCharacterContext();
 
@@ -81,7 +83,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
   const characterType = character.character_type ?? 'pc';
   const name = character.name ?? '';
   const playerName = character.player_name ?? '';
-  const race = (character.species ?? '') as SpeciesId | '';
+  const race = character.species ?? '';
   const alignment = character.alignment ?? '';
   const gender = character.gender ?? '';
   const background = character.background ?? '';
@@ -99,9 +101,16 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
   const allowedClassIds = new Set(gameData.classes.map((c) => c.id));
   const allowedBackgroundIds = new Set(gameData.backgrounds.map((b) => b.id));
 
-  const filteredSpecies = DND_SPECIES.filter((s) => allowedSpeciesIds.has(s.id) || s.id === race);
+  // Built-in entities keep their reference order; entries of the rules library (story 9.3) follow.
+  const filteredSpecies = [
+    ...DND_SPECIES.filter((s) => allowedSpeciesIds.has(s.id) || s.id === race),
+    ...gameData.species.filter((s) => !isSpeciesId(s.id)),
+  ];
   const filteredClasses = DND_CLASSES.filter((c) => allowedClassIds.has(c.id) || c.id === characterClass);
-  const filteredBackgrounds = DND_BACKGROUNDS.filter((b) => allowedBackgroundIds.has(b.id) || b.id === background);
+  const filteredBackgrounds = [
+    ...DND_BACKGROUNDS.filter((b) => allowedBackgroundIds.has(b.id) || b.id === background),
+    ...gameData.backgrounds.filter((b) => !isBackgroundId(b.id)),
+  ];
 
   // Ref-flag + useEffect for post-commit step advance. Refs dodge stale closures
   // and keep onRequestAdvance out of the effect deps (it is a new fn per render).
@@ -147,7 +156,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
     clearWatchdog();
   };
 
-  const handleSpeciesChange = (value: SpeciesId) => {
+  const handleSpeciesChange = (value: string) => {
     cancelPendingAdvance();
     context.updateCharacter({ species: value });
   };
@@ -376,14 +385,15 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
               type="button"
               variant="outline"
               size="icon"
-              disabled={!race || !gender}
+              disabled={!race || !gender || !isSpeciesId(race)}
               title={
                 !race || !gender
                   ? tc('characterBuilder.hints.selectSpeciesAndGender')
                   : tc('characterBuilder.hints.generateRandomName')
               }
               onClick={() => {
-                if (!race || !gender) return;
+                // Name tables exist for the built-in species only.
+                if (!race || !gender || !isSpeciesId(race)) return;
                 const generatedName = generateCharacterName(race, gender as DndGender);
                 if (generatedName) context.updateCharacter({ name: generatedName });
               }}
@@ -417,7 +427,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
               {tc('characterBuilder.fields.species')}
               <span className="text-destructive">*</span>
             </Label>
-            {race && !SPECIES_SOURCES.some((s) => s.id === race) ? (
+            {race && !rules.species.has(race) ? (
               <div className="space-y-1">
                 <Badge variant="destructive" className="text-xs">
                   {tc('characterBuilder.hints.legacySpecies')}
@@ -433,8 +443,8 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
             ) : null}
             <Select
               value={race || null}
-              onValueChange={(value) => value && handleSpeciesChange(value as SpeciesId)}
-              items={filteredSpecies.map((s) => ({ value: s.id, label: t(`species.${s.id}`) }))}
+              onValueChange={(value) => value && handleSpeciesChange(value)}
+              items={filteredSpecies.map((s) => ({ value: s.id, label: ruleName('species', s.id) }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={tc('characterBuilder.placeholders.chooseSpecies')} />
@@ -442,8 +452,8 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
               <SelectContent>
                 {filteredSpecies.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {t(`species.${s.id}`)}
-                    {speciesHasLaterChoices(s.id) && (
+                    {ruleName('species', s.id)}
+                    {speciesHasLaterChoices(s.id, rules) && (
                       <HasLaterChoicesIcon tooltip={tc('characterBuilder.hints.hasLaterChoices')} />
                     )}
                   </SelectItem>
@@ -467,7 +477,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
             <Select
               value={characterClass || null}
               onValueChange={(value) => value && handleClassChange(value as ClassId)}
-              items={filteredClasses.map((c) => ({ value: c.id, label: t(`classes.${c.id}`) }))}
+              items={filteredClasses.map((c) => ({ value: c.id, label: ruleName('class', c.id) }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={tc('characterBuilder.placeholders.chooseClass')} />
@@ -475,8 +485,8 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
               <SelectContent>
                 {filteredClasses.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
-                    {t(`classes.${cls.id}`)}
-                    {classHasLaterChoices(cls.id) && (
+                    {ruleName('class', cls.id)}
+                    {classHasLaterChoices(cls.id, rules) && (
                       <HasLaterChoicesIcon tooltip={tc('characterBuilder.hints.hasLaterChoices')} />
                     )}
                   </SelectItem>
@@ -487,7 +497,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
 
           <div className="space-y-2">
             <Label>{tc('characterBuilder.fields.background')}</Label>
-            {background && !allowedBackgroundIds.has(background as BackgroundId) && (
+            {background && !allowedBackgroundIds.has(background) && (
               <div className="space-y-1">
                 <Badge variant="destructive" className="text-xs">
                   {tc('characterBuilder.hints.disabledSourceBook')}
@@ -497,7 +507,7 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
             <Select
               value={background || null}
               onValueChange={(value) => value && context.updateCharacter({ background: value })}
-              items={filteredBackgrounds.map((b) => ({ value: b.id, label: t(`backgrounds.${b.id}`) }))}
+              items={filteredBackgrounds.map((b) => ({ value: b.id, label: ruleName('background', b.id) }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={tc('characterBuilder.placeholders.chooseBackground')} />
@@ -505,8 +515,8 @@ export function BasicsStep({ onRequestAdvance, allowNpc = true }: BasicsStepProp
               <SelectContent>
                 {filteredBackgrounds.map((b) => (
                   <SelectItem key={b.id} value={b.id}>
-                    {t(`backgrounds.${b.id}`)}
-                    {backgroundHasLaterChoices(b.id as BackgroundId) && (
+                    {ruleName('background', b.id)}
+                    {backgroundHasLaterChoices(b.id, rules) && (
                       <HasLaterChoicesIcon tooltip={tc('characterBuilder.hints.hasLaterChoices')} />
                     )}
                   </SelectItem>

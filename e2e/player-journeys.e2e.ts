@@ -163,3 +163,184 @@ test('a new device starts in French, and the language chosen on the sign-in page
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 });
+
+// Story 9.7: the 2014 builder. A 2014 draft is opened on its scores step: the four methods (manual entry included) and
+// the equipment step with the SRD choices fit 360 px, in English and in French.
+for (const language of ['en', 'fr'] as const) {
+  test(`2014 builder: scores typed by hand and starting equipment · ${language}`, async ({ page }) => {
+    const draft = {
+      id: 'c0000000-0000-4000-8000-000000000001',
+      slug: 'brenn-2014',
+      previous_slugs: [],
+      campaign_id: CAMPAIGN_ID,
+      name: 'Brenn Forgepierre',
+      player_name: 'Alice',
+      character_type: 'pc',
+      species: 'dwarf',
+      class: 'cleric',
+      subclass: null,
+      level: 1,
+      background: 'acolyte',
+      alignment: 'lg',
+      status: 'draft',
+      owner_user_id: 'e2e-user',
+      is_active: true,
+      heroic_inspiration: false,
+      exhaustion_level: 0,
+      conditions: [],
+      character_private: { backstory: null, notes: null },
+    };
+    const rows = [
+      {
+        character_id: draft.id,
+        sequence: 0,
+        base_abilities: { str: 14, dex: 10, con: 15, int: 8, wis: 16, cha: 12 },
+        ability_method: 'manual',
+        choices: { 'lineage-choice:species:dwarf:0': { type: 'lineage-choice', lineageId: 'hill-dwarf' } },
+        class_id: null,
+        class_level: null,
+        subclass_id: null,
+        asi_allocation: null,
+        feat_id: null,
+        hp_roll: null,
+        deleted_at: null,
+      },
+      {
+        character_id: draft.id,
+        sequence: 1,
+        base_abilities: null,
+        ability_method: null,
+        choices: {},
+        class_id: 'cleric',
+        class_level: 1,
+        subclass_id: null,
+        asi_allocation: null,
+        feat_id: null,
+        hp_roll: null,
+        deleted_at: null,
+      },
+    ];
+    const wantsObject = (r: import('@playwright/test').Request) =>
+      (r.headers()['accept'] ?? '').includes('application/vnd.pgrst.object');
+    await stubBackend(page, {
+      signedIn: true,
+      role: 'player',
+      language,
+      campaign: { ruleset: '2014', allowed_source_books: ['phb-2014'] },
+      rest: {
+        characters: (r) => (wantsObject(r) ? draft : [draft]),
+        character_build_levels: rows,
+        character_private: [{ character_id: draft.id, backstory: null, notes: null }],
+      },
+    });
+    await page.goto('/campaign/la-mine-perdue/character/brenn-2014/edit');
+    await expect(page.getByLabel(language === 'en' ? 'Character Name' : /Nom du personnage/)).toBeVisible();
+    await expectNoHorizontalScroll(page);
+
+    // Step 3 of the 2014 order is the ability scores, before the background.
+    await page.getByRole('button', { name: '3', exact: true }).click();
+    const manual = page.getByRole('tab', { name: language === 'en' ? 'Manual entry' : 'Saisie manuelle' });
+    await expect(manual).toBeVisible();
+    await manual.click();
+    await expect(page.getByRole('spinbutton')).toHaveCount(6);
+    await expectNoHorizontalScroll(page);
+
+    // An out-of-bounds score is reported where it is typed.
+    const first = page.getByRole('spinbutton').first();
+    await first.fill('25');
+    await first.blur();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expectNoHorizontalScroll(page);
+    await first.fill('17');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+
+    // Step 5 of the 2014 order is the details, step 6 the equipment with the class choices of the SRD.
+    await page.getByRole('button', { name: '6', exact: true }).click();
+    await expect(page.getByRole('radio').first()).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  });
+}
+
+// Story 9.8: the spells and invocations of a 2014 caster. A level 5 warlock owes spells (any level up to its pact slots)
+// and invocations: the class step lists them (long option texts included) without horizontal scroll, in both languages.
+for (const language of ['en', 'fr'] as const) {
+  test(`2014 caster: spell and invocation choices fit 360 px · ${language}`, async ({ page }) => {
+    const draft = {
+      id: 'c0000000-0000-4000-8000-000000000002',
+      slug: 'nox-2014',
+      previous_slugs: [],
+      campaign_id: CAMPAIGN_ID,
+      name: 'Nox',
+      player_name: 'Bob',
+      character_type: 'pc',
+      species: 'human',
+      class: 'warlock',
+      subclass: 'fiend',
+      level: 5,
+      background: 'acolyte',
+      alignment: 'ce',
+      status: 'draft',
+      owner_user_id: 'e2e-user',
+      is_active: true,
+      heroic_inspiration: false,
+      exhaustion_level: 0,
+      conditions: [],
+      character_private: { backstory: null, notes: null },
+    };
+    const levelRow = (sequence: number, extra: Record<string, unknown> = {}) => ({
+      character_id: draft.id,
+      sequence,
+      base_abilities: null,
+      ability_method: null,
+      choices: {},
+      class_id: 'warlock',
+      class_level: sequence,
+      subclass_id: null,
+      asi_allocation: null,
+      feat_id: null,
+      hp_roll: null,
+      deleted_at: null,
+      ...extra,
+    });
+    const rows = [
+      {
+        ...levelRow(0),
+        base_abilities: { str: 8, dex: 14, con: 14, int: 10, wis: 12, cha: 15 },
+        ability_method: 'manual',
+        class_id: null,
+        class_level: null,
+      },
+      levelRow(1, {
+        choices: { 'subclass:class:warlock:0': { type: 'subclass', subclassId: 'fiend' } },
+        subclass_id: 'fiend',
+      }),
+      levelRow(2),
+      levelRow(3),
+      levelRow(4),
+      levelRow(5),
+    ];
+    const wantsObject = (r: import('@playwright/test').Request) =>
+      (r.headers()['accept'] ?? '').includes('application/vnd.pgrst.object');
+    await stubBackend(page, {
+      signedIn: true,
+      role: 'player',
+      language,
+      campaign: { ruleset: '2014', allowed_source_books: ['phb-2014'] },
+      rest: {
+        characters: (r) => (wantsObject(r) ? draft : [draft]),
+        character_build_levels: rows,
+        character_private: [{ character_id: draft.id, backstory: null, notes: null }],
+      },
+    });
+    await page.goto('/campaign/la-mine-perdue/character/nox-2014/edit');
+    await expect(page.getByLabel(language === 'en' ? 'Character Name' : /Nom du personnage/)).toBeVisible();
+
+    // Step 2 of the 2014 order is the class: spell picks, then the invocations (32 options with their text).
+    await page.getByRole('button', { name: '2', exact: true }).click();
+    await expect(
+      page.getByText(language === 'en' ? /Choose 2 option\(s\)/ : /Choisissez 2 option\(s\)/).first()
+    ).toBeVisible();
+    await expect(page.getByText(/Agonizing Blast/).first()).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  });
+}

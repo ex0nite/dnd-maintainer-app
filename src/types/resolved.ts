@@ -7,7 +7,6 @@ import type {
   ToolProficiencyId,
   LanguageId,
   ClassId,
-  FeatId,
 } from '@/lib/dnd-helpers';
 import type {
   FeatureDef,
@@ -29,7 +28,6 @@ import type {
   WeaponRange,
   BundleCategory,
 } from '@/types/items';
-import type { SpeciesId } from '@/lib/dnd-helpers';
 
 export interface Sourced<T> {
   readonly value: T;
@@ -150,6 +148,22 @@ export interface ResolvedSpellcasting {
   readonly slots: readonly number[];
   readonly preparedCount: number;
   readonly pactMagic: ResolvedPactMagic | null;
+  /**
+   * 2014 known and spellbook spells (story 9.8): total number of free picks among spells of any level the class has
+   * slots for (`spell-choice` grants with `maxSpellLevel`), `null` when the class has none (per-level counts are in
+   * `spellsKnown`). Chosen ones are part of `knownSpells`.
+   */
+  readonly knownTotal?: number | null;
+  /** Spells added to a class list by the character's features (the 2014 warlock patron's expanded list). */
+  readonly listExtensions?: readonly { readonly spellList: ClassId; readonly spellIds: readonly string[] }[];
+}
+
+/** An option of a feature choice; `name` and `description` are the entry's own text (SRD 2014, DM library), else `gamedata` keys apply. */
+export interface PendingFeatureOption {
+  readonly optionId: string;
+  readonly featureId: string;
+  readonly name?: string;
+  readonly description?: string;
 }
 
 export type PendingChoice =
@@ -243,24 +257,21 @@ export type PendingChoice =
       readonly type: 'lineage-choice';
       readonly choiceKey: ChoiceKey;
       readonly source: SourceTag;
-      readonly speciesId: SpeciesId;
+      readonly speciesId: string;
       readonly from: readonly string[];
     }
   | {
       readonly type: 'feat-choice';
       readonly choiceKey: ChoiceKey;
       readonly source: SourceTag;
-      readonly from: readonly FeatId[] | null;
+      readonly from: readonly string[] | null;
       readonly category: FeatCategory;
     }
   | {
       readonly type: 'feature-choice';
       readonly choiceKey: ChoiceKey;
       readonly source: SourceTag;
-      readonly options: readonly [
-        { readonly optionId: string; readonly featureId: string },
-        ...{ readonly optionId: string; readonly featureId: string }[],
-      ];
+      readonly options: readonly [PendingFeatureOption, ...PendingFeatureOption[]];
     }
   | {
       readonly type: 'spell-choice';
@@ -269,6 +280,23 @@ export type PendingChoice =
       readonly count: number;
       readonly spellList: ClassId;
       readonly spellLevel: number;
+      /** 2014: the picks are free among the levels `spellLevel` to `maxSpellLevel`. */
+      readonly maxSpellLevel?: number;
+      /** Spells added to this list by the character's features (patron's expanded list). */
+      readonly extraSpellIds?: readonly string[];
+    }
+  | {
+      readonly type: 'feature-picks';
+      readonly choiceKey: ChoiceKey;
+      readonly source: SourceTag;
+      /** New picks this choice asks for. */
+      readonly count: number;
+      readonly poolId: string;
+      /** Class level of the character in the class that grants the picks (options ask for a minimum). */
+      readonly classLevel: number;
+      readonly options: readonly (PendingFeatureOption & { readonly minClassLevel?: number })[];
+      /** Options already picked through other grants of the pool. */
+      readonly alreadyChosen: readonly string[];
     };
 
 export interface ResolvedCharacter {

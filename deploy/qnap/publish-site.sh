@@ -22,4 +22,6 @@ VOLUME="${COMPOSE_PROJECT_NAME:-dnd}_site"
 
 tar cf - -C "$SRC" . | docker run --rm -i -v "$VOLUME:/site" node:22-alpine \
   sh -c 'find /site -mindepth 1 -delete && tar xf - -C /site && chown -R 0:0 /site && chmod -R a+rX,go-w /site'
+# `up --no-start` may have recreated the gateway container (changed image or configuration): make sure it runs.
+"${COMPOSE[@]}" up -d gateway >/dev/null
 echo "published $(find "$SRC" -type f | wc -l | tr -d ' ') files to the gateway"

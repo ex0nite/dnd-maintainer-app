@@ -98,7 +98,16 @@
       "sylvan": "Sylvestre",
       "arcane": "Arcanique"
     },
-    "useGlobalTheme": "Utiliser le thème global"
+    "useGlobalTheme": "Utiliser le thème global",
+    "licenses": {
+      "title": "Licences",
+      "description": "Contenu de règles fourni avec l'application, et sa licence.",
+      "srdTitle": "System Reference Document 5.1",
+      "srdNotice": "Cette application contient du contenu tiré du System Reference Document 5.1 (« SRD 5.1 ») de Wizards of the Coast LLC. Le SRD 5.1 est distribué sous la licence Creative Commons Attribution 4.0 International.",
+      "srdScope": "Les règles de 2014 intégrées à l'application (espèces, sous-espèces, historiques, classes, sous-classes) viennent du SRD 5.1. Leurs descriptions sont en anglais, seule langue du SRD.",
+      "srdLink": "SRD 5.1",
+      "licenseLink": "Licence CC BY 4.0"
+    }
   },
   "characterBuilder": {
     "title": "Créer un nouveau personnage",
@@ -106,6 +115,7 @@
       "basics": "Bases",
       "class": "Classe",
       "origin": "Origine",
+      "background": "Historique",
       "abilities": "Caractéristiques",
       "details": "Détails",
       "skills": "Compétences",
@@ -173,6 +183,8 @@
       "lineageChoice": "Choisissez votre lignée",
       "featChoice": "Choisissez un don d'origine",
       "featureChoice": "Choisissez une option",
+      "featurePicks": "Choisissez {{count}} option(s)",
+      "spellChoiceUpTo": "Choisissez {{count}} sort(s) de niveau 1 à {{level}}",
       "unsupported": "Choix non pris en charge pour l'instant : {{type}}",
       "remaining": "restant(s)",
       "fromSource": "de {{source}}"
@@ -184,6 +196,7 @@
       "missingClass": "La classe est obligatoire",
       "missingBackground": "L'historique est obligatoire",
       "missingAlignment": "L'alignement est obligatoire",
+      "invalidAbilities": "Les caractéristiques ne correspondent pas à la méthode choisie",
       "pendingChoice": "Choix en attente : {{type}} ({{key}})"
     },
     "status": {
@@ -247,6 +260,13 @@
       "standardArray": "Série standard",
       "pointBuy": "Achat de points",
       "rolling": "Lancers de dés",
+      "manual": "Saisie manuelle",
+      "manualInstructions": "Saisissez les valeurs obtenues ou convenues, avant les bonus d'espèce ({{min}} à {{max}}).",
+      "manualScoreLabel": "Valeur de base : {{ability}}",
+      "speciesBonusSuffix": "espèce",
+      "issueRange": "Chaque valeur doit être comprise entre {{min}} et {{max}}.",
+      "issuePointBuyTotal": "L'achat de points coûte {{cost}} points, la limite est de {{limit}}.",
+      "issueNotInteger": "Chaque valeur doit être un nombre entier.",
       "assignEachValue": "Attribuez chaque valeur à une caractéristique. Chaque valeur une seule fois.",
       "spendPoints": "Dépensez des points pour augmenter les scores à partir de 8.",
       "points": "Points :",
@@ -329,6 +349,7 @@
       "selectBackgroundInBasics": "Choisissez un historique à l'étape Bases pour voir ses choix secondaires."
     },
     "equipment": {
+      "goldManualHint": "Lancez la richesse de départ de votre classe (ou prenez le montant convenu à votre table) et saisissez le résultat.",
       "equipped": "Équipé",
       "quantity": "Qté",
       "weight": "Poids (lb)",
@@ -387,6 +408,7 @@
     },
     "errors": {
       "noCampaignId": "L'identifiant de campagne est nécessaire pour créer un personnage.",
+      "rulesetNotReady": "Les fiches de personnage des règles {{ruleset}} ne sont pas encore disponibles dans cette campagne.",
       "cancelRebuildFailed": "Impossible d'annuler la reconstruction. Veuillez réessayer.",
       "failedToFinalize": "Impossible de finaliser le personnage : {{message}}",
       "failedToSaveDraft": "Impossible d'enregistrer le brouillon. Vos dernières modifications n'ont peut-être pas été enregistrées.",
@@ -463,6 +485,7 @@
       "spellAttackBonus": "Bonus d'attaque des sorts",
       "spellLevelLabel": "Niveau {{level}}",
       "spellLevelUnknown": "Niveau inconnu",
+      "preparedSpells": "Sorts préparés",
       "chosenOfTarget": "{{chosen}}/{{target}}",
       "source": "Source : {{source}}",
       "maxHp": "PV max.",
@@ -657,6 +680,53 @@
       "noTemplate": "Aucun modèle PDF remplissable trouvé. Ajoutez-en un dans public/assets/character-sheet.pdf (voir le README à cet endroit).",
       "failed": "Échec de l'export PDF.",
       "notReady": "Les données du personnage sont encore en cours de chargement : réessayez dans un instant."
+    },
+    "pdf2014": {
+      "title": "Feuille de personnage (règles 2014)",
+      "name": "Nom du personnage",
+      "classLevel": "Classe et niveau",
+      "background": "Historique",
+      "player": "Nom du joueur",
+      "species": "Race",
+      "alignment": "Alignement",
+      "experience": "Points d'expérience",
+      "inspiration": "Inspiration",
+      "proficiencyBonus": "Bonus de maîtrise",
+      "savingThrows": "Jets de sauvegarde",
+      "skills": "Compétences",
+      "passivePerception": "Sagesse passive (Perception)",
+      "armorClass": "Classe d'armure",
+      "initiative": "Initiative",
+      "speed": "Vitesse",
+      "hitPointMax": "Points de vie maximum",
+      "hitDice": "Dés de vie",
+      "attacks": "Attaques et sorts",
+      "attackName": "Nom",
+      "attackBonus": "Bonus d'att.",
+      "attackDamage": "Dégâts et type",
+      "equipment": "Équipement",
+      "personalityTraits": "Traits de personnalité",
+      "ideals": "Idéaux",
+      "bonds": "Liens",
+      "flaws": "Défauts",
+      "featuresAndTraits": "Capacités et traits",
+      "proficienciesAndLanguages": "Autres maîtrises et langues",
+      "armorProficiencies": "Armures",
+      "weaponProficiencies": "Armes",
+      "toolProficiencies": "Outils",
+      "languages": "Langues",
+      "appearance": "Apparence",
+      "backstory": "Histoire du personnage",
+      "spellcasting": "Incantation",
+      "spellcastingClass": "Classe d'incantation",
+      "spellcastingAbility": "Caractéristique d'incantation",
+      "spellSaveDc": "DD de sauvegarde des sorts",
+      "spellAttackBonus": "Bonus d'attaque des sorts",
+      "spellSlots": "Emplacements de sorts",
+      "pactMagic": "Emplacements de magie de pacte",
+      "cantrips": "Sorts mineurs",
+      "spellLevel": "Niveau",
+      "page": "page"
     }
   },
   "characterList": {
@@ -792,6 +862,42 @@
     },
     "theme": "Thème de la campagne",
     "themeDescription": "Personnalisez le thème de couleurs de cette campagne",
+    "ruleset": {
+      "title": "Édition des règles",
+      "description": "L'édition des règles que suit cette campagne. Elle peut être changée jusqu'à la finalisation du premier personnage.",
+      "createHint": "Vous pourrez la changer plus tard, tant qu'aucun personnage n'est finalisé.",
+      "options": {
+        "2014": "D&D 5e (2014)",
+        "2024": "D&D 5.5e (2024)"
+      },
+      "locked": "Un personnage est déjà finalisé : l'édition des règles ne peut plus changer.",
+      "notReady": "Les fiches de personnage de cette édition des règles ne sont pas encore disponibles.",
+      "spellsLater": "Les personnages 2014 peuvent être construits et finalisés. Les sorts et emplacements de sorts des règles 2014 arrivent dans une prochaine mise à jour : l'incantation d'un lanceur de sorts est pour l'instant indiquée en texte.",
+      "saveFailed": "L'édition des règles n'a pas pu être changée."
+    },
+    "rulesLibrary": {
+      "title": "Bibliothèque de règles",
+      "description": "Règles saisies pour cette édition par le MCP. Elles s'appliquent à toutes les campagnes de l'édition. Une entrée remplace la règle intégrée qui porte le même identifiant.",
+      "count_one": "{{count}} entrée dans la bibliothèque de cette édition.",
+      "count_other": "{{count}} entrées dans la bibliothèque de cette édition.",
+      "loading": "Chargement de la bibliothèque de règles…",
+      "error": "La bibliothèque de règles n'a pas pu être lue.",
+      "overrides": "Remplacent une règle intégrée :",
+      "unverified": "En attente de vérification (pas encore utilisables par un personnage) :",
+      "invalid": "Ignorées, elles ne passent pas la validation :",
+      "entry": "{{name}} ({{kind}})",
+      "invalidEntry": "{{kind}} {{id}} : {{path}} : {{message}}",
+      "kinds": {
+        "species": "espèce",
+        "subspecies": "sous-espèce",
+        "class": "classe",
+        "subclass": "sous-classe",
+        "background": "historique",
+        "feat": "don",
+        "spell": "sort",
+        "item": "objet"
+      }
+    },
     "sourceBooks": {
       "title": "Ouvrages de référence",
       "description": "Choisissez les livres de règles disponibles pour la création de personnages dans cette campagne.",
@@ -1084,5 +1190,9 @@
     "invalidCredentials": "Identifiants incorrects",
     "unavailable": "La connexion est indisponible pour le moment. Réessayez dans un instant.",
     "signOut": "Se déconnecter"
+  },
+  "ruleSet": {
+    "loading": "Chargement des règles de la campagne…",
+    "loadFailed": "Les règles de la campagne n'ont pas pu être chargées. La fiche n'est pas calculée sans elles."
   }
 }

@@ -116,6 +116,148 @@ export const BUNDLE_CATALOG: readonly BundleDef[] = [
     contents: [{ itemId: 'shortsword', quantity: 1 }],
     slots: [],
   },
+  // 2014 starting equipment (SRD 5.1 classes, story 9.7). One bundle per option of the SRD's "(a) ... or (b) ..." lines.
+  {
+    id: 'single-greataxe',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'greataxe', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-rapier',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'rapier', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-longsword',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'longsword', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-mace',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'mace', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-warhammer',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'warhammer', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-scimitar',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'scimitar', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-shortsword',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'shortsword', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-quarterstaff',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'quarterstaff', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-dagger',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'dagger', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'two-shortswords',
+    category: 'melee-weapon',
+    contents: [{ itemId: 'shortsword', quantity: 2 }],
+    slots: [],
+  },
+  {
+    id: 'five-javelins',
+    category: 'ranged-weapon',
+    contents: [{ itemId: 'javelin', quantity: 5 }],
+    slots: [],
+  },
+  {
+    id: 'single-shield',
+    category: 'armor',
+    contents: [{ itemId: 'shield', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-scale-mail',
+    category: 'armor',
+    contents: [{ itemId: 'scale-mail', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-leather-armor',
+    category: 'armor',
+    contents: [{ itemId: 'leather', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-chain-mail',
+    category: 'armor',
+    contents: [{ itemId: 'chain-mail', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-lute',
+    category: 'gear',
+    contents: [{ itemId: 'lute', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-musical-instrument',
+    category: 'gear',
+    contents: [{ itemId: 'musical-instrument', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-component-pouch',
+    category: 'gear',
+    contents: [{ itemId: 'component-pouch', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'single-arcane-focus',
+    category: 'gear',
+    contents: [{ itemId: 'arcane-focus', quantity: 1 }],
+    slots: [],
+  },
+  {
+    id: 'any-simple-weapon',
+    category: 'melee-weapon',
+    contents: [],
+    slots: [{ slotKey: 'weapon', quantity: 1, filter: { kind: 'weapon', category: 'simple' } }],
+  },
+  {
+    id: 'any-simple-melee-weapon',
+    category: 'melee-weapon',
+    contents: [],
+    slots: [{ slotKey: 'weapon', quantity: 1, filter: { kind: 'weapon', category: 'simple', range: 'melee' } }],
+  },
+  {
+    id: 'any-martial-melee-weapon',
+    category: 'melee-weapon',
+    contents: [],
+    slots: [{ slotKey: 'weapon', quantity: 1, filter: { kind: 'weapon', category: 'martial', range: 'melee' } }],
+  },
+  {
+    id: 'two-simple-melee-weapons',
+    category: 'melee-weapon',
+    contents: [],
+    slots: [
+      { slotKey: 'weapon-1', quantity: 1, filter: { kind: 'weapon', category: 'simple', range: 'melee' } },
+      { slotKey: 'weapon-2', quantity: 1, filter: { kind: 'weapon', category: 'simple', range: 'melee' } },
+    ],
+  },
 ];
 
 export function getBundleDef(id: string): BundleDef | undefined {

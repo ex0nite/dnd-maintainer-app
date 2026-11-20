@@ -16,7 +16,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/lib/sources/spells', () => ({
+// The panel reads the rule set (story 9.3), built from the real catalog: keep it, override the id check only.
+vi.mock('@/lib/sources/spells', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/sources/spells')>()),
   isSpellId: (id: string) => id.startsWith('spell-'),
 }));
 
@@ -37,6 +39,8 @@ function makeSpellcasting(overrides: Partial<ResolvedSpellcasting> = {}): Resolv
     slots: [],
     preparedCount: 0,
     pactMagic: null,
+    knownTotal: null,
+    listExtensions: [],
     ...overrides,
   };
 }
@@ -267,6 +271,37 @@ describe('SpellcastingPanel', () => {
       expect(screen.getByText((content) => content.includes('1/4'))).toBeDefined();
       // Level 2: chosen=1, target=2 → "1/2"
       expect(screen.getByText((content) => content.includes('1/2'))).toBeDefined();
+    });
+  });
+
+  describe('2014 spellcasting (story 9.8)', () => {
+    it('shows how many spells the character prepares', () => {
+      render(<SpellcastingPanel spellcasting={makeSpellcasting({ ability: 'int', preparedCount: 8 })} />);
+      expect(screen.getByText('preparedSpells')).toBeDefined();
+      expect(screen.getByText('8')).toBeDefined();
+    });
+
+    it('does not show a prepared count for a class that prepares none', () => {
+      render(<SpellcastingPanel spellcasting={makeSpellcasting({ ability: 'cha', preparedCount: 0 })} />);
+      expect(screen.queryByText('preparedSpells')).toBeNull();
+    });
+
+    it('counts the free picks against the total of spells to learn, not the fixed-level ones', () => {
+      render(
+        <SpellcastingPanel
+          spellcasting={makeSpellcasting({
+            knownTotal: 6,
+            spellsKnown: [{ spellLevel: 6, count: 1 }],
+            knownSpells: [
+              { spellId: 'spell-a', spellLevel: 1 },
+              { spellId: 'spell-b', spellLevel: 3 },
+              { spellId: 'spell-c', spellLevel: 6 },
+            ],
+          })}
+        />
+      );
+      // Two free picks of six; the level 6 arcanum is counted by its own level target.
+      expect(screen.getByText(/knownSpells \(2\/6\)/)).toBeDefined();
     });
   });
 });

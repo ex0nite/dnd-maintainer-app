@@ -85,6 +85,8 @@ export interface GearDef {
   readonly id: string;
   readonly weight: number;
   readonly costGp: number;
+  /** An item that only comes inside a pack or a starting kit: no price in the SRD, left out of the shop list. */
+  readonly notForSale?: boolean;
 }
 
 export interface PackDef {

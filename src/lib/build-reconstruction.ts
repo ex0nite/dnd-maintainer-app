@@ -1,14 +1,17 @@
 import { DND_CLASSES, isBackgroundId, isFeatId, isSpeciesId } from '@/lib/dnd-helpers';
+import { ABILITY_METHODS, type AbilityMethod } from '@/lib/ability-scores';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('build-reconstruction');
-import type { ClassId, SpeciesId } from '@/lib/dnd-helpers';
+import type { ClassId } from '@/lib/dnd-helpers';
 import type { AbilityScores } from '@/types/database';
 import type { CharacterBuild, ChoiceDecision, ChoiceKey } from '@/types/choices';
-import { isSubclassId } from '@/types/sources';
 import { createChoiceKey, parseChoiceKey } from '@/types/choices';
-import { AbilityScoresSchema, ChoiceDecisionSchema } from '@/lib/schemas/character-build';
-import { CLASS_SOURCES } from '@/lib/sources/classes';
+import { AbilityScoresSchema, makeChoiceDecisionSchema } from '@/lib/schemas/character-build';
+import { isSpellId } from '@/lib/sources/spells';
+import { builtin2024RuleSet } from '@/lib/rules/ruleset';
+import { isEntityId } from '@/lib/rules/schemas';
+import type { RuleSet } from '@/lib/rules/types';
 
 /**
  * A single row from `character_build_levels`.
@@ -55,7 +58,7 @@ export function isCreationRow(row: BuildLevelRow): row is CreationRow {
 }
 
 export interface CharacterIdentity {
-  readonly species: SpeciesId | null;
+  readonly species: string | null;
   readonly background: string | null;
 }
 
@@ -68,14 +71,15 @@ const DEFAULT_ABILITIES: AbilityScores = {
   cha: 10,
 };
 
-const VALID_ABILITY_METHODS = ['standard-array', 'point-buy', 'rolling'] as const;
-type AbilityMethod = (typeof VALID_ABILITY_METHODS)[number];
+const VALID_ABILITY_METHODS = ABILITY_METHODS;
 
 export function reconstructBuild(
   character: CharacterIdentity,
   rows: readonly BuildLevelRow[],
   equippedItems: readonly string[],
-  onWarning?: (message: string) => void
+  onWarning?: (message: string) => void,
+  /** Rules the build is read against (story 9.3). Defaults to the built-in 2024 rules. */
+  rules: RuleSet = builtin2024RuleSet()
 ): CharacterBuild {
   const warn = (message: string, cause?: unknown): void => {
     logger.warn(message, cause);
@@ -83,7 +87,12 @@ export function reconstructBuild(
   };
 
   if (!character.species) throw new Error('Character is missing required species');
-  if (!isSpeciesId(character.species)) throw new Error(`Character has invalid species ID: "${character.species}"`);
+  if (!isEntityId(character.species)) throw new Error(`Character has invalid species ID: "${character.species}"`);
+  // A well-formed id that the rules do not know (entry deleted, waiting for review, other edition): the build stays
+  // readable and resolves without the species grants; collectBundles reports why.
+  if (!isSpeciesId(character.species) && !rules.species.has(character.species)) {
+    warn(`Unknown species "${character.species}" in the ${rules.ruleset} rules: its grants are left out`);
+  }
 
   const creationRow = rows.find((r): r is CreationRow => isCreationRow(r));
   if (!creationRow) {
@@ -130,7 +139,14 @@ export function reconstructBuild(
   const feats = levelRows
     .filter((row): row is LevelRow & { feat_id: string } => row.feat_id !== null)
     .map((row) => row.feat_id)
-    .filter(isFeatId);
+    .filter((id) => isFeatId(id) || rules.feats.has(id) || isEntityId(id));
+
+  // Feat and spell decisions are kept when their id is well formed, even if the rules do not know it (yet): dropping
+  // them silently would lose the player's choice; collectBundles warns about the missing entry instead.
+  const decisionSchema = makeChoiceDecisionSchema({
+    isFeat: (id) => isFeatId(id) || rules.feats.has(id) || isEntityId(id),
+    isSpell: (id) => isSpellId(id) || rules.spells.has(id) || isEntityId(id),
+  });
 
   // Build choices map
   const choices: Record<ChoiceKey, ChoiceDecision> = {} as Record<ChoiceKey, ChoiceDecision>;
@@ -143,7 +159,7 @@ export function reconstructBuild(
 
   // Helper to safely parse and merge a choices JSONB entry
   function mergeChoiceEntry(key: ChoiceKey, value: unknown): void {
-    const parsed = ChoiceDecisionSchema.safeParse(value);
+    const parsed = decisionSchema.safeParse(value);
     if (!parsed.success) {
       throw new Error(`Invalid choice "${key}": ${parsed.error.message}`);
     }
@@ -164,7 +180,7 @@ export function reconstructBuild(
   // Process level rows
   for (const row of levelRows) {
     if (row.subclass_id !== null) {
-      if (!isSubclassId(row.subclass_id)) {
+      if (!rules.subclasses.has(row.subclass_id)) {
         warn(`Skipping unknown subclass_id "${row.subclass_id}" in build level row sequence ${row.sequence}`);
       } else {
         const key = createChoiceKey('subclass', 'class', row.class_id, 0);
@@ -173,7 +189,7 @@ export function reconstructBuild(
     }
 
     if (row.asi_allocation !== null) {
-      const classSource = CLASS_SOURCES.find((cs) => cs.id === row.class_id);
+      const classSource = rules.classes.get(row.class_id);
       let asiGrantIndex = 0;
       if (classSource) {
         // Count how many ASI-granting levels come before this one (0-indexed levels array)
@@ -204,7 +220,10 @@ export function reconstructBuild(
   }
 
   const backgroundId =
-    character.background !== null && isBackgroundId(character.background) ? character.background : null;
+    character.background !== null &&
+    (isBackgroundId(character.background) || rules.backgrounds.has(character.background))
+      ? character.background
+      : null;
 
   return {
     speciesId: character.species,

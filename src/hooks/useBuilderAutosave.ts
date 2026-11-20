@@ -5,7 +5,8 @@ import type { Character } from '@/types/database';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
 import type { ResolvedCharacter } from '@/types/resolved';
 import type { TablesInsert, TablesUpdate } from '@/types/supabase';
-import { buildMaterializedItemRows } from '@/lib/resolver/materialize';
+import { autoEquipRows, buildMaterializedItemRows } from '@/lib/resolver/materialize';
+import type { RulesetId } from '@/lib/ruleset';
 import { getLogger } from '@/lib/logger';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
@@ -21,6 +22,8 @@ export interface AutosavePayload {
   readonly rows: readonly BuildLevelRow[];
   readonly resolved: ResolvedCharacter | null;
   readonly purchasedItems?: readonly { itemId: string; quantity: number; costGp: number }[];
+  /** Edition of the campaign: in 2014 the worn gear is equipped at finalize. */
+  readonly ruleset?: RulesetId;
 }
 
 /**
@@ -279,7 +282,8 @@ export function useBuilderAutosave(existingCharacterId?: string) {
           if (checkError) throw checkError;
 
           if (existingItems.length === 0) {
-            const allRows = [...startingRows, ...purchasedRows];
+            const rawRows = [...startingRows, ...purchasedRows];
+            const allRows = payload.ruleset === '2014' ? autoEquipRows(rawRows) : rawRows;
             if (allRows.length > 0) {
               const { error: insertError } = await supabase
                 .from('character_items')

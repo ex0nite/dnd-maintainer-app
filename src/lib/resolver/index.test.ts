@@ -18,6 +18,24 @@ const baseInput: ResolverInput = {
 };
 
 describe('resolveCharacter', () => {
+  it('grants one hit die per class level, per class when multiclassing', () => {
+    const cls = (id: ClassId, level: number, grants: GrantBundle['grants']): GrantBundle => ({
+      source: { origin: 'class', id, level },
+      grants,
+    });
+    const bundles: readonly GrantBundle[] = [
+      cls('cleric', 1, [{ type: 'hit-die', die: 8 }]),
+      cls('cleric', 2, []),
+      cls('cleric', 3, []),
+      cls('fighter', 1, [{ type: 'hit-die', die: 10 }]),
+    ];
+    const result = resolveCharacter({ ...baseInput, level: 4, bundles, hpRolls: [null, null, null, null] });
+    expect(result.hitDie).toEqual([
+      { die: 8, count: 3 },
+      { die: 10, count: 1 },
+    ]);
+  });
+
   it('collects resistance grants into resolved.resistances with source', () => {
     const bundles: readonly GrantBundle[] = [
       {

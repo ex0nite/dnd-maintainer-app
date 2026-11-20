@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SOURCE_BOOKS } from '@/lib/source-books';
+import { booksOfEdition, SOURCE_BOOKS } from '@/lib/source-books';
 import type { SourceBookId } from '@/lib/source-books';
 import type { Campaign } from '@/types/database';
 import CampaignDashboard from '@/pages/CampaignDashboard';
@@ -51,6 +51,16 @@ vi.mock('@/hooks/usePageTitle', () => ({
   usePageTitle: () => undefined,
 }));
 
+// The rules library card and the rule set (story 9.3) read their own query; they have their own tests.
+vi.mock('@/components/RulesLibraryStatus', () => ({
+  RulesLibraryStatus: () => null,
+}));
+vi.mock('@/hooks/useRuleSet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useRuleSet')>();
+  const { builtin2024RuleSet } = await import('@/lib/rules/ruleset');
+  return { ...actual, useRuleSet: () => ({ rules: builtin2024RuleSet(), status: 'ready', retry: () => undefined }) };
+});
+
 vi.mock('@/hooks/useCharacters', () => ({
   useCharacters: () => ({ data: [], error: null }),
 }));
@@ -77,6 +87,7 @@ const makeCampaign = (overrides?: Partial<Campaign>): Campaign => ({
   theme: null,
   archived_at: null,
   allowed_source_books: ['phb-2024'],
+  ruleset: '2024',
   ...overrides,
 });
 
@@ -100,12 +111,13 @@ describe('CampaignDashboard — source books card', () => {
     mockUpdateMutate.mockClear();
   });
 
-  it('renders one checkbox per SOURCE_BOOKS entry', () => {
+  it('renders one checkbox per source book of the campaign edition', () => {
     renderDashboard();
 
-    // The card must have exactly as many checkboxes as there are SOURCE_BOOKS
+    // Story 9.3 review: the card lists the books of the campaign's edition only (2014 books are hidden in 2024).
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes.length).toBeGreaterThanOrEqual(SOURCE_BOOKS.length);
+    expect(checkboxes.length).toBe(booksOfEdition(SOURCE_BOOKS, '2024').length);
+    expect(screen.queryByText('phb-2014')).toBeNull();
   });
 
   it('checkbox is checked when the book is in allowed_source_books', () => {

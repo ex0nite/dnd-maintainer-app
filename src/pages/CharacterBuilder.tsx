@@ -18,6 +18,11 @@ import type { AutosavePayload } from '@/hooks/useBuilderAutosave';
 import { useCharacterBuildLevels, useCharacterItems } from '@/hooks/useCharacterBuild';
 import { useCharacter, useCampaignDrafts, useCharacterMutations } from '@/hooks/useCharacters';
 import { useCampaignContext } from '@/hooks/useCampaignContext';
+import { useCampaign } from '@/hooks/useCampaigns';
+import { RuleSetProvider, useActiveRuleSet, useRuleAwareT } from '@/hooks/useRuleSet';
+import { isAbilityMethod, validateBaseAbilities } from '@/lib/ability-scores';
+import { canBuildCharacters, isRulesetId } from '@/lib/ruleset';
+import { builderSteps } from '@/lib/character-builder/steps';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import type { Character } from '@/types/database';
 import { ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react';
@@ -25,22 +30,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactElement } from 
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DND_SPECIES, DND_CLASSES, isBackgroundId } from '@/lib/dnd-helpers';
+import { DND_CLASSES } from '@/lib/dnd-helpers';
 import { collectClassBundleKeys } from '@/lib/gold-equipment';
 import type { StepType } from '@/types/character-builder';
 import { useRole } from '@/hooks/usePermissions';
 
 const logger = getLogger('character-builder');
-
-const STEPS: { id: StepType }[] = [
-  { id: 'basics' },
-  { id: 'class' },
-  { id: 'origin' },
-  { id: 'abilities' },
-  { id: 'details' },
-  { id: 'equipment' },
-  { id: 'backstory' },
-];
 
 function renderStep(
   step: StepType,
@@ -128,6 +123,13 @@ function CharacterBuilderInner({
 }) {
   const { t } = useTranslation('common');
   const { t: tg } = useTranslation('gamedata');
+  const rules = useActiveRuleSet();
+  const STEPS = builderSteps(rules.ruleset);
+  const stepLabel = (id: StepType): string =>
+    id === 'origin' && rules.ruleset === '2014'
+      ? t('characterBuilder.steps.background')
+      : t(`characterBuilder.steps.${id}`);
+  const rt = useRuleAwareT();
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const { campaignId } = useCampaignContext();
   const { isPlayer } = useRole();
@@ -202,15 +204,30 @@ function CharacterBuilderInner({
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
-  const selectedRace = character.species ? DND_SPECIES.find((s) => s.id === character.species) : null;
+  const selectedRace = character.species && rules.species.has(character.species) ? { id: character.species } : null;
   const selectedClass = character.class ? DND_CLASSES.find((c) => c.id === character.class) : null;
 
-  const isReadyToFinalize = hasRequiredFields && (resolved?.pendingChoices.length ?? 0) === 0;
+  // Buying with gold replaces the class's starting equipment: its bundle choices are not asked in that mode.
+  const pendingChoices = (resolved?.pendingChoices ?? []).filter(
+    (p) => !(equipmentMode === 'buy-with-gold' && p.type === 'bundle-choice' && p.source.origin === 'class')
+  );
+  // The scores must match the method that produced them (a point buy over its budget, a standard array not fully
+  // assigned, a typed score out of bounds).
+  const creationRow = rows.find((r) => r.sequence === 0);
+  const abilityIssues = creationRow?.base_abilities
+    ? validateBaseAbilities(
+        isAbilityMethod(creationRow.ability_method) ? creationRow.ability_method : 'standard-array',
+        creationRow.base_abilities
+      )
+    : [];
+
+  const isReadyToFinalize = hasRequiredFields && pendingChoices.length === 0 && abilityIssues.length === 0;
 
   // Surface exactly what's blocking finalize so the user can find and fix it.
   const finalizeBlockers: readonly string[] = [
     ...REQUIRED_BASE_FIELDS.filter((f) => !f.present).map((f) => t(f.blocker)),
-    ...(resolved?.pendingChoices ?? []).map((pending) =>
+    ...(abilityIssues.length > 0 ? [t('characterBuilder.finalizeBlockers.invalidAbilities')] : []),
+    ...pendingChoices.map((pending) =>
       t('characterBuilder.finalizeBlockers.pendingChoice', {
         type: pending.type,
         key: pending.choiceKey,
@@ -314,7 +331,8 @@ function CharacterBuilderInner({
     equipmentMode,
     startingGoldTotal,
     purchasedItems,
-    classId: character.class,
+    // The 2014 starting wealth is rolled at the table (the SRD has no table): no preset amount, the player types it.
+    classId: rules.ruleset === '2014' ? null : character.class,
     onModeChange: handleModeChange,
     onGoldChange: handleGoldChange,
     onPurchase: handlePurchase,
@@ -331,6 +349,7 @@ function CharacterBuilderInner({
         rows,
         resolved,
         purchasedItems: equipmentMode === 'buy-with-gold' ? purchasedItems : [],
+        ruleset: rules.ruleset,
       };
       const slug = await finalize(payload);
       navigate(`/campaign/${campaignSlug}/character/${slug}`);
@@ -378,9 +397,7 @@ function CharacterBuilderInner({
                   </button>
                   {/* Labels are hidden on the narrowest viewports so all 7 steps fit (#243.1);
                       the numbered circles + the step content heading convey position there. */}
-                  <span className="hidden text-xs text-muted-foreground mt-2 sm:block">
-                    {t(`characterBuilder.steps.${step.id}`)}
-                  </span>
+                  <span className="hidden text-xs text-muted-foreground mt-2 sm:block">{stepLabel(step.id)}</span>
                 </div>
                 {index < STEPS.length - 1 && (
                   <div
@@ -398,11 +415,18 @@ function CharacterBuilderInner({
             <>
               <span className="font-semibold text-foreground">{character.name}</span>
               {' · '}
-              {tg(`species.${selectedRace.id}`)}
+              {rt(`species.${selectedRace.id}` as `species.${string}`, { defaultValue: selectedRace.id })}
               {' · '}
               {tg(`classes.${selectedClass.id}`)}
-              {character.background && isBackgroundId(character.background) && (
-                <> ({tg(`backgrounds.${character.background}`)})</>
+              {character.background && rules.backgrounds.has(character.background) && (
+                <>
+                  {' '}
+                  (
+                  {rt(`backgrounds.${character.background}` as `backgrounds.${string}`, {
+                    defaultValue: character.background,
+                  })}
+                  )
+                </>
               )}
             </>
           )}
@@ -411,7 +435,7 @@ function CharacterBuilderInner({
         {/* Step Content */}
         <Card className="mb-8">
           <CardContent className="p-8">
-            <h2 className="text-2xl font-bold mb-6">{t(`characterBuilder.steps.${STEPS[currentStepIndex].id}`)}</h2>
+            <h2 className="text-2xl font-bold mb-6">{stepLabel(STEPS[currentStepIndex].id)}</h2>
             {renderStep(currentStep, goToStep, equipmentProps, !isPlayer)}
           </CardContent>
         </Card>
@@ -556,6 +580,7 @@ export default function CharacterBuilder() {
   const navigate = useNavigate();
   const { userId, isPlayer } = useRole();
   const isNew = !characterSlug;
+  const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignSlug);
   const {
     data: existingCharacter,
     isLoading: characterLoading,
@@ -585,7 +610,17 @@ export default function CharacterBuilder() {
     );
   }
 
-  const isLoading = !isNew && (characterLoading || rowsLoading || itemsLoading);
+  // The sheet engine of an edition is added by epic 9: until then a campaign on those rules builds no sheet,
+  // rather than silently computing one with the other edition's rules.
+  if (campaign && isRulesetId(campaign.ruleset) && !canBuildCharacters(campaign.ruleset)) {
+    return (
+      <div className="page-container">
+        <p role="status">{t('characterBuilder.errors.rulesetNotReady', { ruleset: campaign.ruleset })}</p>
+      </div>
+    );
+  }
+
+  const isLoading = campaignLoading || (!isNew && (characterLoading || rowsLoading || itemsLoading));
 
   if (isLoading) {
     return (
@@ -652,17 +687,22 @@ export default function CharacterBuilder() {
           </div>
         </div>
       )}
-      <CharacterProvider
-        key={characterSlug ?? 'new'}
-        initialCharacter={initialCharacter}
-        initialRows={initialRows}
-        initialEquippedItems={initialEquippedItems}
+      <RuleSetProvider
+        ruleset={campaign && isRulesetId(campaign.ruleset) ? campaign.ruleset : undefined}
+        campaignLoading={campaignLoading}
       >
-        <CharacterBuilderInner
-          existingCharacterId={initialCharacter.id || undefined}
-          wasFinalized={!isNew && itemsData.length > 0}
-        />
-      </CharacterProvider>
+        <CharacterProvider
+          key={characterSlug ?? 'new'}
+          initialCharacter={initialCharacter}
+          initialRows={initialRows}
+          initialEquippedItems={initialEquippedItems}
+        >
+          <CharacterBuilderInner
+            existingCharacterId={initialCharacter.id || undefined}
+            wasFinalized={!isNew && itemsData.length > 0}
+          />
+        </CharacterProvider>
+      </RuleSetProvider>
     </>
   );
 }

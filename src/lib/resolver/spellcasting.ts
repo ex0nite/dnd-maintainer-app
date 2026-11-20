@@ -2,8 +2,9 @@ import type { GrantBundle } from '@/types/sources';
 import type { AbilityKey, ClassId } from '@/lib/dnd-helpers';
 import type { ResolvedAbility, ResolvedSpellcasting, SpellLevel } from '@/types/resolved';
 import { getPactMagicSlots, getPreparedSpellCount, getSpellSlots } from '@/lib/dnd-helpers';
-import { collectGrantsByType } from '@/lib/resolver/helpers';
-import { getSpellDef } from '@/lib/sources/spells';
+import { collectGrantsByType, getClassLevel, spellListExtensions } from '@/lib/resolver/helpers';
+import { builtin2024RuleSet } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('resolver');
@@ -18,8 +19,11 @@ export function resolveSpellcasting(
   bundles: readonly GrantBundle[],
   abilities: Readonly<Record<AbilityKey, ResolvedAbility>>,
   proficiencyBonus: number,
-  level: number
+  level: number,
+  /** Spells come from the rule set (story 9.3): a library spell, or one replacing a built-in spell, is honoured. */
+  rules: RuleSet = builtin2024RuleSet()
 ): ResolvedSpellcasting | null {
+  const getSpellDef = (id: string) => rules.spells.get(id);
   const spellcastingGrants = collectGrantsByType(bundles, 'spellcasting');
   const spellGrants = collectGrantsByType(bundles, 'spell');
   const spellChoiceGrants = collectGrantsByType(bundles, 'spell-choice');
@@ -31,6 +35,7 @@ export function resolveSpellcasting(
   let spellAttackBonus: number | null = null;
   let classId: ClassId | null = null;
   let abilityMod = 0;
+  let prepared: { readonly levelDivisor: 1 | 2 } | undefined;
 
   if (spellcastingGrants.length > 0) {
     const primary = spellcastingGrants.find((g) => g.grant.source === 'class') ?? spellcastingGrants[0];
@@ -39,6 +44,7 @@ export function resolveSpellcasting(
     spellSaveDC = 8 + proficiencyBonus + abilityMod;
     spellAttackBonus = proficiencyBonus + abilityMod;
     classId = primary.source.origin === 'class' ? primary.source.id : null;
+    prepared = primary.grant.prepared;
   }
 
   const cantrips: string[] = [];
@@ -67,10 +73,13 @@ export function resolveSpellcasting(
   // These represent the number of slots the character has to fill (via choices) —
   // not the choices themselves (those are expanded into spell grants by collectBundles).
   let cantripsKnown = 0;
+  let knownTotal: number | null = null;
   const spellsKnownMap = new Map<SpellLevel, number>();
   for (const { grant } of spellChoiceGrants) {
     if (grant.spellLevel === 0) {
       cantripsKnown += grant.count;
+    } else if (grant.maxSpellLevel !== undefined) {
+      knownTotal = (knownTotal ?? 0) + grant.count;
     } else {
       spellsKnownMap.set(grant.spellLevel, (spellsKnownMap.get(grant.spellLevel) ?? 0) + grant.count);
     }
@@ -79,11 +88,31 @@ export function resolveSpellcasting(
     .sort(([a], [b]) => a - b)
     .map(([lvl, count]) => ({ spellLevel: lvl, count }));
 
-  // TODO(#93): multiclass spell-slot tables not yet implemented; uses character level as class level.
-  const isWarlock = classId === 'warlock';
-  const pactMagic = isWarlock ? getPactMagicSlots(level) : null;
-  const slots = isWarlock ? [] : classId ? getSpellSlots(classId, level) : [];
-  const preparedCount = classId ? getPreparedSpellCount(classId, level, abilityMod) : 0;
+  // Story 9.8: a class of the SRD 2014 carries its own slot table (`spell-slots`) or pact magic table (`pact-magic`),
+  // read at its class level; without one (the 2024 classes) the built-in tables apply.
+  const slotGrant = collectGrantsByType(bundles, 'spell-slots').find((g) => g.source.origin === 'class');
+  const pactGrant = collectGrantsByType(bundles, 'pact-magic').find((g) => g.source.origin === 'class');
+  const dataDriven = slotGrant !== undefined || pactGrant !== undefined;
+  const levelIn = (source: { readonly origin: string; readonly id?: string } | undefined): number =>
+    source?.origin === 'class' ? getClassLevel(bundles, source.id as ClassId) : level;
+
+  let slots: readonly number[];
+  let pactMagic: ResolvedSpellcasting['pactMagic'];
+  let preparedCount: number;
+  if (dataDriven) {
+    slots = slotGrant ? (slotGrant.grant.table[levelIn(slotGrant.source) - 1] ?? []) : [];
+    const pactRow = pactGrant ? pactGrant.grant.table[levelIn(pactGrant.source) - 1] : undefined;
+    pactMagic = pactRow && pactRow.count > 0 && pactRow.slotLevel > 0 ? { ...pactRow } : null;
+    preparedCount = prepared
+      ? Math.max(1, Math.floor(levelIn(slotGrant?.source ?? pactGrant?.source) / prepared.levelDivisor) + abilityMod)
+      : 0;
+  } else {
+    // TODO(#93): multiclass spell-slot tables not yet implemented; uses character level as class level.
+    const isWarlock = classId === 'warlock';
+    pactMagic = isWarlock ? getPactMagicSlots(level) : null;
+    slots = isWarlock ? [] : classId ? getSpellSlots(classId, level) : [];
+    preparedCount = classId ? getPreparedSpellCount(classId, level, abilityMod) : 0;
+  }
 
   return {
     ability,
@@ -97,5 +126,7 @@ export function resolveSpellcasting(
     slots,
     preparedCount,
     pactMagic,
+    knownTotal,
+    listExtensions: spellListExtensions(bundles),
   };
 }

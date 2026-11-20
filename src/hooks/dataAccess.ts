@@ -184,6 +184,11 @@ export async function fetchExportCharacterTables(characterIds: string[]) {
   return { buildLevelsRes, itemsRes, characterPrivateRes };
 }
 
+/** The DM rules library of the given editions (story 9.9): the rules of the exported campaigns. */
+export async function fetchExportRuleEntries(rulesets: string[]) {
+  return supabase.from('rule_entries').select('*').in('ruleset', rulesets).order('ruleset').order('kind').order('id');
+}
+
 export async function fetchExportSessionTables(sessionIds: string[]) {
   const sessionDmRes = await supabase.from('session_dm').select('*').in('session_id', sessionIds);
   return { sessionDmRes };

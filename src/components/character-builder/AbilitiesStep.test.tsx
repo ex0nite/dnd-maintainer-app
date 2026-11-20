@@ -36,6 +36,7 @@ let contextBuildChoices: Record<string, unknown>;
 
 const mockMakeChoice = vi.fn();
 const mockClearChoice = vi.fn();
+const mockUpdateCreation = vi.fn();
 
 vi.mock('@/hooks/useCharacterContext', () => ({
   useCharacterContext: () => ({
@@ -45,7 +46,7 @@ vi.mock('@/hooks/useCharacterContext', () => ({
     bundles: contextBundles,
     resolved: contextResolved,
     updateCharacter: vi.fn(),
-    updateCreation: vi.fn(),
+    updateCreation: mockUpdateCreation,
     levelUp: vi.fn(),
     levelDown: vi.fn(),
     undoLevelDown: vi.fn(),
@@ -125,9 +126,10 @@ describe('AbilitiesStep', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the three method tabs (Standard Array, Point-Buy, Rolling)', () => {
+  it('renders the four method tabs (Standard Array, Point-Buy, Rolling, Manual)', () => {
     render(<AbilitiesStep />);
 
+    expect(screen.getByText('manual')).toBeTruthy();
     expect(screen.getByText('standardArray')).toBeTruthy();
     expect(screen.getByText('pointBuy')).toBeTruthy();
     expect(screen.getByText('rolling')).toBeTruthy();
@@ -164,6 +166,82 @@ describe('AbilitiesStep', () => {
         b.getAttribute('title')?.toLowerCase().includes('decrease')
     );
     expect(incDecButtons).toHaveLength(0);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Manual entry (story 9.7)
+  // ---------------------------------------------------------------------------
+
+  describe('manual entry', () => {
+    beforeEach(() => {
+      contextRows = [{ ...buildCreationRow(), ability_method: 'manual' }];
+    });
+
+    it('shows one numeric field per ability, holding the stored base score', () => {
+      render(<AbilitiesStep />);
+      const field = screen.getByRole('spinbutton', { name: 'manualScoreLabel:str' }) as HTMLInputElement;
+      expect(field.value).toBe('10');
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(6);
+    });
+
+    it('saves a typed whole number as the base score', () => {
+      render(<AbilitiesStep />);
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'manualScoreLabel:str' }), { target: { value: '17' } });
+      expect(mockUpdateCreation).toHaveBeenCalledWith({
+        base_abilities: { str: 17, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      });
+    });
+
+    it('does not save text that is not a whole number of one or two digits', () => {
+      render(<AbilitiesStep />);
+      const field = screen.getByRole('spinbutton', { name: 'manualScoreLabel:dex' });
+      fireEvent.change(field, { target: { value: '' } });
+      fireEvent.change(field, { target: { value: '1e1' } });
+      expect(mockUpdateCreation).not.toHaveBeenCalled();
+    });
+
+    it('warns when a stored score is outside the bounds, and stays quiet inside them', () => {
+      contextRows = [
+        {
+          ...buildCreationRow(),
+          ability_method: 'manual',
+          base_abilities: { str: 25, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+        },
+      ];
+      const { unmount } = render(<AbilitiesStep />);
+      expect(screen.getByRole('alert').textContent).toBe('issueRange');
+      unmount();
+
+      contextRows = [
+        {
+          ...buildCreationRow(),
+          ability_method: 'manual',
+          base_abilities: { str: 20, dex: 3, con: 10, int: 10, wis: 10, cha: 10 },
+        },
+      ];
+      render(<AbilitiesStep />);
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+  });
+
+  it('shows the species bonus next to the ability it raises', () => {
+    contextResolved = {
+      abilities: {
+        str: { base: 10, bonuses: [], total: 10, modifier: 0 },
+        dex: { base: 10, bonuses: [], total: 10, modifier: 0 },
+        con: {
+          base: 10,
+          bonuses: [{ value: 2, source: { origin: 'species', id: 'dwarf' } }],
+          total: 12,
+          modifier: 1,
+        },
+        int: { base: 10, bonuses: [], total: 10, modifier: 0 },
+        wis: { base: 10, bonuses: [], total: 10, modifier: 0 },
+        cha: { base: 10, bonuses: [], total: 10, modifier: 0 },
+      } as ResolvedCharacter['abilities'],
+    };
+    render(<AbilitiesStep />);
+    expect(screen.getByText('+2 speciesBonusSuffix')).toBeTruthy();
   });
 
   // ---------------------------------------------------------------------------

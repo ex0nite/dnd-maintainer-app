@@ -25,6 +25,8 @@ export const SAMPLE_CAMPAIGN = {
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
   archived_at: null,
+  ruleset: '2024',
+  allowed_source_books: ['phb-2024'],
 };
 
 /** Pick the colour theme / mode the way the ThemeProvider stores them. */
@@ -50,6 +52,8 @@ export async function stubBackend(
     language?: 'fr' | 'en' | null;
     /** A password sign-in succeeds (journeys that start from the login page). */
     loginOk?: boolean;
+    /** Fields of the sample campaign to replace (the rules edition, for instance). */
+    campaign?: Partial<typeof SAMPLE_CAMPAIGN>;
   }
 ): Promise<void> {
   // `language: null` leaves the device alone (a new device, or a choice that must survive a reload).
@@ -88,7 +92,10 @@ export async function stubBackend(
       });
     }
     if (url.pathname.startsWith('/rest/v1/campaigns')) {
-      return route.fulfill({ json: [SAMPLE_CAMPAIGN] });
+      // .single() asks for one object (PostgREST answers with the object, not a one-row list).
+      const wantsObject = (route.request().headers()['accept'] ?? '').includes('application/vnd.pgrst.object');
+      const campaign = { ...SAMPLE_CAMPAIGN, ...opts.campaign };
+      return route.fulfill({ json: wantsObject ? campaign : [campaign] });
     }
     const table = url.pathname.replace('/rest/v1/', '').split('/')[0];
     if (opts.rest && url.pathname.startsWith('/rest/v1/') && table in opts.rest) {

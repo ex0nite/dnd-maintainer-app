@@ -47,9 +47,23 @@ describe('reconstructBuild', () => {
     );
   });
 
-  it('throws when character.species is not a valid SpeciesId', () => {
+  // Story 9.3 review: an unknown but well-formed species id (entry deleted or waiting for review) no longer breaks the
+  // sheet: a warning, and the build resolves without the species grants. A malformed id still throws.
+  it('warns, without throwing, when a well-formed species id is unknown to the rules', () => {
+    const warnings: string[] = [];
+    const build = reconstructBuild(
+      { species: 'dwarf-hill' as SpeciesId, background: 'soldier' },
+      [creationRow],
+      [],
+      (m) => warnings.push(m)
+    );
+    expect(build.speciesId).toBe('dwarf-hill');
+    expect(warnings.some((w) => w.includes('dwarf-hill'))).toBe(true);
+  });
+
+  it('throws when character.species is not a well-formed id', () => {
     expect(() =>
-      reconstructBuild({ species: 'dwarf-hill' as SpeciesId, background: 'soldier' }, [creationRow], [])
+      reconstructBuild({ species: 'Dwarf <Hill>' as SpeciesId, background: 'soldier' }, [creationRow], [])
     ).toThrow(/invalid species/i);
   });
 

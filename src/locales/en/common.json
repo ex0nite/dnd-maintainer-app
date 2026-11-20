@@ -98,7 +98,16 @@
       "sylvan": "Sylvan",
       "arcane": "Arcane"
     },
-    "useGlobalTheme": "Use global theme"
+    "useGlobalTheme": "Use global theme",
+    "licenses": {
+      "title": "Licenses",
+      "description": "Rules content shipped with the app and its license.",
+      "srdTitle": "System Reference Document 5.1",
+      "srdNotice": "This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License.",
+      "srdScope": "The 2014 rules built into the app (species, subspecies, backgrounds, classes, subclasses) come from the SRD 5.1. Their descriptions are in English, the only language of the SRD.",
+      "srdLink": "SRD 5.1",
+      "licenseLink": "CC BY 4.0 license"
+    }
   },
   "characterBuilder": {
     "title": "Create New Character",
@@ -106,6 +115,7 @@
       "basics": "Basics",
       "class": "Class",
       "origin": "Origin",
+      "background": "Background",
       "abilities": "Abilities",
       "details": "Details",
       "skills": "Skills",
@@ -173,6 +183,8 @@
       "lineageChoice": "Choose your lineage",
       "featChoice": "Choose an origin feat",
       "featureChoice": "Choose an option",
+      "featurePicks": "Choose {{count}} option(s)",
+      "spellChoiceUpTo": "Choose {{count}} spell(s) of level 1 to {{level}}",
       "unsupported": "Choice not yet supported: {{type}}",
       "remaining": "remaining",
       "fromSource": "from {{source}}"
@@ -184,6 +196,7 @@
       "missingClass": "Class is required",
       "missingBackground": "Background is required",
       "missingAlignment": "Alignment is required",
+      "invalidAbilities": "The ability scores do not match the chosen method",
       "pendingChoice": "Pending {{type}} ({{key}})"
     },
     "status": {
@@ -247,6 +260,13 @@
       "standardArray": "Standard Array",
       "pointBuy": "Point-Buy",
       "rolling": "Rolling",
+      "manual": "Manual entry",
+      "manualInstructions": "Type the scores you rolled or agreed on, before species bonuses ({{min}} to {{max}}).",
+      "manualScoreLabel": "Base score: {{ability}}",
+      "speciesBonusSuffix": "species",
+      "issueRange": "Each score must be between {{min}} and {{max}}.",
+      "issuePointBuyTotal": "Point buy costs {{cost}} points, the limit is {{limit}}.",
+      "issueNotInteger": "Every score must be a whole number.",
       "assignEachValue": "Assign each value to an ability. Each value used once.",
       "spendPoints": "Spend points to increase scores from 8.",
       "points": "Points:",
@@ -329,6 +349,7 @@
       "selectBackgroundInBasics": "Pick a background in the Basics step to see its sub-choices."
     },
     "equipment": {
+      "goldManualHint": "Roll the starting wealth of your class (or use the amount your table agreed on) and type the result.",
       "equipped": "Equipped",
       "quantity": "Qty",
       "weight": "Weight (lb)",
@@ -387,6 +408,7 @@
     },
     "errors": {
       "noCampaignId": "Campaign ID is required to create a character.",
+      "rulesetNotReady": "Character sheets for the {{ruleset}} rules are not available yet in this campaign.",
       "cancelRebuildFailed": "The rebuild could not be cancelled. Please try again.",
       "failedToFinalize": "Failed to finalize character: {{message}}",
       "failedToSaveDraft": "Failed to save draft. Your recent changes may not have been saved.",
@@ -463,6 +485,7 @@
       "spellAttackBonus": "Spell Attack Bonus",
       "spellLevelLabel": "Level {{level}}",
       "spellLevelUnknown": "Unknown level",
+      "preparedSpells": "Spells prepared",
       "chosenOfTarget": "{{chosen}}/{{target}}",
       "source": "Source: {{source}}",
       "maxHp": "Max HP",
@@ -657,6 +680,53 @@
       "noTemplate": "No fillable PDF template found. Add one at public/assets/character-sheet.pdf (see the README there).",
       "failed": "PDF export failed.",
       "notReady": "Character data is still loading — try again in a moment."
+    },
+    "pdf2014": {
+      "title": "Character sheet (2014 rules)",
+      "name": "Character name",
+      "classLevel": "Class and level",
+      "background": "Background",
+      "player": "Player name",
+      "species": "Race",
+      "alignment": "Alignment",
+      "experience": "Experience points",
+      "inspiration": "Inspiration",
+      "proficiencyBonus": "Proficiency bonus",
+      "savingThrows": "Saving throws",
+      "skills": "Skills",
+      "passivePerception": "Passive Wisdom (Perception)",
+      "armorClass": "Armor class",
+      "initiative": "Initiative",
+      "speed": "Speed",
+      "hitPointMax": "Hit point maximum",
+      "hitDice": "Hit dice",
+      "attacks": "Attacks and spellcasting",
+      "attackName": "Name",
+      "attackBonus": "Atk bonus",
+      "attackDamage": "Damage and type",
+      "equipment": "Equipment",
+      "personalityTraits": "Personality traits",
+      "ideals": "Ideals",
+      "bonds": "Bonds",
+      "flaws": "Flaws",
+      "featuresAndTraits": "Features and traits",
+      "proficienciesAndLanguages": "Other proficiencies and languages",
+      "armorProficiencies": "Armor",
+      "weaponProficiencies": "Weapons",
+      "toolProficiencies": "Tools",
+      "languages": "Languages",
+      "appearance": "Appearance",
+      "backstory": "Character backstory",
+      "spellcasting": "Spellcasting",
+      "spellcastingClass": "Spellcasting class",
+      "spellcastingAbility": "Spellcasting ability",
+      "spellSaveDc": "Spell save DC",
+      "spellAttackBonus": "Spell attack bonus",
+      "spellSlots": "Spell slots",
+      "pactMagic": "Pact magic slots",
+      "cantrips": "Cantrips",
+      "spellLevel": "Level",
+      "page": "page"
     }
   },
   "characterList": {
@@ -792,6 +862,42 @@
     },
     "theme": "Campaign Theme",
     "themeDescription": "Customize the color theme for this campaign",
+    "ruleset": {
+      "title": "Rules edition",
+      "description": "Which edition of the rules this campaign follows. It can be changed until the first character is finalized.",
+      "createHint": "You can change it later, until a character is finalized.",
+      "options": {
+        "2014": "D&D 5e (2014)",
+        "2024": "D&D 5.5e (2024)"
+      },
+      "locked": "A character is already finalized: the rules edition can no longer change.",
+      "notReady": "Character sheets for this rules edition are not available yet.",
+      "spellsLater": "2014 characters can be built and finalized. Spells and spell slots of the 2014 rules come in a later update: a caster's spellcasting is listed as text for now.",
+      "saveFailed": "The rules edition could not be changed."
+    },
+    "rulesLibrary": {
+      "title": "Rules library",
+      "description": "Rules entered for this edition through the MCP. They apply to every campaign of the edition. An entry replaces a built-in rule that has the same identifier.",
+      "count_one": "{{count}} entry in the library for this edition.",
+      "count_other": "{{count}} entries in the library for this edition.",
+      "loading": "Loading the rules library…",
+      "error": "The rules library could not be read.",
+      "overrides": "Replace a built-in rule:",
+      "unverified": "Waiting for review (not usable by characters yet):",
+      "invalid": "Ignored, they do not pass validation:",
+      "entry": "{{name}} ({{kind}})",
+      "invalidEntry": "{{kind}} {{id}}: {{path}}: {{message}}",
+      "kinds": {
+        "species": "species",
+        "subspecies": "subspecies",
+        "class": "class",
+        "subclass": "subclass",
+        "background": "background",
+        "feat": "feat",
+        "spell": "spell",
+        "item": "item"
+      }
+    },
     "sourceBooks": {
       "title": "Source Books",
       "description": "Choose which rulebooks are available for character creation in this campaign.",
@@ -1084,5 +1190,9 @@
     "invalidCredentials": "Incorrect credentials",
     "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
     "signOut": "Sign out"
+  },
+  "ruleSet": {
+    "loading": "Loading the campaign rules…",
+    "loadFailed": "The campaign rules could not be loaded. The sheet is not computed without them."
   }
 }

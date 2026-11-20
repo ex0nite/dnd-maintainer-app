@@ -157,6 +157,96 @@ la tâche est conservée dans `TO-DO.md`, section « Plus tard ».
 - Le repli sur Supabase cloud (D-20) n'est donc pas nécessaire. À remesurer si la table grandit ou si d'autres services s'ajoutent.
 - L'installation est décrite dans `docs/deploy-qnap.md` ; la pile (`deploy/qnap/`) est épinglée par empreinte et testée en CI.
 
+### D-34 · 2026-11-18 · Règles 2014 par campagne, ouverture sans sauvegarde
+
+- La table Affaires Draconiques joue en règles **2014** ; le moteur est 2024. Le propriétaire choisit : un **champ de règles par
+  campagne** (le moteur 2024 et ses tests ne bougent pas), le **SRD 5.1 seul dans le dépôt public**, le contenu hors SRD fourni
+  par le MJ hors dépôt (paquets importés, story 9.7). Epic 9 dans `epics.md`.
+- Les règles du dépôt officiel sont du **code** (`src/lib/sources/*`) : le MCP ne peut ni les créer ni les modifier. Le propriétaire veut que le MCP le fasse : les règles deviennent des **données validées stockées en base** et chargées par le moteur (stories 9.3 et 9.4). Le contenu hors SRD y est saisi par le MJ, jamais dans le dépôt public.
+- L'app est ouverte aux joueurs **avant** la fin de l'epic 9 (campagne, séances publiées, notes) ; les fiches 2014 suivent.
+- Le propriétaire confirme l'ouverture **sans sauvegarde** (D-23) « pour le moment » (2026-11-18) : à reposer avant d'inviter les joueurs.
+- La CSP bloquante est vérifiée sur le site réel (connexion, accueil, joueurs, export, paramètres, mot de passe) : aucune violation.
+
+### D-35 · 2026-11-18 · Les règles deviennent des données : `RuleSet`, bibliothèque du MJ, SRD seul dans le dépôt
+
+Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
+
+- **Le moteur reste un pipeline Source → Grant → Résolveur.** Les 29 variantes de `Grant` sont des données sérialisables ; une
+  classe porte déjà ses aptitudes niveau par niveau, donc le niveau de choix de la sous-classe en 2014 (1, 2 ou 3) est une donnée,
+  pas du code. Ce qui est du code aujourd'hui : les registres au niveau des modules (45 appels hors `src/lib/sources/`) et les
+  identifiants en unions TypeScript fermées.
+- **Un `RuleSet` remplace les registres.** `collectBundles(build, rules)` et le résolveur le reçoivent ; un fournisseur React et le
+  moteur du MCP le construisent. Trois couches, la dernière l'emporte : règles de 2024 intégrées (code), SRD 5.1 de 2014 (JSON dans
+  le dépôt), bibliothèque du MJ (base de données).
+- **Bibliothèque par édition, pas par campagne.** Table `rule_entries (ruleset, kind, id, content, revision)` ; un seul MJ,
+  donc un seul jeu de règles par édition, lu par les membres des campagnes de cette édition, écrit par le MJ seul. Évite de
+  ressaisir les mêmes règles par campagne. FR-29 (bibliothèque de texte, par campagne) reste distinct.
+- **Identifiants d'entités ouverts, vocabulaire mécanique fermé.** Espèces, sous-classes, historiques, dons, sorts, objets : chaînes
+  en kebab-case. Caractéristiques, compétences, types de dégâts, états, catégories d'armes et d'armures : restent dans le code ;
+  une règle qui en exige un nouveau est un changement de code. Langues et outils s'ouvrent (les livres de 2014 en ajoutent).
+- **Sécurité.** Donnée seule : aucun code, balise ni lien ; texte affiché brut ; taille et nombre bornés ; validation Zod à l'écriture
+  (MCP et app) et **à la lecture** (une entrée invalide est ignorée et signalée, jamais résolue) ; garde structurelle en SQL.
+  Précision du 2026-11-18 (revue de la 9.3) : le SQL (`validate_rule_entry`) est un **plancher structurel** (enveloppe, clés du
+  corps, type de chaque `grant` parmi les 29, bornes, texte dangereux), pas la validation complète ; **Zod fait le contrôle
+  complet** à l'écriture (app, MCP) et à la lecture. Un joueur peut inscrire n'importe quel identifiant kebab-case dans l'espèce ou
+  l'historique de sa fiche (sans effet hors de sa fiche, qui se calcule sans lui), mais peut ainsi bloquer la suppression d'une
+  entrée de même identifiant jusqu'à ce que le MJ corrige la fiche.
+- **Licence.** Le dépôt public ne contient que le SRD 5.1 (CC-BY 4.0, 9 espèces, 4 sous-espèces, 12 classes, 12 sous-classes dont le
+  Fiélon, 1 historique, 1 don, 319 sorts, 237 objets) avec son attribution. Hors SRD (Nain des montagnes, Cercle des Spores, Chevalier
+  runique, Âme acérée, Traqueur des ténèbres, artificier, historiques et dons non SRD) : saisi par le MJ dans sa base privée.
+- **Source du SRD :** le jeu de données SRD 5.1 ouvert (un JSON par entité), converti par un script du dépôt ; rien n'est lu à
+  l'exécution. Le paquet PyPI `dnd-5e-core` est examiné et écarté (moteur de jeu Python, mêmes données SRD, hors périmètre).
+
+### D-36 · 2026-11-19 · Le moteur 2014 est ouvert avant les sorts (story 9.7)
+
+- `canBuildCharacters('2014')` et `ruleset_has_engine('2014')` deviennent vrais avec le constructeur : le critère de la 9.7 demande
+  qu'un personnage 2014 créé par le MCP soit finalisé avec une fiche juste. Les sorts et emplacements de 2014 sont la 9.8 : en
+  attendant, l'incantation d'un lanceur de sorts est en texte, et le tableau de bord le dit au MJ.
+- Méthode de caractéristiques **« saisie manuelle »** (3 à 20, avant bonus) en plus des trois autres ; chaque méthode est contrôlée
+  (`validateBaseAbilities`), à la finalisation dans l'app et à la création dans le MCP. La base ne contrôle pas les valeurs.
+- **Richesse de départ 2014** : le SRD 5.1 n'a pas de table (elle est dans le PHB) ; le dépôt public n'en contient pas, le joueur
+  saisit le montant tiré.
+- Équipement de départ des classes en choix `bundle-choice` (objets et paquets du SRD ajoutés au catalogue en code) ; ce qui n'a
+  pas de prix dans le SRD est marqué `notForSale`.
+
+### D-37 · 2026-11-19 · Les sorts de 2014 sont des données ; les nombres viennent des tables du SRD, pas du jeu de données (story 9.8)
+
+- **Sorts et incantation en données** : les 319 sorts du SRD 5.1 (entrées `spell`), les emplacements (`spell-slots`), la magie de
+  pacte (`pact-magic`), les sorts connus et le livre de sorts (`spell-choice` avec `maxSpellLevel`), les sorts préparés
+  (`spellcasting.prepared`), les sorts de domaine, de serment et de cercle (`spell` toujours préparés), la liste étendue du
+  patron (`spell-list-extension`), les invocations et la métamagie (`feature-picks`) et le don de pacte (`feature-choice`) sont
+  générés par le même script depuis le même instantané. Le moteur 2024 est inchangé : une classe sans table utilise les tables
+  intégrées. Détails : `docs/rules-as-data.md` section 13.
+- **Les nombres sont ceux des tables du SRD.** Le jeu de données donne un nombre d'invocations faux aux niveaux 4 et 6 de
+  l'occultiste (3 et 4 au lieu de 2 et 3) et une métamagie au niveau 16 au lieu de 17 : le convertisseur écrit les nombres du SRD
+  et un test les fige. Les emplacements, sorts mineurs et sorts connus sont comparés par test, à la main, aux tables du SRD.
+- **Sorts préparés = un nombre**, pas une liste (comme en 2024) ; sorts des espèces (cantrip du haut-elfe, Héritage infernal du
+  tieffelin) restent en texte : un choix de sort d'espèce n'a pas d'écran et un octroi d'espèce ne se déclenche pas par niveau.
+- **Limites relevées** : `summaryMax` 4000 (un sort va jusqu'à 3825 caractères), `materialMax` 400.
+
+### D-38 · 2026-11-19 · La fiche 2014 est dessinée, sans modèle ; l'export du MJ emporte la bibliothèque de règles (story 9.9)
+
+- **Fiche PDF 2014 dessinée.** La fiche officielle 2014 n'est pas dans le SRD 5.1 : on ne peut ni la livrer, ni la remplir sans que
+  le joueur la fournisse. Le PDF 2014 est donc dessiné par `pdf-lib` (`src/lib/pdf-sheet-2014.ts`), avec les champs de la fiche
+  2014 et la mention CC-BY 4.0 du SRD 5.1 au pied de chaque page quand du contenu SRD y figure. L'export 2024 (formulaire officiel
+  fourni par le joueur) est inchangé.
+- **Export du MJ.** Il porte la colonne `campaigns.ruleset` (déjà exportée) et, en plus, les entrées `rule_entries` des éditions
+  des campagnes choisies : le champ de règles et les règles propres de la campagne. Les entrées du SRD ne sont pas exportées
+  (ce sont des données du code). Détails : `docs/rules-as-data.md` section 14.
+
+### D-39 · 2026-11-20 · Libellés français des règles 2014 au rendu ; table publique limitée au Manuel des joueurs
+
+- **Rendu, pas données.** En interface française, une campagne 2014 affiche les libellés du Manuel des joueurs FR (sexes,
+  alignements, caractéristiques, compétences, types de dégâts, états, écoles, catégories d'armes et d'armures, propriétés
+  d'armes, tailles, langues, noms d'espèces, de sous-espèces, de classes et de sous-classes). Les identifiants et le SRD
+  généré ne changent pas ; la table est `src/locales/fr/srd-2014.json`, appliquée par `src/lib/rules/fr-labels.ts`. Le 2024
+  n'est pas modifié (la table ne sert que sous `RuleSetProvider` d'une campagne 2014). Un libellé absent retombe sur l'anglais.
+- **Table publique limitée au contenu libre.** Le dépôt est public : la table ne reprend que le Manuel des joueurs FR, plus
+  sexes, alignements et langues (corrections validées : Elfe, Ore, Sylvain, Profond, Commun des profondeurs, Argot des voleurs,
+  Druidique, Demi-ore).
+- **Sorts et équipement restent en anglais** : leur source française (glossaire AideDD) n'est pas libre, elle n'entre pas dans
+  le dépôt. Détails : `docs/rules-as-data.md` section 15.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

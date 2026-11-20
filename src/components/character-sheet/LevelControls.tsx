@@ -17,7 +17,7 @@ interface LevelControlsProps {
 export function LevelControls({ classId }: LevelControlsProps) {
   const { t } = useTranslation('common');
   const { t: tg } = useTranslation('gamedata');
-  const { level, rows, resolved, hasDeletedRows, nextRestoreLevel, levelUp, levelDown, undoLevelDown } =
+  const { level, rows, resolved, bundles, hasDeletedRows, nextRestoreLevel, levelUp, levelDown, undoLevelDown } =
     useCharacterContext();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -106,6 +106,7 @@ export function LevelControls({ classId }: LevelControlsProps) {
         resolvedWeaponProficiencies={resolved?.weaponProficiencies ?? []}
         resolvedSkills={resolved?.skills ?? null}
         allDecisions={allDecisions}
+        bundles={bundles}
       />
     </>
   );

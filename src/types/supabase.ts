@@ -44,6 +44,7 @@ export type Database = {
           image_url: string | null
           name: string
           previous_slugs: string[]
+          ruleset: string
           setting: string | null
           slug: string
           status: string | null
@@ -59,6 +60,7 @@ export type Database = {
           image_url?: string | null
           name: string
           previous_slugs?: string[]
+          ruleset?: string
           setting?: string | null
           slug?: string
           status?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           previous_slugs?: string[]
+          ruleset?: string
           setting?: string | null
           slug?: string
           status?: string | null
@@ -657,6 +660,39 @@ export type Database = {
           },
         ]
       }
+      rule_entries: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          overrides_builtin: boolean
+          revision: number
+          ruleset: string
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id: string
+          kind: string
+          overrides_builtin?: boolean
+          revision?: number
+          ruleset: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          overrides_builtin?: boolean
+          revision?: number
+          ruleset?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_comments: {
         Row: {
           author_id: string | null
@@ -752,6 +788,14 @@ export type Database = {
       }
       last_activity_at: {
         Args: { c: Database["public"]["Tables"]["campaigns"]["Row"] }
+        Returns: string
+      }
+      rule_entry_users: {
+        Args: { p_id: string; p_kind: string; p_ruleset: string }
+        Returns: { character_id: string; name: string }[]
+      }
+      validate_rule_entry: {
+        Args: { p_content: Json; p_kind: string }
         Returns: string
       }
     }

@@ -141,12 +141,65 @@ export const PAGES: PageUnderTest[] = [
     },
   },
   {
+    // Story 9.3: the rules library card (an override, an entry waiting for review, an ignored entry).
+    name: 'campaign dashboard (DM)',
+    path: '/campaign/la-mine-perdue',
+    signedIn: true,
+    role: 'dm',
+    rest: {
+      rule_entries: [
+        {
+          ruleset: '2024',
+          kind: 'feat',
+          id: 'alert',
+          revision: 2,
+          content: {
+            schema: 1,
+            kind: 'feat',
+            id: 'alert',
+            name: { en: 'Alert (table version)', fr: 'Vigilant (version de la table)' },
+            body: { category: 'origin', prerequisites: [], grants: [] },
+          },
+        },
+        {
+          ruleset: '2024',
+          kind: 'subclass',
+          id: 'circle-of-testing-with-a-rather-long-identifier',
+          revision: 1,
+          content: {
+            schema: 1,
+            kind: 'subclass',
+            id: 'circle-of-testing-with-a-rather-long-identifier',
+            name: { en: 'Circle of Testing', fr: 'Cercle du Test' },
+            needsReview: ['feature levels read from a scan, to confirm against the book before use'],
+            body: { class: 'druid', chosenAtClassLevel: 3, features: [] },
+          },
+        },
+        { ruleset: '2024', kind: 'feat', id: 'broken-feat', revision: 1, content: { schema: 1, kind: 'feat' } },
+      ],
+    },
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: 'Rules library' })).toBeVisible();
+      await expect(page.getByText('Alert (table version) (feat)')).toBeVisible();
+    },
+  },
+  {
     name: 'players',
     path: '/players',
     signedIn: true,
     role: 'dm',
     ready: async (page) => {
       await expect(page.getByLabel('Pseudo')).toBeVisible();
+    },
+  },
+  {
+    // Story 9.5: the SRD 5.1 attribution (licenses section of the settings).
+    name: 'settings (licenses)',
+    path: '/settings/theme',
+    signedIn: true,
+    ready: async (page) => {
+      await expect(page.getByRole('heading', { name: 'Licenses' })).toBeVisible();
+      await expect(page.getByRole('link', { name: /systems-reference-document/ })).toBeVisible();
     },
   },
 ];

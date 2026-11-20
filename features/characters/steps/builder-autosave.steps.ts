@@ -29,6 +29,7 @@ function seedDraft(world: DndWorld, name: string): { campaign: Campaign; slug: s
     updated_at: '2024-01-01T00:00:00Z',
     archived_at: null,
     allowed_source_books: ['phb-2024'],
+    ruleset: '2024',
   };
   world.db.seed('campaigns', [campaign as unknown as Row]);
 
@@ -106,6 +107,8 @@ When('the player opens the character builder for that draft', async function (th
     '@/hooks/useCharacters': useCharactersMod,
     '@/hooks/useCharacterBuild': useCharacterBuildMod,
     '@/hooks/useBuilderAutosave': useBuilderAutosaveMod,
+    // The builder reads the campaign to know its rules edition (story 9.1); the fake backend has no campaign query.
+    '@/hooks/useCampaigns': { useCampaign: () => ({ data: campaign, isLoading: false }) },
     '@/hooks/useCampaignContext': {
       useCampaignContext: () => ({
         campaignSlug: campaign.slug,

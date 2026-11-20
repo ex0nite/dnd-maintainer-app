@@ -1,4 +1,4 @@
-import { isSpellId } from '@/lib/sources/spells';
+import { useActiveRuleSet, useRuleName } from '@/hooks/useRuleSet';
 import { getSpellDisplayMeta } from '@/lib/spell-display';
 import type { ResolvedCharacter } from '@/types/resolved';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,8 @@ type Spellcasting = NonNullable<ResolvedCharacter['spellcasting']>;
 export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting }) {
   const { t } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
+  const ruleName = useRuleName();
 
   // Group knownSpells by level, ascending
   const spellsByLevel = spellcasting.knownSpells.reduce<Record<number, string[]>>((acc, { spellId, spellLevel }) => {
@@ -18,6 +20,10 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
   const sortedLevels = Object.keys(spellsByLevel)
     .map(Number)
     .sort((a, b) => a - b);
+
+  // 2014 free picks (story 9.8): the spells of levels that have no per-level target count against the total.
+  const fixedLevels = new Set(spellcasting.spellsKnown.map((e) => e.spellLevel));
+  const freeChosen = spellcasting.knownSpells.filter((s) => !fixedLevels.has(s.spellLevel)).length;
 
   // Cantrips header: show "CANTRIPS (chosen/target)" when cantripsKnown > 0
   const cantripsHeader =
@@ -30,7 +36,10 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
       <h2 className="text-lg font-bold text-foreground mb-4">{tc('characterSheet.sections.spells')}</h2>
 
       {/* Spellcasting stats header */}
-      {(spellcasting.ability != null || spellcasting.spellSaveDC != null || spellcasting.spellAttackBonus != null) && (
+      {(spellcasting.ability != null ||
+        spellcasting.spellSaveDC != null ||
+        spellcasting.spellAttackBonus != null ||
+        spellcasting.preparedCount > 0) && (
         <div className="flex flex-wrap gap-4 mb-4 text-sm border-b border-border pb-3">
           {spellcasting.ability != null && (
             <div className="text-center">
@@ -44,6 +53,12 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
             <div className="text-center">
               <div className="text-xs text-muted-foreground mb-1">{tc('characterSheet.fields.spellSaveDC')}</div>
               <div className="font-bold text-foreground">{spellcasting.spellSaveDC}</div>
+            </div>
+          )}
+          {spellcasting.preparedCount > 0 && (
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground mb-1">{tc('characterSheet.fields.preparedSpells')}</div>
+              <div className="font-bold text-foreground">{spellcasting.preparedCount}</div>
             </div>
           )}
           {spellcasting.spellAttackBonus != null && (
@@ -64,11 +79,13 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
             <div className="text-xs font-bold text-muted-foreground mb-2">{cantripsHeader}</div>
             <div className="space-y-1">
               {spellcasting.cantrips.map((cantrip, i) => {
-                const meta = getSpellDisplayMeta(cantrip);
+                const meta = getSpellDisplayMeta(cantrip, rules);
                 return (
                   <div key={i} className="text-sm text-foreground">
-                    &bull; {isSpellId(cantrip) ? t(`spells.${cantrip}.name`) : cantrip}
-                    {meta && <span className="text-xs text-muted-foreground ml-2">{`(${meta.school})`}</span>}
+                    &bull; {ruleName('spell', cantrip)}
+                    {meta && (
+                      <span className="text-xs text-muted-foreground ml-2">{`(${t(`schools.${meta.school}`)})`}</span>
+                    )}
                   </div>
                 );
               })}
@@ -76,10 +93,12 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
           </div>
         )}
 
-        {sortedLevels.length > 0 && (
+        {(sortedLevels.length > 0 || (spellcasting.knownTotal ?? 0) > 0) && (
           <div>
             <div className="text-xs font-bold text-muted-foreground mb-2">
               {tc('characterSheet.sections.knownSpells')}
+              {spellcasting.knownTotal != null &&
+                ` (${tc('characterSheet.fields.chosenOfTarget', { chosen: freeChosen, target: spellcasting.knownTotal })})`}
             </div>
             <div className="space-y-2">
               {sortedLevels.map((level) => {
@@ -99,12 +118,12 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                     <div className="text-xs text-muted-foreground mb-1">{levelHeader}</div>
                     <div className="space-y-1">
                       {spellsByLevel[level].map((id, i) => {
-                        const meta = getSpellDisplayMeta(id);
+                        const meta = getSpellDisplayMeta(id, rules);
                         return (
                           <div key={i} className="text-sm text-foreground">
-                            &bull; {isSpellId(id) ? t(`spells.${id}.name`) : id}
+                            &bull; {ruleName('spell', id)}
                             {meta && (
-                              <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${t(`schools.${meta.school}`)})`}</span>
                             )}
                           </div>
                         );
@@ -124,12 +143,12 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
             </div>
             <div className="space-y-1">
               {spellcasting.alwaysPreparedSpells.map((id, i) => {
-                const meta = getSpellDisplayMeta(id);
+                const meta = getSpellDisplayMeta(id, rules);
                 return (
                   <div key={i} className="text-sm text-foreground">
-                    &bull; {isSpellId(id) ? t(`spells.${id}.name`) : id}
+                    &bull; {ruleName('spell', id)}
                     {meta && (
-                      <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${t(`schools.${meta.school}`)})`}</span>
                     )}
                   </div>
                 );

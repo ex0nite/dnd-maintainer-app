@@ -19,6 +19,8 @@ import {
   type FeatGrantInfo,
   type GamedataT,
 } from '@/lib/pdf-field-map';
+import type { RuleSet } from '@/lib/rules/types';
+import { buildSheet2014, renderSheet2014, type PdfLabels2014 } from '@/lib/pdf-sheet-2014';
 
 export class PdfTemplateError extends Error {
   constructor(
@@ -45,7 +47,8 @@ export async function fillCharacterPdf(
   resolved: ResolvedCharacter,
   character: Character,
   t: GamedataT,
-  featSources: ReadonlyMap<string, FeatGrantInfo>
+  featSources: ReadonlyMap<string, FeatGrantInfo>,
+  rules?: RuleSet
 ): Promise<FillResult> {
   let pdfDoc: PDFDocument;
   try {
@@ -56,7 +59,7 @@ export async function fillCharacterPdf(
 
   const form = pdfDoc.getForm();
   const existing = new Set(form.getFields().map((f) => f.getName()));
-  const values = buildFieldValues(resolved, character, t, featSources);
+  const values = buildFieldValues(resolved, character, t, featSources, rules);
   const missingFields: string[] = [];
 
   for (const [semanticKey, value] of Object.entries(values.text)) {
@@ -111,6 +114,10 @@ export interface ExportOptions {
   readonly templateUrl?: string;
   /** Override the download filename (without extension). Defaults to the character name. */
   readonly filename?: string;
+  /** The campaign's rule set (story 9.3). Built-in 2024 by default. */
+  readonly rules?: RuleSet;
+  /** Labels of the 2014 sheet (story 9.9), in the language of the reader. Required when the rules are those of 2014. */
+  readonly labels?: PdfLabels2014;
 }
 
 const DEFAULT_TEMPLATE_URL = '/assets/character-sheet.pdf';
@@ -127,6 +134,14 @@ export async function exportCharacterPdf(
   featSources: ReadonlyMap<string, FeatGrantInfo>,
   opts: ExportOptions = {}
 ): Promise<{ missingFields: readonly string[] }> {
+  // The 2014 sheet is drawn, not filled: no template to fetch (story 9.9).
+  if (opts.rules?.ruleset === '2014') {
+    if (!opts.labels) throw new Error('The labels of the 2014 sheet are required.');
+    const sheet = buildSheet2014(resolved, character, t, featSources, opts.rules, opts.labels);
+    downloadPdf(await renderSheet2014(sheet), `${opts.filename ?? characterDisplayName(character)}.pdf`);
+    return { missingFields: [] };
+  }
+
   const templateUrl = opts.templateUrl ?? DEFAULT_TEMPLATE_URL;
 
   let response: Response;
@@ -140,7 +155,14 @@ export async function exportCharacterPdf(
   }
 
   const templateBytes = await response.arrayBuffer();
-  const { bytes, missingFields } = await fillCharacterPdf(templateBytes, resolved, character, t, featSources);
+  const { bytes, missingFields } = await fillCharacterPdf(
+    templateBytes,
+    resolved,
+    character,
+    t,
+    featSources,
+    opts.rules
+  );
   downloadPdf(bytes, `${opts.filename ?? characterDisplayName(character)}.pdf`);
   return { missingFields };
 }

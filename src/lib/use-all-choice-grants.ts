@@ -7,7 +7,9 @@ import { createChoiceKey, parseChoiceKey } from '@/types/choices';
 import type { ChoiceDecision, ChoiceKey } from '@/types/choices';
 import type { PendingChoice } from '@/types/resolved';
 import type { Grant } from '@/types/grants';
-import type { SourceTag } from '@/types/sources';
+import type { GrantBundle, SourceTag } from '@/types/sources';
+import { extraSpellIdsOf, getClassLevel } from '@/lib/resolver/helpers';
+import { featurePicksPool, optionText, otherPicks } from '@/lib/resolver/feature-picks';
 import type { FightingStyleId } from '@/lib/dnd-helpers';
 import { getLogger } from '@/lib/logger';
 
@@ -26,6 +28,13 @@ export interface CollectChoiceGrantsContext {
   readonly alreadyClaimedMasteries?: Set<string>;
   /** All fighting styles already chosen across all grants — maintained across bundle calls. */
   readonly allChosenStyles?: FightingStyleId[];
+  /**
+   * Every bundle of the character (story 9.8): spells added to a class list by features and the options of a
+   * `feature-picks` pool are read from them (the grants of the call alone do not carry them).
+   */
+  readonly allBundles?: readonly GrantBundle[];
+  /** Decisions of earlier levels, for the picks a `feature-picks` pool already holds (the level-up dialog passes no `choices`). */
+  readonly priorChoices?: Readonly<Record<ChoiceKey, ChoiceDecision>>;
 }
 
 /**
@@ -259,11 +268,21 @@ export function collectChoiceGrantsFromGrants(
           type: 'feature-choice',
           choiceKey: grant.key,
           source,
-          options: mapNonEmpty(grant.options, (o) => ({ optionId: o.optionId, featureId: o.featureId })),
+          options: mapNonEmpty(grant.options, (o) => ({
+            optionId: o.optionId,
+            featureId: o.featureId,
+            ...optionText(o),
+          })),
         });
         break;
 
-      case 'spell-choice':
+      case 'spell-choice': {
+        const extraSpellIds = [
+          ...new Set([
+            ...extraSpellIdsOf(context.allBundles ?? [], grant.spellList),
+            ...extraSpellIdsOf([{ source, grants }], grant.spellList),
+          ]),
+        ];
         result.push({
           type: 'spell-choice',
           choiceKey: grant.key,
@@ -271,8 +290,32 @@ export function collectChoiceGrantsFromGrants(
           count: grant.count,
           spellList: grant.spellList,
           spellLevel: grant.spellLevel,
+          ...(grant.maxSpellLevel !== undefined ? { maxSpellLevel: grant.maxSpellLevel } : {}),
+          ...(extraSpellIds.length > 0 ? { extraSpellIds } : {}),
         });
         break;
+      }
+
+      case 'feature-picks': {
+        const all = context.allBundles ?? [{ source, grants }];
+        const pool = grant.options ?? featurePicksPool(all, grant.poolId);
+        result.push({
+          type: 'feature-picks',
+          choiceKey: grant.key,
+          source,
+          count: grant.count,
+          poolId: grant.poolId,
+          classLevel: source.origin === 'class' ? Math.max(source.level ?? 0, getClassLevel(all, source.id)) : 0,
+          options: pool.map((o) => ({
+            optionId: o.optionId,
+            featureId: o.featureId,
+            ...optionText(o),
+            ...(o.minClassLevel !== undefined ? { minClassLevel: o.minClassLevel } : {}),
+          })),
+          alreadyChosen: [...otherPicks(all, context.priorChoices ?? choices, grant.poolId, grant.key)],
+        });
+        break;
+      }
 
       // Non-choice grants — no pending choice emitted
       default:
@@ -324,6 +367,7 @@ export function useAllChoiceGrants(): PendingChoice[] {
         resolvedWeaponProficiencies,
         alreadyClaimedMasteries,
         allChosenStyles,
+        allBundles: bundles,
       };
       // Skip weapon-mastery grants when mastery dedup context is not set up yet.
       // The weapon mastery block above is only enabled when we pass alreadyClaimedMasteries.

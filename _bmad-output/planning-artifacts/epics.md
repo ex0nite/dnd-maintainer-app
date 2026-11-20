@@ -120,6 +120,10 @@ FR26: Epic 1 - Créer une campagne (MJ)
 FR27: Epic 1 - Rattacher les données existantes et garder le MCP fonctionnel
 FR28: Epic 8 - Récapitulatifs en texte enrichi
 FR29: Epic 8 - Bibliothèque « Règles de la table »
+FR30: Epic 9 - Édition des règles d'une campagne
+FR31: Epic 9 - Fiches de personnage selon les règles de 2014
+FR32: Epic 9 - Règles modifiables par le MJ (données)
+FR33: Epic 9 - Contenu sous licence (SRD 5.1)
 
 NFR1, NFR7 : transversaux, portés par chaque story (revue de sécurité D-06, tests pgTAP AD-14).
 NFR4, NFR5, NFR5b, NFR9 : Epic 7. NFR10 : Epic 4 (bornes) et Epic 8 (CSP). NFR8 : Epic 6 et critère de chaque story d'interface.
@@ -187,6 +191,12 @@ de type livre, sans risque pour la sécurité.
 **FRs covered:** FR28, FR29
 **Notes :** AD-16 à AD-22, D-32 ; démarre par un spike (corpus de brews, bundle, mobile) ; 8 stories proposées par le
 brainstorm de design.
+
+### Epic 9 : Les règles de 2014 pour les tables qui les jouent
+
+Le MJ choisit les règles 2014 ou 2024 par campagne et crée ou modifie les règles par le MCP (règles en données, en base) ; les joueurs d'une campagne 2014 créent des personnages conformes (SRD 5.1 dans le dépôt, le reste saisi par le MJ).
+**FRs covered:** FR30, FR31, FR32, FR33
+**Notes :** décision du propriétaire du 2026-11-18 ; 10 stories ; architecture : `docs/rules-as-data.md` (D-35) ; les règles du dépôt officiel sont du code, d'où la 9.3.
 
 ## Définition de terminé commune (chaque story)
 
@@ -1315,3 +1325,247 @@ So that j'aie le rendu d'un livre à la table (AD-19).
 **Given** un écran étroit
 **When** le mode page est demandé
 **Then** le mode lecture reste appliqué
+
+## Epic 9 : Les règles de 2014 pour les tables qui les jouent
+
+Le MJ choisit, campagne par campagne, les règles 2014 ou 2024, et **crée et modifie les règles lui-même, par le MCP** : les
+règles deviennent des données validées, stockées en base, que le moteur charge à côté des règles intégrées. Les joueurs
+d'une campagne 2014 créent et font évoluer des personnages conformes.
+**Notes :** décision du propriétaire le 2026-11-18 : la table Affaires Draconiques joue en 2014 (Nain des montagnes,
+Occultiste Fiélon, Halfelin Pieds-Légers, Druide du Cercle des Spores). Le moteur actuel est 2024 (espèces sans bonus,
+historiques avec bonus et don d'origine, maîtrises d'armes, sous-classe au niveau 3). Choix : un champ de règles par
+campagne, le moteur 2024 et ses tests restent intacts ; contenu libre (SRD 5.1, CC-BY) seul dans le dépôt public ;
+ouverture aux joueurs avant la fin de cet epic (campagne, séances publiées, notes). Aucun FR du PRD : à ajouter au PRD
+avant la 9.2.
+**Constat du 2026-11-18 (docs du dépôt officiel, `docs/dnd-2024.md`) :** toutes les règles sont du code TypeScript
+(`src/lib/sources/*`, objets `*Source` et `Grant[]`, noms dans `gamedata.json`), donc ni modifiables ni créables par le MCP.
+Les `Grant` (29 variantes) sont des objets sérialisables : on les décrit par un schéma strict, on les stocke en base et on
+les injecte dans le pipeline Source → Grant → Résolveur. Le contenu hors SRD est alors saisi par le MJ (via le MCP) dans
+sa base privée, jamais dans le dépôt public (remplace l'ancienne story « paquets de contenu »).
+**Résultat de la 9.2 (2026-11-18) :** architecture dans `docs/rules-as-data.md` (D-35). Périmètre précisé : `RuleSet` à trois couches (2024 intégré, SRD 2014 en JSON, bibliothèque du MJ par édition) ; le champ `needsReview` des entrées issues d'un scan bloque leur usage tant qu'il n'est pas levé (9.3, 9.4) ; sous-espèce avec parent (9.5) ; méthode de caractéristiques « saisie manuelle » (9.7) ; invocations, pacte et liste de sorts étendue (9.8). **Question ouverte pour le MJ :** la liste des livres de 2014 autorisés à la table n'est écrite nulle part (proposition : `phb-2014`, `xgte`, `tcoe`).
+
+### Story 9.1 : Le MJ choisit les règles d'une campagne
+
+As a MJ,
+I want indiquer si une campagne suit les règles 2014 ou 2024,
+So that chaque table construise ses personnages avec les bonnes règles.
+
+**Acceptance Criteria:**
+
+**Given** la table `campaigns`
+**When** la migration s'applique
+**Then** elle porte une colonne `ruleset` (`'2014'` ou `'2024'`), `'2024'` par défaut pour les campagnes existantes, avec contrainte de valeurs
+
+**Given** l'écran de création et d'édition d'une campagne
+**When** le MJ choisit les règles
+**Then** le choix est enregistré ; il n'est plus modifiable dès qu'un personnage non brouillon existe dans la campagne (la base le refuse, pas seulement l'interface)
+
+**Given** le serveur MCP et l'export
+**When** une campagne est créée, lue ou exportée
+**Then** le champ `ruleset` y figure, et le MCP refuse de créer un personnage 2024 dans une campagne 2014 tant que le moteur 2014 n'existe pas
+
+**Given** la matrice AD-14
+**When** les tests pgTAP s'exécutent
+**Then** un joueur ne peut pas modifier `ruleset`, un non-membre ne le lit pas
+
+**Given** les deux langues
+**When** le choix est affiché
+**Then** les libellés existent en français et en anglais et le parcours tient sur 360 px
+
+### Story 9.2 : Spike, inventaire du contenu et architecture des règles en données
+
+As a développeur de l'app,
+I want inventorier ce que le SRD 5.1 couvre et décider comment représenter les règles en données,
+So that le périmètre, la licence et le modèle reposent sur des faits.
+
+**Acceptance Criteria:**
+
+**Given** les personnages réels de la table (hors dépôt) et le SRD 5.1
+**When** l'inventaire est fait
+**Then** un tableau consigne, par élément (espèce, sous-espèce, classe, sous-classe, historique, don, sort, objet), s'il est dans le SRD, avec la source de la licence (attribution CC-BY exigée par le SRD)
+
+**Given** les `Grant` et `*Source` existants
+**When** l'architecture est arrêtée
+**Then** une décision (`DECISIONS.md`) fixe : les types de règles stockables, la description des noms et textes dans l'entrée elle-même (au lieu des clés de `gamedata.json`), la façon dont des identifiants dynamiques cohabitent avec les unions TypeScript étroites, l'ordre de priorité entre règles intégrées et règles de la campagne, et les limites de sécurité (pas de code, de lien ni de HTML ; taille bornée)
+
+**Given** le PRD
+**When** le spike est terminé
+**Then** les exigences de l'epic 9 y sont ajoutées
+
+### Story 9.3 : Les règles en base, validées et chargées par le moteur
+
+As a MJ,
+I want que les règles d'une campagne soient des données validées stockées en base,
+So that elles puissent être créées et modifiées sans toucher au code.
+
+**Acceptance Criteria:**
+
+**Given** une table `rule_entries` (campagne, type, identifiant, contenu JSON, version)
+**When** la migration s'applique
+**Then** seul le MJ propriétaire écrit, les membres de la campagne lisent, un non-membre ne voit rien (matrice AD-14 : lecture, insertion, modification, suppression × MJ, joueur, non-membre, anonyme)
+
+**Given** un schéma Zod strict de chaque type de règle (espèce, sous-espèce, classe, sous-classe, historique, don, sort, objet) et de chaque variante de `Grant`
+**When** une entrée est enregistrée
+**Then** elle est validée côté serveur (fonction ou contrainte) ; une entrée avec code, lien, HTML, champ inconnu ou taille hors borne est refusée
+
+**Given** une campagne qui porte des règles propres
+**When** le résolveur assemble un personnage
+**Then** les entrées de la campagne s'ajoutent aux règles intégrées dans le pipeline Source → Grant → Résolveur, sans modifier le comportement des campagnes qui n'en ont pas (tous les tests existants passent)
+
+**Given** une entrée de la campagne qui reprend l'identifiant d'une règle intégrée
+**When** le moteur charge les règles
+**Then** la règle de la campagne l'emporte, et l'écart est visible du MJ
+
+**Given** les noms et descriptions des entrées
+**When** l'interface les affiche
+**Then** elles s'affichent en français et en anglais quand les deux existent, sinon dans la langue fournie
+
+### Story 9.4 : Le MCP crée et modifie les règles
+
+As a MJ,
+I want créer, lire, modifier et supprimer des règles depuis le MCP,
+So that Claude m'aide à saisir mes règles de table (sous-classes, espèces, historiques, sorts, objets) sans passer par le code.
+
+**Acceptance Criteria:**
+
+**Given** le serveur MCP
+**When** il démarre
+**Then** il expose `dnd_list_rules`, `dnd_get_rule`, `dnd_create_rule`, `dnd_update_rule` et `dnd_delete_rule`, avec la même authentification du MJ que les outils existants
+
+**Given** une demande de création ou de modification
+**When** le contenu ne respecte pas le schéma
+**Then** rien n'est enregistré et le message liste chaque problème, avec le chemin du champ fautif et un exemple valide
+
+**Given** une règle créée
+**When** le MJ la lit ou crée un personnage qui l'utilise
+**Then** la fiche calculée applique la règle (essai : une sous-classe ajoutée à une campagne apparaît dans le choix de sous-classe au bon niveau)
+
+**Given** une règle utilisée par un personnage
+**When** le MJ veut la supprimer
+**Then** l'outil refuse et indique les personnages concernés ; la modification d'une règle utilisée est permise, avec la liste des fiches recalculées
+
+**Given** les entrées lues par le MCP
+**When** leur contenu contient du texte saisi par un tiers
+**Then** il est traité comme une donnée, jamais comme une instruction
+
+**Given** la documentation du MCP
+**When** elle est mise à jour
+**Then** elle décrit chaque outil, le schéma de chaque type de règle et un exemple complet par type
+
+### Story 9.5 : Espèces, sous-espèces et historiques 2014
+
+As a joueur d'une campagne 2014,
+I want des espèces avec leurs bonus de caractéristiques et leurs traits, et des historiques sans bonus,
+So that mon personnage suive les règles que ma table joue.
+
+**Acceptance Criteria:**
+
+**Given** une campagne 2014
+**When** le résolveur assemble un personnage
+**Then** l'espèce et la sous-espèce donnent leurs bonus de caractéristiques, leur vitesse, leur taille, leurs langues et leurs traits, et l'historique donne ses compétences, ses outils, ses langues et son trait de background, sans bonus ni don d'origine
+
+**Given** une campagne 2024
+**When** le même personnage est résolu
+**Then** le comportement existant est inchangé (tous les tests 2024 passent)
+
+**Given** les contenus du SRD 5.1
+**When** ils sont chargés
+**Then** chaque entrée est validée par un schéma et testée (bonus, traits, langues)
+
+### Story 9.6 : Classes et sous-classes 2014
+
+As a joueur d'une campagne 2014,
+I want les classes avec leurs règles de 2014,
+So that mon niveau, mes capacités et ma sous-classe soient corrects.
+
+**Acceptance Criteria:**
+
+**Given** une classe 2014
+**When** le personnage monte de niveau
+**Then** la sous-classe est demandée au bon niveau de sa classe (1, 2 ou 3), les augmentations de caractéristiques viennent aux niveaux de la classe, et il n'y a aucune maîtrise d'arme
+
+**Given** les classes du SRD 5.1
+**When** elles sont chargées
+**Then** leurs capacités, jets de sauvegarde, compétences et équipements de départ 2014 sont testés niveau par niveau (1 à 20)
+
+**Given** une campagne 2024
+**When** le même moteur s'exécute
+**Then** rien ne change
+
+### Story 9.7 : Constructeur de personnage 2014
+
+As a joueur d'une campagne 2014,
+I want un constructeur qui suit la création de 2014,
+So that je crée ma fiche sans erreur et sans ressaisir mes calculs.
+
+**Acceptance Criteria:**
+
+**Given** une campagne 2014
+**When** le joueur construit son personnage
+**Then** les étapes suivent l'ordre de 2014 (espèce, classe, caractéristiques avec bonus d'espèce, historique, équipement de départ de la classe ou en pièces d'or), avec sauvegarde automatique
+
+**Given** les valeurs obtenues par tirage, achat de points ou tableau standard
+**When** le joueur les saisit
+**Then** elles sont contrôlées et les bonus d'espèce s'y ajoutent
+
+**Given** un personnage créé par le MJ via le MCP
+**When** il est finalisé
+**Then** la même fiche calculée apparaît, avec PV, CA, bonus de maîtrise, sauvegardes et compétences corrects
+
+**Given** le parcours
+**When** il est affiché sur 360 px
+**Then** il tient sans défilement horizontal, en français et en anglais, sous la CSP stricte
+
+**Résultat de la 9.7 (2026-11-19) :** constructeur 2014 dans le même parcours (ordre : espèce, classe, caractéristiques avec bonus d'espèce, historique, équipement), méthode « saisie manuelle » (3 à 20) et contrôle de chaque méthode (tableau standard, achat de 27 points, tirage 3 à 18) bloquant la finalisation ; équipement de départ des classes du SRD en choix, équipement de l'acolyte en objets ; richesse de départ saisie à la main (absente du SRD) ; MCP ouvert au 2014 (création, choix, niveau, finalisation) avec la même fiche ; migration `20261122000000` (`ruleset_has_engine('2014')`). Les sorts restent à la 9.8.
+
+### Story 9.8 : Sorts et incantation 2014
+
+As a joueur lanceur de sorts d'une campagne 2014,
+I want mes sorts connus, préparés et mes emplacements selon les règles de 2014,
+So that ma fiche soit juste.
+
+**Acceptance Criteria:**
+
+**Given** les classes lanceuses de sorts
+**When** la fiche est calculée
+**Then** les sorts connus ou préparés, les emplacements et la magie de pacte de l'Occultiste (invocations comprises) suivent les tables de 2014
+
+**Given** la liste de sorts du SRD 5.1
+**When** elle est chargée
+**Then** chaque sort est validé par un schéma et rattaché à ses classes
+
+**Résultat de la 9.8 (2026-11-19) :** les 319 sorts du SRD 5.1 sont des entrées `spell` générées (validées par le schéma, rattachées à leurs classes) ; chaque classe lanceuse de sorts reçoit ses emplacements, sa magie de pacte (Occultiste), ses sorts mineurs et sorts connus (ou livre de sorts du magicien), son nombre de sorts préparés, ses sorts de domaine, de serment et de cercle, la liste étendue du Fiélon, l'Arcanum mystique, ses invocations, son don de pacte et la métamagie de l'ensorceleur, d'après les tables du SRD (D-37, `docs/rules-as-data.md` section 13). Le jeu de données source se trompe sur les invocations (niveaux 4 et 6) et la métamagie (niveau 16) : les nombres du SRD sont écrits dans le convertisseur et figés par test. Restes : sorts préparés comptés mais non listés, sorts d'espèce en texte, noms français des sorts à fournir.
+
+### Story 9.9 : Fiche PDF et export 2014
+
+As a joueur,
+I want imprimer ma fiche de 2014,
+So that je la joue à la table.
+
+**Acceptance Criteria:**
+
+**Given** un personnage 2014
+**When** l'export PDF est demandé
+**Then** les champs sont ceux de la fiche 2014 (avec attribution du SRD si du contenu SRD y figure)
+
+**Given** l'export de données du MJ
+**When** il porte sur une campagne 2014
+**Then** il contient le champ de règles et les règles propres de la campagne
+
+**Résultat de la 9.9 (2026-11-19) :** la fiche d'un personnage 2014 est dessinée en PDF (champs de la fiche 2014, sorts compris), sans modèle à fournir, avec la mention du SRD 5.1 (CC-BY 4.0) quand du contenu SRD y figure ; l'export de données du MJ contient le champ de règles de la campagne (`campaigns.ruleset`) et les entrées de la bibliothèque de règles de son édition (D-38, `docs/rules-as-data.md` section 14). Restes : dés de vie par niveau, points de vie actuels et points d'expérience non portés par la fiche.
+
+### Story 9.10 : Recette de la table Affaires Draconiques
+
+As a MJ,
+I want recréer les cinq personnages joués de ma table,
+So that la table reprenne l'outil avec ses vraies fiches.
+
+**Acceptance Criteria:**
+
+**Given** les fiches réelles de Matdhöur, Søren, Nox, Hiero le Fou et Robbie
+**When** chaque joueur les construit dans l'application
+**Then** PV, CA, sorts, capacités et équipement correspondent aux fiches PDF actuelles, les écarts étant consignés
+
+**Given** la recette
+**When** elle est terminée
+**Then** la `TO-DO.md`, la documentation et les décisions sont à jour

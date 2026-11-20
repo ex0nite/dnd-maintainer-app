@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMaterializedItemRows } from '@/lib/resolver/materialize';
+import { autoEquipRows, buildMaterializedItemRows } from '@/lib/resolver/materialize';
 import type { ResolvedCharacter, ResolvedEquipmentItem } from '@/types/resolved';
 import type { SourceTag } from '@/types/sources';
 import { requireItemDef } from '@/lib/sources/items';
@@ -149,5 +149,43 @@ describe('buildMaterializedItemRows', () => {
     const resolved = makeResolved([]);
     const rows = buildMaterializedItemRows(resolved, CHARACTER_ID);
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('autoEquipRows', () => {
+  const row = (itemId: string) => ({
+    character_id: 'c',
+    item_id: itemId,
+    quantity: 1,
+    equipped: false,
+    attuned: false,
+    source: { origin: 'loot', description: 'x' },
+  });
+  const equippedIds = (ids: readonly string[]) =>
+    autoEquipRows(ids.map(row))
+      .filter((r) => r.equipped)
+      .map((r) => r.item_id);
+
+  it('wears chain mail, shield and a mace', () => {
+    expect(equippedIds(['chain-mail', 'mace', 'shield', 'backpack'])).toEqual(['chain-mail', 'mace', 'shield']);
+  });
+
+  it('never equips two body armors', () => {
+    expect(equippedIds(['chain-mail', 'leather'])).toEqual(['chain-mail']);
+  });
+
+  it('keeps one weapon next to a shield, melee first, and drops a two-handed one', () => {
+    expect(equippedIds(['light-crossbow', 'mace', 'shield'])).toEqual(['mace', 'shield']);
+    expect(equippedIds(['greatsword', 'shield'])).toEqual(['shield']);
+  });
+
+  it('equips up to two weapons without a shield and does not mutate its input', () => {
+    const input = ['mace', 'light-crossbow', 'greatsword'].map(row);
+    expect(autoEquipRows(input).filter((r) => r.equipped)).toHaveLength(2);
+    expect(input.every((r) => !r.equipped)).toBe(true);
+  });
+
+  it('leaves unknown items alone', () => {
+    expect(equippedIds(['dm-custom-item'])).toEqual([]);
   });
 });

@@ -3,7 +3,8 @@ import { PortraitUpload } from '@/components/character-sheet/PortraitUpload';
 import { PortraitImage } from '@/components/PortraitImage';
 import { LevelControls } from '@/components/character-sheet/LevelControls';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
-import { BACKGROUND_SOURCES } from '@/lib/sources/backgrounds';
+import { useActiveRuleSet, useOwnRuleName } from '@/hooks/useRuleSet';
+import { localizedName } from '@/lib/rules/display';
 import { deriveOriginFeatInfo } from '@/lib/character-builder/origin-feat-info';
 import { DND_CLASSES, isBackgroundId, type ClassId } from '@/lib/dnd-helpers';
 import type { Character } from '@/types/database';
@@ -39,8 +40,15 @@ export function CharacterSheetHeader({
   /** DM-only commands: clone, archive, delete (default: yes). */
   canManage?: boolean;
 }) {
-  const { t } = useTranslation('gamedata');
+  const { t, i18n } = useTranslation('gamedata');
   const { t: tc } = useTranslation('common');
+  const rules = useActiveRuleSet();
+  const ownName = useOwnRuleName();
+  // Lineages of a library species carry their own names (story 9.3).
+  const ownLineageName = (speciesId: string, lineageId: string): string | undefined => {
+    const name = rules.lineageNames.get(speciesId)?.get(lineageId);
+    return name ? localizedName(name, i18n?.language ?? 'en') : undefined;
+  };
   const { build, level: resolvedLevel } = useCharacterContext();
 
   const alignmentName = character.alignment
@@ -61,8 +69,8 @@ export function CharacterSheetHeader({
   // Origin feat: derive badge info from the background source's grants.
   // deriveOriginFeatInfo handles both shapes (feat grant and direct feat-magic-initiate-* feature).
   const originFeatInfo = (() => {
-    if (!character.background || !isBackgroundId(character.background)) return null;
-    const bg = BACKGROUND_SOURCES.find((s) => s.id === character.background);
+    if (!character.background) return null;
+    const bg = rules.backgrounds.get(character.background);
     if (!bg) return null;
     return deriveOriginFeatInfo(bg.grants);
   })();
@@ -181,9 +189,12 @@ export function CharacterSheetHeader({
         <div>
           <span className="text-muted-foreground">{tc('characterSheet.fields.class')}</span>
           <p className="text-foreground font-semibold">
-            {character.class ? t(`classes.${character.class}`, { defaultValue: character.class }) : ''}
+            {character.class
+              ? (ownName('class', character.class) ??
+                t(`classes.${character.class}`, { defaultValue: character.class }))
+              : ''}
             {character.subclass
-              ? ` (${t(`subclasses.${character.subclass}.name`, { defaultValue: character.subclass })})`
+              ? ` (${ownName('subclass', character.subclass) ?? t(`subclasses.${character.subclass}.name`, { defaultValue: character.subclass })})`
               : ''}
           </p>
         </div>
@@ -194,11 +205,15 @@ export function CharacterSheetHeader({
         <div>
           <span className="text-muted-foreground">{tc('characterSheet.fields.species')}</span>
           <p className="text-foreground font-semibold">
-            {character.species ? t(`species.${character.species}`, { defaultValue: character.species }) : ''}
+            {character.species
+              ? (ownName('species', character.species) ??
+                t(`species.${character.species}`, { defaultValue: character.species }))
+              : ''}
           </p>
           {lineageId && character.species && (
             <p className="text-xs text-muted-foreground mt-0.5">
-              {t(`lineages.${character.species}.${lineageId}`, { defaultValue: lineageId })}
+              {ownLineageName(character.species, lineageId) ??
+                t(`lineages.${character.species}.${lineageId}`, { defaultValue: lineageId })}
             </p>
           )}
         </div>
@@ -206,9 +221,10 @@ export function CharacterSheetHeader({
           <span className="text-muted-foreground">{tc('characterSheet.fields.background')}</span>
           <p className="text-foreground font-semibold">
             {character.background
-              ? isBackgroundId(character.background)
-                ? t(`backgrounds.${character.background}`)
-                : character.background
+              ? (ownName('background', character.background) ??
+                (isBackgroundId(character.background)
+                  ? t(`backgrounds.${character.background}`)
+                  : character.background))
               : ''}
           </p>
           {originFeatInfo && (
@@ -217,9 +233,10 @@ export function CharacterSheetHeader({
                 ? t(`features.${originFeatInfo.id}.name` as `features.${string}.name`, {
                     defaultValue: originFeatInfo.id,
                   })
-                : t(`feats.${originFeatInfo.id}.name` as `feats.${string}.name`, {
+                : (ownName('feat', originFeatInfo.id) ??
+                  t(`feats.${originFeatInfo.id}.name` as `feats.${string}.name`, {
                     defaultValue: originFeatInfo.id,
-                  })}
+                  }))}
             </p>
           )}
         </div>

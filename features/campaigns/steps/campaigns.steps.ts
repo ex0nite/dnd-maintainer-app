@@ -63,6 +63,7 @@ function makeCampaignRow(overrides: Partial<Campaign> & { name: string }): Campa
     updated_at: NOW,
     archived_at: null,
     allowed_source_books: ['phb-2024'],
+    ruleset: '2024',
     ...overrides,
   };
 }

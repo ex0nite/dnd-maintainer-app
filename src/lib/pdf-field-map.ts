@@ -29,6 +29,8 @@ import type { GrantBundle, SourceTag } from '@/types/sources';
 import { getItemNameKey } from '@/lib/sources/items';
 import { getSourceDisplayName } from '@/lib/source-display';
 import { getSpellDisplayMeta } from '@/lib/spell-display';
+import { builtin2024RuleSet } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('pdf-field-map');
@@ -100,13 +102,18 @@ export function characterDisplayName(character: Character): string {
 
 /** i18n display name for a granted feature (class feature or species trait). */
 function featureLabel(f: ResolvedFeature, t: GamedataT): string {
-  return t(`features.${f.feature.id}.name` as `features.${string}.name`, { defaultValue: f.feature.id });
+  // A rule entry's own feature text is printed as is (never interpolated by i18next).
+  return (
+    f.feature.name ?? t(`features.${f.feature.id}.name` as `features.${string}.name`, { defaultValue: f.feature.id })
+  );
 }
 
 /** "Name — description" line for a feature, with the i18n description appended when present. */
 function featureLine(f: ResolvedFeature, t: GamedataT): string {
   const name = featureLabel(f, t);
-  const desc = t(`features.${f.feature.id}.description` as `features.${string}.description`, { defaultValue: '' });
+  const desc =
+    f.feature.description ??
+    t(`features.${f.feature.id}.description` as `features.${string}.description`, { defaultValue: '' });
   return desc ? `${name} — ${desc}` : name;
 }
 
@@ -259,7 +266,9 @@ export function buildFieldValues(
   resolved: ResolvedCharacter,
   character: Character,
   t: GamedataT,
-  featSources: ReadonlyMap<string, FeatGrantInfo>
+  featSources: ReadonlyMap<string, FeatGrantInfo>,
+  /** The campaign's rule set (story 9.3): spells of the library get their level. Built-in 2024 by default. */
+  rules: RuleSet = builtin2024RuleSet()
 ): PdfFieldValues {
   const text: Record<string, string> = {};
   const checks: Record<string, boolean> = {};
@@ -475,7 +484,7 @@ export function buildFieldValues(
       spellId: id,
       // SpellDisplayMeta.level is typed as number, but the value always comes from SpellDef.level
       // which is the literal union 0|1|...|9 — casting is safe here.
-      spellLevel: (getSpellDisplayMeta(id)?.level ?? 0) as SpellLevel,
+      spellLevel: (getSpellDisplayMeta(id, rules)?.level ?? 0) as SpellLevel,
     }));
 
     const allSpells = [...cantripEntries, ...knownEntries, ...alwaysPreparedEntries].sort(

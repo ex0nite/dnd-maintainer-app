@@ -778,3 +778,59 @@ describe('ChoicePicker saving-throw-choice', () => {
     expect(onClear).toHaveBeenCalledWith(SAVE_CHOICE.choiceKey);
   });
 });
+
+// ---------------------------------------------------------------------------
+// ChoicePicker — feature-picks branch (story 9.8: 2014 invocations, metamagic)
+// ---------------------------------------------------------------------------
+
+const WARLOCK_SOURCE = { origin: 'class' as const, id: 'warlock' as const, level: 5 };
+
+const FEATURE_PICKS: PendingChoice & { type: 'feature-picks' } = {
+  type: 'feature-picks',
+  choiceKey: 'feature-picks:class:warlock:1' as ChoiceKey,
+  source: WARLOCK_SOURCE,
+  count: 1,
+  poolId: 'warlock-invocations',
+  classLevel: 5,
+  options: [
+    {
+      optionId: 'agonizing-blast',
+      featureId: 'eldritch-invocation-agonizing-blast',
+      name: 'Agonizing Blast',
+      description: 'Add your Charisma modifier.',
+    },
+    { optionId: 'devils-sight', featureId: 'eldritch-invocation-devils-sight', name: "Devil's Sight" },
+    { optionId: 'lifedrinker', featureId: 'eldritch-invocation-lifedrinker', name: 'Lifedrinker', minClassLevel: 12 },
+  ],
+  alreadyChosen: ['devils-sight'],
+};
+
+describe('ChoicePicker feature-picks', () => {
+  it('shows the own name and text of each option the class level allows, and none above it', () => {
+    render(<ChoicePicker choice={FEATURE_PICKS} currentDecision={undefined} onDecide={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.getByText('Agonizing Blast')).toBeDefined();
+    expect(screen.getByText('Add your Charisma modifier.')).toBeDefined();
+    expect(screen.queryByText('Lifedrinker')).toBeNull();
+  });
+
+  it('disables an option another pick of the pool already holds', () => {
+    render(<ChoicePicker choice={FEATURE_PICKS} currentDecision={undefined} onDecide={vi.fn()} onClear={vi.fn()} />);
+    const boxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    expect(boxes).toHaveLength(2);
+    expect(
+      boxes[1].hasAttribute('disabled') ||
+        boxes[1].getAttribute('aria-disabled') === 'true' ||
+        boxes[1].dataset.disabled !== undefined
+    ).toBe(true);
+  });
+
+  it('decides with the picked option ids', () => {
+    const onDecide = vi.fn();
+    render(<ChoicePicker choice={FEATURE_PICKS} currentDecision={undefined} onDecide={onDecide} onClear={vi.fn()} />);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    expect(onDecide).toHaveBeenCalledWith(FEATURE_PICKS.choiceKey, {
+      type: 'feature-picks',
+      optionIds: ['agonizing-blast'],
+    });
+  });
+});

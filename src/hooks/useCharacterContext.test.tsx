@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { CharacterProvider, useCharacterContext, resolveChoiceSequence } from '@/hooks/useCharacterContext';
 import type { BuildLevelRow } from '@/lib/build-reconstruction';
+import { buildRuleSet } from '@/lib/rules/ruleset';
 import type { Character } from '@/types/database';
 import type { ChoiceKey } from '@/types/choices';
 import type { ReactNode } from 'react';
@@ -57,6 +58,12 @@ const rows = [creationRow, fighterLevel1, wizardLevel2] as const;
 describe('resolveChoiceSequence', () => {
   it('routes species choices to sequence 0', () => {
     expect(resolveChoiceSequence('language-choice:species:human:0', rows)).toBe(0);
+  });
+
+  it('routes the subspecies choice and the subspecies own choices to sequence 0 (story 9.5)', () => {
+    const srd2014 = buildRuleSet('2014');
+    expect(resolveChoiceSequence('lineage-choice:species:dwarf:0', rows, srd2014)).toBe(0);
+    expect(resolveChoiceSequence('language-choice:species:high-elf:0', rows, srd2014)).toBe(0);
   });
 
   it('routes background choices to sequence 0', () => {

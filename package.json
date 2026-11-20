@@ -25,7 +25,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:bdd": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx --import ./features/support/register.mjs ./node_modules/@cucumber/cucumber/bin/cucumber.js --exit",
-    "test:bdd:future": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx --import ./features/support/register.mjs ./node_modules/@cucumber/cucumber/bin/cucumber.js --exit --profile future"
+    "test:bdd:future": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx --import ./features/support/register.mjs ./node_modules/@cucumber/cucumber/bin/cucumber.js --exit --profile future",
+    "srd:generate": "TSX_TSCONFIG_PATH=tsconfig.app.json tsx scripts/generate-srd-2014.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

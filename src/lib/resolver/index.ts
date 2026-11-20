@@ -1,5 +1,5 @@
 import { getProficiencyBonus } from '@/lib/dnd-helpers';
-import type { AbilityKey, ToolProficiencyId, SkillId, FeatId, ClassId } from '@/lib/dnd-helpers';
+import type { AbilityKey, ToolProficiencyId, SkillId, ClassId } from '@/lib/dnd-helpers';
 import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('resolver');
@@ -12,7 +12,7 @@ import type { ResolvedCharacter, PendingChoice, ResolvedSkill } from '@/types/re
 import type { HitDie, ExpertiseChoiceGrant } from '@/types/grants';
 import { mapNonEmpty } from '@/lib/non-empty';
 import type { WeaponMasteryId } from '@/types/items';
-import { collectGrantsByType, getClassLevel } from '@/lib/resolver/helpers';
+import { collectGrantsByType, extraSpellIdsOf, getClassLevel } from '@/lib/resolver/helpers';
 import { resolveAbilities } from '@/lib/resolver/abilities';
 import { resolveSavingThrows, resolveSkills, resolveProficiencies } from '@/lib/resolver/proficiencies';
 import { resolveFeatures } from '@/lib/resolver/features';
@@ -21,8 +21,9 @@ import { resolveSpellcasting } from '@/lib/resolver/spellcasting';
 import { resolveEquipment, resolveAttacks, resolveEquippedArmorAc } from '@/lib/resolver/equipment';
 import { resolveResourcePools } from '@/lib/resolver/resource-pools';
 import { getItemDef, WEAPON_CATALOG } from '@/lib/sources/items';
-import { getFeatSource } from '@/lib/sources';
-import { getSpellsForList } from '@/lib/sources/spells';
+import { builtin2024RuleSet, spellChoicePool } from '@/lib/rules/ruleset';
+import type { RuleSet } from '@/lib/rules/types';
+import { featurePicksPool, optionText, otherPicks } from '@/lib/resolver/feature-picks';
 
 export interface PersistedItem {
   readonly itemId: string;
@@ -41,7 +42,9 @@ export interface ResolverInput {
   readonly equippedItemIds?: readonly string[];
   readonly persistedItems?: readonly PersistedItem[];
   readonly useDBInventory?: boolean;
-  readonly expandedFeats?: ReadonlySet<FeatId>;
+  readonly expandedFeats?: ReadonlySet<string>;
+  /** Rules the bundles were collected from (story 9.3). Defaults to the built-in 2024 rules. */
+  readonly rules?: RuleSet;
 }
 
 function isValidExpertiseSkillPick(
@@ -58,7 +61,8 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   const { baseAbilities, level, bundles, choices } = input;
   const hpRolls = input.hpRolls ?? input.levels?.map((l) => l.hpRoll) ?? [];
   const equippedItemIds = input.equippedItemIds ?? [];
-  const expandedFeats = input.expandedFeats ?? new Set<FeatId>();
+  const expandedFeats = input.expandedFeats ?? new Set<string>();
+  const rules = input.rules ?? builtin2024RuleSet();
 
   const proficiencyBonus = getProficiencyBonus(level);
   const abilities = resolveAbilities(baseAbilities, bundles, choices);
@@ -71,7 +75,7 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   const features = resolveFeatures(bundles, abilities, proficiencyBonus);
   const hitPoints = resolveHp(bundles, hpRolls, conModifier, level);
   const speed = resolveSpeed(bundles);
-  const spellcasting = resolveSpellcasting(bundles, abilities, proficiencyBonus, level);
+  const spellcasting = resolveSpellcasting(bundles, abilities, proficiencyBonus, level, rules);
 
   // Equipment resolution — finalized characters read from DB inventory directly
   const equipmentResult =
@@ -110,8 +114,16 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   // Build hitDie array from hit-die grants
   const hitDieGrants = collectGrantsByType(bundles, 'hit-die');
   const hitDieMap = new Map<HitDie, number>();
-  for (const { grant } of hitDieGrants) {
-    hitDieMap.set(grant.die, (hitDieMap.get(grant.die) ?? 0) + 1);
+  // The grant sits on class level 1 only; the class owns one die per level it has in the build.
+  const classLevelCount = new Map<string, number>();
+  for (const bundle of bundles) {
+    if (bundle.source.origin === 'class') {
+      classLevelCount.set(bundle.source.id, Math.max(classLevelCount.get(bundle.source.id) ?? 0, bundle.source.level));
+    }
+  }
+  for (const { grant, source } of hitDieGrants) {
+    const dice = source.origin === 'class' ? (classLevelCount.get(source.id) ?? 1) : 1;
+    hitDieMap.set(grant.die, (hitDieMap.get(grant.die) ?? 0) + dice);
   }
   const hitDie = Array.from(hitDieMap.entries()).map(([die, count]) => ({ die, count }));
 
@@ -330,7 +342,11 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
         type: 'feature-choice',
         choiceKey: grant.key,
         source,
-        options: mapNonEmpty(grant.options, (o) => ({ optionId: o.optionId, featureId: o.featureId })),
+        options: mapNonEmpty(grant.options, (o) => ({
+          optionId: o.optionId,
+          featureId: o.featureId,
+          ...optionText(o),
+        })),
       });
     }
   }
@@ -352,7 +368,7 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   // Unresolved feat-choice grants (or decided with an unresolvable featId — invalid/corrupted decision)
   for (const { grant, source } of collectGrantsByType(bundles, 'feat-choice')) {
     const decision = choices[grant.key];
-    const resolvedFeat = decision?.type === 'feat-choice' ? getFeatSource(decision.featId) : undefined;
+    const resolvedFeat = decision?.type === 'feat-choice' ? rules.feats.get(decision.featId) : undefined;
     if (!decision || decision.type !== 'feat-choice' || !resolvedFeat) {
       // Either-or suppression: if the companion ASI is satisfied, skip feat-choice pending
       const parsed = parseChoiceKey(grant.key);
@@ -377,7 +393,8 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
   for (const { grant, source } of collectGrantsByType(bundles, 'spell-choice')) {
     const decision = choices[grant.key];
     const chosenIds = decision?.type === 'spell-choice' ? decision.spellIds : [];
-    const inPool = getSpellsForList(grant.spellList, grant.spellLevel);
+    const extraSpellIds = extraSpellIdsOf(bundles, grant.spellList);
+    const inPool = spellChoicePool(rules, { ...grant, extraSpellIds });
     const validDistinct = new Set(chosenIds.filter((id) => inPool.some((s) => s.id === id)));
     if (!decision || decision.type !== 'spell-choice' || validDistinct.size < grant.count) {
       pendingChoices.push({
@@ -387,6 +404,41 @@ export function resolveCharacter(input: ResolverInput): ResolvedCharacter {
         count: grant.count,
         spellList: grant.spellList,
         spellLevel: grant.spellLevel,
+        ...(grant.maxSpellLevel !== undefined ? { maxSpellLevel: grant.maxSpellLevel } : {}),
+        ...(extraSpellIds.length > 0 ? { extraSpellIds } : {}),
+      });
+    }
+  }
+
+  // Unresolved or underfilled feature-picks grants (2014 invocations, metamagic)
+  for (const { grant, source } of collectGrantsByType(bundles, 'feature-picks')) {
+    const pool = featurePicksPool(bundles, grant.poolId);
+    const classLevel = source.origin === 'class' ? getClassLevel(bundles, source.id) : level;
+    const decision = choices[grant.key];
+    const chosen = decision?.type === 'feature-picks' ? decision.optionIds : [];
+    const taken = new Set(otherPicks(bundles, choices, grant.poolId, grant.key));
+    const takenBefore = new Set(otherPicks(bundles, choices, grant.poolId, grant.key, true));
+    const valid = new Set(
+      chosen.filter((id) => {
+        const option = pool.find((o) => o.optionId === id);
+        return option !== undefined && (option.minClassLevel ?? 1) <= classLevel && !takenBefore.has(id);
+      })
+    );
+    if (valid.size < grant.count) {
+      pendingChoices.push({
+        type: 'feature-picks',
+        choiceKey: grant.key,
+        source,
+        count: grant.count,
+        poolId: grant.poolId,
+        classLevel,
+        options: pool.map((o) => ({
+          optionId: o.optionId,
+          featureId: o.featureId,
+          ...optionText(o),
+          ...(o.minClassLevel !== undefined ? { minClassLevel: o.minClassLevel } : {}),
+        })),
+        alreadyChosen: [...taken],
       });
     }
   }
