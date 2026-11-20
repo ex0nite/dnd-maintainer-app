@@ -27,7 +27,7 @@ insert into public.encounters (campaign_id, name) values ('aaaaaaaa-0000-4000-80
 insert into public.notes (campaign_id, title) values ('aaaaaaaa-0000-4000-8000-00000000000a', 'Lore');
 
 -- Structure
-select policies_are('public', 'sessions', array['sessions_dm_all', 'access_active'], 'sessions: exactly the DM policy and the active-user rule');
+select policies_are('public', 'sessions', array['sessions_dm_all', 'sessions_member_published', 'access_active'], 'sessions: the DM policy, the published-recap read policy (epic 5) and the active-user rule');
 select policies_are('public', 'encounters', array['encounters_dm_all', 'access_active'], 'encounters: exactly the DM policy and the active-user rule');
 select policies_are('public', 'notes', array['notes_dm_all', 'access_active'], 'notes: exactly the DM policy and the active-user rule');
 select is(

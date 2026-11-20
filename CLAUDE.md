@@ -77,6 +77,8 @@ All user-facing strings must use `react-i18next` translation keys — never hard
 - **Dynamic keys**: Domain ID types (`SpeciesId`, `ClassId`, `AlignmentId`) are narrow enough that template literals like ``t(`species.${speciesId}`)`` typecheck without casts. If a variable is wider than the key union (e.g., `string` from `Object.entries()`), narrow it first rather than using `as never`.
 - **ID-based data model**: Species, class, background, alignment, and skill values are stored as lowercase IDs in the database (e.g., `dwarf`, `wizard`, `acolyte`). Always translate IDs to display names via `t()` from the `gamedata` namespace — never display raw IDs to users.
 
+- **Languages**: French (default on a new device) and English, chosen with `LanguageSwitcher` and remembered in `localStorage`. `src/locales/fr/common.json` must keep exactly the keys and `{{placeholders}}` of `en/common.json` (`locales.test.ts` enforces it): add every new string to BOTH files. `gamedata` stays English. Unit tests and e2e run in English.
+
 ### D&D Game Data
 
 `src/lib/dnd-helpers.ts` contains D&D 5.5e (2024) reference data (species, classes, skills, backgrounds, alignments, conditions) and utility functions (ability modifier calculation, proficiency bonus, spell slot tables). Species/class/background data uses ID-based keys that correspond to translation keys in `gamedata.json`. See `docs/dnd-2024.md` for the contributor data-shape reference.

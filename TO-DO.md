@@ -78,9 +78,9 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 - [x] Epic 2 : le MJ gère sa table (2.1 spike authentification FAIT, voir `docs/auth-spike.md` ; 2.2 création de compte FAIT, 2.3 mot de passe obligatoire FAIT,
       2.4 réinitialisation FAIT, 2.5 membres / archivage FAIT, 2.6 limitation des tentatives FAIT)
 - [x] Epic 3 : fiche de personnage (3.1 FAIT ; 3.6, 3.7, 3.9 : base FAITE, interface à faire avec 3.2 ; 3.1 à 3.9 FAITES : policies, accueil joueur, fiches, création, niveaux, reconstruction, portraits, réassignation)
-- [ ] Epic 4 : notes de campagne (4.1 à 4.4)
-- [ ] Epic 5 : récapitulatifs de séance (5.1 à 5.4)
-- [ ] Epic 6 : page joueur bilingue et adaptée au téléphone (6.1 à 6.4), dont `src/locales/fr/common.json`
+- [x] Epic 4 : notes de campagne (4.1 à 4.4 FAITES : carnet personnel, lecture MJ, notes communes, modération)
+- [x] Epic 5 : récapitulatifs de séance (5.1 à 5.4) (5.1 à 5.4 FAITES : publication, lecture, commentaires, modération)
+- [x] Epic 6 : page joueur bilingue et adaptée au téléphone (6.1 à 6.4), dont `src/locales/fr/common.json` (6.1 à 6.4 FAITES : accueil joueur, français/anglais, parcours 360 px, refus clair)
 
 ### Epic 7, suite : mise en ligne
 
@@ -132,3 +132,11 @@ critères d'acceptation dans `epics.md`. Cocher une story une fois fusionnée da
 
 - [x] BMAD dans le dépôt MCP : non (D-24), simple renvoi depuis son `CLAUDE.md`
 - [ ] Traduire les données de règles (`gamedata`, 1 728 clés) en français, par lots (D-28)
+
+- [ ] Export du MJ (`ExportData`, `generateSeedSql`) : n'inclut pas encore `notes_personal`, `notes_shared`, `session_comments` ni `sessions.summary_published` (epics 4 et 5) ; à ajouter avant le basculement (sauvegarde).
+- [ ] Récapitulatif de séance : `summary` sert à la fois de brouillon et de texte publié (chaque autosave est visible des joueurs tant que la séance est publiée) ; envisager `summary_draft`.
+- [ ] Parcours « édition de fiche » de l'e2e 360 px : couvre le début du constructeur (saisie du nom), pas encore la fiche complète d'un personnage existant (fixtures à écrire).
+- [ ] Traduction française de `common.json` produite par un modèle : à faire relire par un francophone de la table (vocabulaire).
+- [ ] Pages du MJ (`SessionList`, `SessionDetail`, `NotesPage`, `CampaignDashboard`) : dates en `toLocaleDateString(undefined, ...)` (langue du navigateur) au lieu de `i18n.language`.
+- [ ] Accueil joueur : la campagne choisie n'est pas mémorisée (retour sur la première campagne après un aller-retour) ; sélecteur de langue masqué quand le menu est replié.
+- [ ] Traduction : « Feature » rendu par « trait » (PHB : « aptitude »), « weapon mastery » par « spécialisation d'arme » (PHB 2024 : « botte d'arme » ?) à valider à la relecture.

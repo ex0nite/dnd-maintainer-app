@@ -1,4 +1,5 @@
 import { CampaignSummary } from '@/types/database';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   BookOpen,
   ChevronDown,
@@ -7,6 +8,7 @@ import {
   ExternalLink,
   KeyRound,
   ScrollText,
+  NotebookPen,
   Settings,
   Shield,
   Sword,
@@ -31,7 +33,13 @@ export interface SidebarProps {
 
 interface NavItem {
   readonly icon: typeof Shield;
-  readonly labelKey: 'nav.dashboard' | 'nav.characters' | 'nav.sessions' | 'nav.notes';
+  readonly labelKey:
+    | 'nav.dashboard'
+    | 'nav.characters'
+    | 'nav.sessions'
+    | 'nav.notes'
+    | 'nav.campaignNotes'
+    | 'nav.recaps';
   readonly path: string;
   readonly matchPaths?: readonly string[];
   readonly end?: boolean;
@@ -42,6 +50,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { icon: Users, labelKey: 'nav.characters', path: '/characters', matchPaths: ['/character'] },
   { icon: BookOpen, labelKey: 'nav.sessions', path: '/sessions' },
   { icon: ScrollText, labelKey: 'nav.notes', path: '/notes' },
+  { icon: NotebookPen, labelKey: 'nav.campaignNotes', path: '/table-notes' },
+  { icon: ScrollText, labelKey: 'nav.recaps', path: '/recaps', matchPaths: ['/recaps'] },
 ];
 
 export function Sidebar({
@@ -54,8 +64,12 @@ export function Sidebar({
   const { t } = useTranslation('common');
   const { signOut } = useAuth();
   const { isPlayer } = useRole();
-  // A player's table: only the characters for now (notes and recaps come with their own epics).
-  const navItems = isPlayer ? NAV_ITEMS.filter((item) => item.labelKey === 'nav.characters') : NAV_ITEMS;
+  // A player's table: the characters and the campaign notes (recaps come with epic 5). The DM's own notes stay hidden.
+  // The DM reads the recaps in Sessions (where they publish them): the recap list is the players' entry.
+  const PLAYER_ITEMS = ['nav.characters', 'nav.campaignNotes', 'nav.recaps'];
+  const navItems = isPlayer
+    ? NAV_ITEMS.filter((item) => PLAYER_ITEMS.includes(item.labelKey))
+    : NAV_ITEMS.filter((item) => item.labelKey !== 'nav.recaps');
   const { campaignSlug } = useParams<{ campaignSlug: string }>();
   const location = useLocation();
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
@@ -232,6 +246,7 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="px-2 py-4 border-t border-sidebar-border">
+          {!isCollapsed && <LanguageSwitcher className="px-3 pb-3" />}
           <NavLink
             to="/settings/theme"
             onClick={() => {

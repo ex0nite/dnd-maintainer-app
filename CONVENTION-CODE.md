@@ -116,9 +116,41 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   inventaire, niveaux), jamais les PNJ ni une autre campagne, un PJ archivé avec son propriétaire reste lisible en lecture seule, un PJ désactivé à la main par le MJ est retiré de la table (seuls son propriétaire, gelé, et le MJ le lisent).
   `character_private` (historique, notes) : propriétaire et MJ seulement, le propriétaire modifie mais ne crée ni ne supprime
   la ligne. Une réassignation par le MJ est immédiate (les policies relisent `owner_user_id` à chaque requête) ; la partie privée suit la fiche chez le nouveau propriétaire (le MJ la vide avant si besoin). Les autres joueurs lisent toutes les colonnes d'un PJ lisible, `owner_user_id` et `player_name` compris (accepté).
+- Notes de campagne (epic 4) : `notes_personal` (carnet d'un joueur par campagne) : l'auteur, tant qu'il est membre, lit, crée,
+  modifie et supprime ; le MJ lit tout avec l'auteur, n'écrit JAMAIS (aucune policy d'écriture, 0 ligne). `notes_shared` :
+  les membres actifs lisent et créent (en leur nom), l'auteur modifie et supprime, le MJ modère tout (policy distincte). Un
+  ex-membre perd l'accès, le MJ garde la lecture de ses notes. La table `notes` du MJ reste DM seul, sans rapport. Texte brut
+  (CHECK 10 000 caractères, titre 200), affiché échappé. `author_id` vaut `auth.uid()` par défaut, jamais envoyé par le
+  client ; le trigger `guard_row_identity` interdit de changer `campaign_id`, `author_id` ou `session_id` d'une ligne (sauf
+  MJ), il sert aussi aux commentaires. « Dernier enregistrement gagne » : pas de gestion d'édition simultanée (D-12).
+  `campaign_member_names(campaign_id)` (SECURITY DEFINER, membres actifs et MJ seulement) donne les pseudos des auteurs :
+  les joueurs d'une même table se voient entre eux par leur pseudo (accepté).
+- Récapitulatifs de séance (epic 5) : `sessions.summary_published` (écriture MJ seul, comme tout `sessions`). Un membre actif
+  lit titre, date et récapitulatif d'une séance PUBLIÉE de sa campagne (`sessions_member_published`) ; notes, butin et XP
+  sont dans `session_dm` (MJ seul), donc un `select *` d'un joueur ne renvoie rien de privé. `session_comments` : le membre
+  commente un récapitulatif publié de sa campagne (clé étrangère `(session_id, campaign_id)` : un commentaire porte la
+  campagne de sa séance), l'auteur modifie et supprime les siens, le MJ modère tout. Dépublier masque le récapitulatif ET
+  ses commentaires aux joueurs sans rien supprimer ; republier les rend. Le commentaire d'un joueur archivé reste visible
+  des autres membres. Droits par COLONNE sur les tables de notes et de commentaires (`grant insert (...)`, `grant update
+(...)`) : ni `id`, ni `author_id` (défaut `auth.uid()`), ni dates, ni déplacement par l'API ; le trigger
+  `guard_row_identity` n'est qu'une ceinture. Le bouton de publication lit/écrit seulement cette colonne (composant
+  `RecapPublishToggle`), jamais via le formulaire de séance, pour qu'un autosave ne republie pas d'un état périmé.
 - Tests pgTAP : les sept identités (anonyme, propriétaire, autre joueur, archivé, mot de passe temporaire, non-membre,
   MJ) sur chaque table ; une écriture bloquée par la RLS touche 0 ligne (`tests.rows_affected`), une écriture refusée
   par `WITH CHECK` ou par absence de droit lève `42501`.
+
+## Langues (story 6.2)
+
+- Deux langues d'interface : français (défaut sur un appareil neuf) et anglais, choix mémorisé dans `localStorage`
+  (`dnd-language`) par `LanguageSwitcher` (page de connexion et menu). `src/lib/language.ts` décide de la langue de
+  départ ; les tests unitaires et le BDD (pas de navigateur, `MODE === 'test'`) restent en anglais, de même que les e2e
+  (qui posent `dnd-language` à `en`, sauf le contrôle de mise en page en français).
+- `src/locales/fr/common.json` suit EXACTEMENT les clés de `en/common.json` (le type `satisfies typeof commonEn` et
+  `src/locales/locales.test.ts` font échouer la CI sur une clé manquante ou en trop, ou des `{{placeholders}}` différents).
+  Toute nouvelle chaîne s'ajoute donc dans les DEUX fichiers.
+- Les données de règles (`gamedata`) restent en anglais dans les deux langues.
+- Les dates des pages joueur s'affichent avec `i18n.language` (`toLocaleDateString(i18n.language)`) ; les pages du MJ
+  (séances, notes du MJ, tableau de bord) suivent encore la langue du navigateur (voir TO-DO).
 
 ## Interface selon le rôle (epic 3)
 
@@ -130,6 +162,13 @@ anon`), les `GRANT` par défaut de Supabase ne sont jamais une protection.
   d'un personnage désactivé est en lecture seule (`<fieldset disabled>`, pas d'autosave, pas de dialogues d'édition).
 - Un joueur crée un PJ à lui (`ownerFieldsForNewCharacter` ajoute `owner_user_id` et le type à l'INSERT) ; les brouillons
   des autres joueurs ne sont ni listés ni reprenables.
+
+- Un joueur qui ouvre à la main une page réservée au MJ voit un refus clair (`RequireDm`, `access.*`) ; la vraie
+  protection reste celle de la base. Les menus du joueur (`Sidebar`) ne contiennent que ses personnages, les notes de
+  campagne et les récapitulatifs (story 6.4). La page d'accueil du joueur (`PlayerHome`) montre, pour la campagne choisie,
+  ses personnages, ses notes (comptes) et les derniers récapitulatifs publiés (story 6.1).
+- Les parcours du joueur à 360 px (connexion, mot de passe, début de fiche, notes, récapitulatif et commentaire) sont
+  parcourus de bout en bout par `e2e/player-journeys.e2e.ts` (backend simulé, `rest` peut être une fonction à état).
 
 ## Reconstruire une fiche (story 3.5, constaté dans le constructeur)
 
