@@ -349,6 +349,7 @@ function CharacterBuilderInner({
         rows,
         resolved,
         purchasedItems: equipmentMode === 'buy-with-gold' ? purchasedItems : [],
+        ruleset: rules.ruleset,
       };
       const slug = await finalize(payload);
       navigate(`/campaign/${campaignSlug}/character/${slug}`);

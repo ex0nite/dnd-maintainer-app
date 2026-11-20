@@ -1,4 +1,5 @@
 import type { ResolvedCharacter } from '@/types/resolved';
+import { getItemDef } from '@/lib/sources/items';
 import type { TablesInsert } from '@/types/supabase';
 
 /**
@@ -40,4 +41,34 @@ export function buildMaterializedItemRows(
   }
 
   return rows;
+}
+
+type ItemRow = TablesInsert<'character_items'>;
+
+/**
+ * Marks the worn gear of freshly materialized rows as equipped (2014 finalize): at most one body armor, at most one
+ * shield, and weapons (melee first, in row order): two with free hands, one next to a shield, never a two-handed one
+ * next to a shield. Rows whose item is unknown stay unequipped. Returns new rows, the input is not touched.
+ */
+export function autoEquipRows(rows: readonly ItemRow[]): readonly ItemRow[] {
+  const defs = rows.map((row) => getItemDef(row.item_id));
+  const armorIdx = defs.findIndex((d) => d?.type === 'armor' && d.category !== 'shield');
+  const shieldIdx = defs.findIndex((d) => d?.type === 'armor' && d.category === 'shield');
+  const hasShield = shieldIdx >= 0;
+  const weaponIdx = defs
+    .map((d, i) => ({ d, i }))
+    .filter(({ d }) => d?.type === 'weapon' && !(hasShield && d.properties.includes('two-handed')))
+    .sort(
+      (a, b) =>
+        Number(a.d?.type === 'weapon' && a.d.range === 'ranged') -
+        Number(b.d?.type === 'weapon' && b.d.range === 'ranged')
+    )
+    .slice(0, hasShield ? 1 : 2)
+    .map(({ i }) => i);
+  const equip = new Set<number>([
+    ...(armorIdx >= 0 ? [armorIdx] : []),
+    ...(hasShield ? [shieldIdx] : []),
+    ...weaponIdx,
+  ]);
+  return rows.map((row, i) => (equip.has(i) ? { ...row, equipped: true } : row));
 }

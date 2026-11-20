@@ -667,8 +667,11 @@ New and extended `Grant` variants (the schemas count 33; each has its resolver a
 
 ### 14.3 Limits kept on purpose
 
-- Hit dice: the resolver grants one hit die per class, not per level; the sheet prints the character level times the die when the
-  character has one die size, and the resolver's own count (one per class) when dice differ (multiclass with different dice).
+- Hit dice: the resolver counts one hit die per class level, per class (a cleric 3 / fighter 1 has `d8 x 3` and `d10 x 1`), for both
+  editions; the sheet and the 2014 PDF print that count. HP still takes the first class's die (multiclass HP is not modelled).
+- Starting gear: at finalize in 2014 (`autoEquipRows`), one body armor, one shield and the weapons (melee first, one next to a
+  shield and never a two-handed one next to it, otherwise two) are marked equipped so the armor class and attacks show. 2024 keeps
+  its items unequipped.
 - Current hit points, spent hit dice, spent slots and experience points are not part of the build: the sheet prints the maximum
   and leaves the experience box blank, like a sheet to fill at the table.
 - The layout is one page of boxes plus flowing text; it was checked by construction and by tests (page count, no encoding error),
