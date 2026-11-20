@@ -328,11 +328,14 @@ interface Pen {
   readonly pages: PDFPage[];
 }
 
+// No-break and narrow no-break spaces, written as code points so no irregular whitespace sits in the source.
+const NARROW_SPACES = new RegExp(`[${String.fromCharCode(0xa0, 0x202f)}]`, 'g');
+
 /** Text the standard font can encode: other characters become '?'; typographic dashes and spaces are folded. */
 export function toWinAnsi(text: string, font: PDFFont): string {
   const folded = text
     .replace(/[−‐‑‒]/g, '-')
-    .replace(/[  ]/g, ' ')
+    .replace(NARROW_SPACES, ' ')
     .replace(/\t/g, ' ');
   const set = new Set(font.getCharacterSet());
   let out = '';

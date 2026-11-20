@@ -2372,6 +2372,16 @@
     "female": "Female",
     "nonbinary": "Non-Binary"
   },
+  "schools": {
+    "abjuration": "abjuration",
+    "conjuration": "conjuration",
+    "divination": "divination",
+    "enchantment": "enchantment",
+    "evocation": "evocation",
+    "illusion": "illusion",
+    "necromancy": "necromancy",
+    "transmutation": "transmutation"
+  },
   "sizes": {
     "tiny": "Tiny",
     "small": "Small",

@@ -5,6 +5,7 @@
  * hand. Each element is a rule entry in the envelope of docs/dnd-2024.md "Rule entries"; it is validated like a DM entry
  * when the rule set is built. Story 9.5: species, subspecies, backgrounds; story 9.6: the 12 classes and their 12 subclasses; story 9.8: the 319 spells (items are code, story 9.7). Nothing outside the SRD 5.1 may ever be added here: the repository is public.
  */
+import { applyFrNames } from '@/lib/rules/fr-labels';
 import background from '@/lib/rules/srd-2014/background.json';
 import classes from '@/lib/rules/srd-2014/class.json';
 import species from '@/lib/rules/srd-2014/species.json';
@@ -12,11 +13,14 @@ import spells from '@/lib/rules/srd-2014/spell.json';
 import subclasses from '@/lib/rules/srd-2014/subclass.json';
 import subspecies from '@/lib/rules/srd-2014/subspecies.json';
 
-export const SRD_2014_ENTRIES: readonly unknown[] = Object.freeze([
-  ...(species as readonly unknown[]),
-  ...(subspecies as readonly unknown[]),
-  ...(background as readonly unknown[]),
-  ...(classes as readonly unknown[]),
-  ...(subclasses as readonly unknown[]),
-  ...(spells as readonly unknown[]),
-]);
+// French names of the core-book table are laid over the generated ones at load (D-39); the JSON stays as generated.
+export const SRD_2014_ENTRIES: readonly unknown[] = Object.freeze(
+  applyFrNames([
+    ...(species as readonly unknown[]),
+    ...(subspecies as readonly unknown[]),
+    ...(background as readonly unknown[]),
+    ...(classes as readonly unknown[]),
+    ...(subclasses as readonly unknown[]),
+    ...(spells as readonly unknown[]),
+  ])
+);

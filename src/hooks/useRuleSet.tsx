@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
+import type { i18n as I18nInstance, TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRuleEntries } from '@/hooks/useRuleEntries';
@@ -15,6 +15,7 @@ import {
   ruleSummary,
   type NamedRuleKind,
 } from '@/lib/rules/display';
+import { withFrLabels2014 } from '@/lib/rules/fr-labels';
 import type { RuleSet } from '@/lib/rules/types';
 
 export type RuleSetStatus = 'loading' | 'error' | 'ready';
@@ -81,7 +82,35 @@ export function RuleSetProvider({ ruleset, campaignLoading = false, children }: 
       </div>
     );
   }
-  return <RuleSetContext.Provider value={rules}>{children}</RuleSetContext.Provider>;
+  return (
+    <RuleSetContext.Provider value={rules}>
+      <Rules2014Labels ruleset={ruleset}>{children}</Rules2014Labels>
+    </RuleSetContext.Provider>
+  );
+}
+
+/**
+ * A private copy of the i18n instance whose French `gamedata` carries the 2014 labels (D-39). The shared bundle is never
+ * touched, so 2024 screens stay as they were; the copy follows the interface language.
+ */
+function create2014Instance(base: I18nInstance): I18nInstance | null {
+  if (typeof base?.cloneInstance !== 'function') return null;
+  const clone = base.cloneInstance({ forkResourceStore: true, lng: base.language });
+  const fr = base.getResourceBundle('fr', 'gamedata') as object | undefined;
+  if (fr) clone.addResourceBundle('fr', 'gamedata', withFrLabels2014(fr), false, true);
+  return clone;
+}
+
+/** Under a 2014 campaign, `useTranslation('gamedata')` below answers with the French 2014 labels (French only). */
+function Rules2014Labels({ ruleset, children }: { ruleset: RulesetId | undefined; children: ReactNode }) {
+  const { i18n } = useTranslation('gamedata');
+  const instance = useMemo(() => (ruleset === '2014' ? create2014Instance(i18n) : null), [ruleset, i18n]);
+  const language = i18n?.language;
+  useEffect(() => {
+    if (instance && language && instance.language !== language) void instance.changeLanguage(language);
+  }, [instance, language]);
+  if (!instance) return <>{children}</>;
+  return <I18nextProvider i18n={instance}>{children}</I18nextProvider>;
 }
 
 /** The rule set of the enclosing `RuleSetProvider` (built-in 2024 outside one). */

@@ -234,6 +234,19 @@ Résultat du spike 9.2 (détail : `docs/rules-as-data.md`).
   des campagnes choisies : le champ de règles et les règles propres de la campagne. Les entrées du SRD ne sont pas exportées
   (ce sont des données du code). Détails : `docs/rules-as-data.md` section 14.
 
+### D-39 · 2026-11-20 · Libellés français des règles 2014 au rendu ; table publique limitée au Manuel des joueurs
+
+- **Rendu, pas données.** En interface française, une campagne 2014 affiche les libellés du Manuel des joueurs FR (sexes,
+  alignements, caractéristiques, compétences, types de dégâts, états, écoles, catégories d'armes et d'armures, propriétés
+  d'armes, tailles, langues, noms d'espèces, de sous-espèces, de classes et de sous-classes). Les identifiants et le SRD
+  généré ne changent pas ; la table est `src/locales/fr/srd-2014.json`, appliquée par `src/lib/rules/fr-labels.ts`. Le 2024
+  n'est pas modifié (la table ne sert que sous `RuleSetProvider` d'une campagne 2014). Un libellé absent retombe sur l'anglais.
+- **Table publique limitée au contenu libre.** Le dépôt est public : la table ne reprend que le Manuel des joueurs FR, plus
+  sexes, alignements et langues (corrections validées : Elfe, Ore, Sylvain, Profond, Commun des profondeurs, Argot des voleurs,
+  Druidique, Demi-ore).
+- **Sorts et équipement restent en anglais** : leur source française (glossaire AideDD) n'est pas libre, elle n'entre pas dans
+  le dépôt. Détails : `docs/rules-as-data.md` section 15.
+
 ### D-24 · 2026-11-15 · BMAD uniquement dans le dépôt de l'app
 
 BMAD et les fichiers de pilotage (`TO-DO.md`, `DECISIONS.md`, etc.) restent dans `dnd-maintainer-app` et couvrent aussi le

@@ -676,3 +676,23 @@ New and extended `Grant` variants (the schemas count 33; each has its resolver a
   and leaves the experience box blank, like a sheet to fill at the table.
 - The layout is one page of boxes plus flowing text; it was checked by construction and by tests (page count, no encoding error),
   not against a print of the official sheet.
+
+## 15. French labels of the 2014 vocabulary (D-39)
+
+- **Table.** `src/locales/fr/srd-2014.json` (`{ section: { id: "nom FR" } }`): classes, species, subspecies, SRD subclasses,
+  abilities, skills, damage types, conditions, schools, weapon and armor categories, weapon properties, sizes, plus sexes,
+  alignments and languages. Only the free core-book names are in it. **Spell and equipment names are not** (their French source,
+  the AideDD glossary, is not free): they stay English. Never add them to the repository.
+- **Applied at render.** `src/lib/rules/fr-labels.ts` maps each table id to the `gamedata` path that shows it (skills
+  `animal-handling` -> `animalhandling`, alignments `lawful-good` -> `lg`, categories -> `weaponCategories`/`weapons` and
+  `armorCategories`/`armor`, conditions -> `conditions.<id>.name`) and capitalizes the label like the other `gamedata` labels.
+  `RuleSetProvider` of a **2014** campaign gives the screens below it a private i18next instance (`cloneInstance` with a forked
+  store) whose French `gamedata` carries the overlay: every `useTranslation('gamedata')` below it answers in French, the shared
+  bundle and 2024 are untouched, the instance follows the interface language. The names of SRD species, subspecies, classes and
+  subclasses are laid over the generated `name.fr` when `SRD_2014_ENTRIES` loads (`applyFrNames`); the generated JSON is not edited.
+- **Fallback.** A label the table lacks shows the English `gamedata` text, never an id. Not covered (English): `common-sign`,
+  `nonbinary`, `medium-nonmetal`/`shields-nonmetal`, weapon properties `monk` and `range` and the `unaligned` alignment (no `gamedata`
+  key to feed), languages `thieves-cant` and `druidic` (not in the engine's language vocabulary), and every spell, item and feature text.
+- **Schools.** `gamedata.schools` was added (English value = id, so 2024 looks as before); the spellcasting panel now reads it.
+- **Tests.** `src/lib/rules/fr-labels.test.ts` (sections, corrections, no orphan key, SRD id coverage, overlay purity) and
+  `src/hooks/useRuleSet.fr2014.test.tsx` (French render for 2014, English for 2024 and for the English interface).

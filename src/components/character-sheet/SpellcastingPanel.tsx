@@ -83,7 +83,7 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                 return (
                   <div key={i} className="text-sm text-foreground">
                     &bull; {ruleName('spell', cantrip)}
-                    {meta && <span className="text-xs text-muted-foreground ml-2">{`(${meta.school})`}</span>}
+                    {meta && <span className="text-xs text-muted-foreground ml-2">{`(${t(`schools.${meta.school}`)})`}</span>}
                   </div>
                 );
               })}
@@ -121,7 +121,7 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                           <div key={i} className="text-sm text-foreground">
                             &bull; {ruleName('spell', id)}
                             {meta && (
-                              <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${t(`schools.${meta.school}`)})`}</span>
                             )}
                           </div>
                         );
@@ -146,7 +146,7 @@ export function SpellcastingPanel({ spellcasting }: { spellcasting: Spellcasting
                   <div key={i} className="text-sm text-foreground">
                     &bull; {ruleName('spell', id)}
                     {meta && (
-                      <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${meta.school})`}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{`(lvl ${meta.level} ${t(`schools.${meta.school}`)})`}</span>
                     )}
                   </div>
                 );
