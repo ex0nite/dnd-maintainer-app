@@ -40,7 +40,6 @@ export type Database = {
           archived_at: string | null
           created_at: string
           description: string | null
-          dm_notes: string | null
           id: string
           image_url: string | null
           name: string
@@ -56,7 +55,6 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
-          dm_notes?: string | null
           id?: string
           image_url?: string | null
           name: string
@@ -72,7 +70,6 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
-          dm_notes?: string | null
           id?: string
           image_url?: string | null
           name?: string
@@ -84,6 +81,149 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      campaign_dm: {
+        Row: {
+          campaign_id: string
+          dm_notes: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          dm_notes?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          dm_notes?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_dm_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_members: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          must_change_password: boolean
+          password_reset_pending: boolean
+          pseudo: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          must_change_password?: boolean
+          password_reset_pending?: boolean
+          pseudo: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          must_change_password?: boolean
+          password_reset_pending?: boolean
+          pseudo?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      character_private: {
+        Row: {
+          backstory: string | null
+          character_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          backstory?: string | null
+          character_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backstory?: string | null
+          character_id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_private_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: true
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_dm: {
+        Row: {
+          experience_awarded: number
+          loot: Json | null
+          notes: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          experience_awarded?: number
+          loot?: Json | null
+          notes?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          experience_awarded?: number
+          loot?: Json | null
+          notes?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_dm_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       character_build_levels: {
         Row: {
@@ -195,7 +335,6 @@ export type Database = {
           appearance: string | null
           armor_class: number | null
           background: string | null
-          backstory: string | null
           bonds: string | null
           campaign_id: string
           character_type: string
@@ -216,7 +355,6 @@ export type Database = {
           is_active: boolean
           level: number
           name: string
-          notes: string | null
           personality_traits: string | null
           player_name: string | null
           portrait_url: string | null
@@ -233,6 +371,8 @@ export type Database = {
           updated_at: string
           weapon_masteries: Json | null
           weight: string | null
+          archived_with_owner: boolean
+          owner_user_id: string | null
         }
         Insert: {
           age?: string | null
@@ -240,7 +380,6 @@ export type Database = {
           appearance?: string | null
           armor_class?: number | null
           background?: string | null
-          backstory?: string | null
           bonds?: string | null
           campaign_id: string
           character_type: string
@@ -261,7 +400,6 @@ export type Database = {
           is_active?: boolean
           level?: number
           name: string
-          notes?: string | null
           personality_traits?: string | null
           player_name?: string | null
           portrait_url?: string | null
@@ -278,6 +416,8 @@ export type Database = {
           updated_at?: string
           weapon_masteries?: Json | null
           weight?: string | null
+          archived_with_owner?: boolean
+          owner_user_id?: string | null
         }
         Update: {
           age?: string | null
@@ -285,7 +425,6 @@ export type Database = {
           appearance?: string | null
           armor_class?: number | null
           background?: string | null
-          backstory?: string | null
           bonds?: string | null
           campaign_id?: string
           character_type?: string
@@ -306,7 +445,6 @@ export type Database = {
           is_active?: boolean
           level?: number
           name?: string
-          notes?: string | null
           personality_traits?: string | null
           player_name?: string | null
           portrait_url?: string | null
@@ -323,6 +461,8 @@ export type Database = {
           updated_at?: string
           weapon_masteries?: Json | null
           weight?: string | null
+          archived_with_owner?: boolean
+          owner_user_id?: string | null
         }
         Relationships: [
           {
@@ -440,11 +580,8 @@ export type Database = {
           campaign_id: string
           created_at: string
           date: string | null
-          experience_awarded: number
           id: string
-          loot: Json | null
           name: string | null
-          notes: string | null
           previous_slugs: string[]
           session_number: number
           slug: string
@@ -455,11 +592,8 @@ export type Database = {
           campaign_id: string
           created_at?: string
           date?: string | null
-          experience_awarded?: number
           id?: string
-          loot?: Json | null
           name?: string | null
-          notes?: string | null
           previous_slugs?: string[]
           session_number: number
           slug?: string
@@ -470,11 +604,8 @@ export type Database = {
           campaign_id?: string
           created_at?: string
           date?: string | null
-          experience_awarded?: number
           id?: string
-          loot?: Json | null
           name?: string | null
-          notes?: string | null
           previous_slugs?: string[]
           session_number?: number
           slug?: string

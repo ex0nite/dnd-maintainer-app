@@ -43,3 +43,6 @@ supabase/.temp
 
 # Copyrighted PDF templates dropped into public/assets are never committed.
 public/assets/*.pdf
+dist-e2e
+test-results
+playwright-report

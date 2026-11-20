@@ -55,9 +55,15 @@ function stubObjectUrl(): void {
 async function renderExport(world: DndWorld) {
   stubObjectUrl();
   const useCampaignsMod = await world.esmockWithSupabase('@/hooks/useCampaigns');
+  const failable = failableSupabase(world.statefulSupabase as { from: (t: string) => unknown });
+  // The export queries live in src/hooks/dataAccess.ts: it gets the failable client.
+  const dataAccessMod = await world.esmockWithSupabase('@/hooks/dataAccess', {
+    '@/lib/supabase': { supabase: failable },
+  });
   const mod = await world.esmockWithSupabase('@/pages/ExportData', {
     // Override the default '@/lib/supabase' injection with the failable wrapper.
-    '@/lib/supabase': { supabase: failableSupabase(world.statefulSupabase as { from: (t: string) => unknown }) },
+    '@/lib/supabase': { supabase: failable },
+    '@/hooks/dataAccess': dataAccessMod,
     '@/hooks/useCampaigns': useCampaignsMod,
     '@/hooks/usePageTitle': { usePageTitle: () => undefined },
   });

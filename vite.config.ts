@@ -20,6 +20,8 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    // The account-admin service (npm run account-admin) sits behind /admin-api/, as it does behind the proxy.
+    proxy: { '/admin-api': 'http://127.0.0.1:8787' },
   },
   test: {
     globals: true,

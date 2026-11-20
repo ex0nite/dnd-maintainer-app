@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { supabase } from '@/lib/supabase';
+import { updateCampaignTheme } from '@/hooks/dataAccess';
 import type { ThemeId } from '@/lib/theme';
 import type { CampaignSummary } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -23,10 +23,7 @@ function CampaignThemeRow({ campaign }: { campaign: CampaignSummary }): React.JS
   const queryClient = useQueryClient();
 
   const updateTheme = useMutation({
-    mutationFn: async (newTheme: ThemeId | null) => {
-      const { error } = await supabase.from('campaigns').update({ theme: newTheme }).eq('id', campaign.id);
-      if (error) throw error;
-    },
+    mutationFn: (newTheme: ThemeId | null) => updateCampaignTheme(campaign.id, newTheme),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       queryClient.invalidateQueries({ queryKey: ['campaign', campaign.id] });

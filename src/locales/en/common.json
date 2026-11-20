@@ -60,6 +60,8 @@
     "sessions": "Sessions",
     "notes": "Notes",
     "exportData": "Export Data",
+    "players": "Players",
+    "changePassword": "Change password",
     "settings": "Settings",
     "selectCampaign": "Select Campaign",
     "noCampaigns": "No campaigns",
@@ -825,6 +827,87 @@
       "loading": "Error loading notes"
     }
   },
+  "password": {
+    "title": "Choose your password",
+    "forced": "You signed in with a temporary password. Choose your own password to continue.",
+    "rule": "At least {{count}} characters. Do not reuse the temporary one.",
+    "new": "New password",
+    "confirm": "Confirm the new password",
+    "submit": "Save the password",
+    "errors": {
+      "tooShort": "The password must have at least {{count}} characters.",
+      "mismatch": "The two passwords are different.",
+      "same": "Choose a password different from the current one.",
+      "weak": "This password is too easy to guess. Choose a longer or less common one.",
+      "unavailable": "The password could not be changed. Try again in a moment."
+    }
+  },
+  "players": {
+    "title": "Players",
+    "description": "Create an account for a player. They sign in with the pseudo and a temporary password, and must choose their own password on first sign-in.",
+    "pseudo": "Pseudo",
+    "pseudoHelp": "3 to 20 characters: lower-case letters, digits, hyphen or underscore.",
+    "campaign": "Campaign",
+    "create": "Create the account",
+    "list": {
+      "title": "Accounts",
+      "empty": "No player account yet.",
+      "error": "The list of accounts could not be loaded.",
+      "noCampaign": "No campaign"
+    },
+    "status": {
+      "active": "Active",
+      "temporary": "Temporary password",
+      "archived": "Archived"
+    },
+    "cancel": "Cancel",
+    "add": "Add",
+    "addTo": "Add {{pseudo}} to a campaign",
+    "removeFrom": "Remove {{pseudo}} from {{campaign}}",
+    "campaignsOf": "Campaigns of {{pseudo}}",
+    "archive": {
+      "short": "Archive",
+      "button": "Archive the account of {{pseudo}}",
+      "confirm": "Confirm: cut their access",
+      "confirmFor": "Confirm archiving {{pseudo}}: access is cut at once and their characters are disabled",
+      "retry": "Block sign-in again",
+      "retryFor": "Archive {{pseudo}} again to block their sign-in"
+    },
+    "reactivate": {
+      "short": "Reactivate",
+      "button": "Reactivate the account of {{pseudo}}"
+    },
+    "reset": {
+      "title": "New temporary password for {{pseudo}}",
+      "short": "Reset password",
+      "button": "Reset the password of {{pseudo}}",
+      "confirm": "Confirm: sign them out",
+      "confirmFor": "Confirm the reset for {{pseudo}}: they will be signed out"
+    },
+    "noCampaign": "Create a campaign first: a player account is attached to one.",
+    "created": {
+      "title": "Account created for {{pseudo}}",
+      "once": "Give this temporary password to the player now. It is shown only once and cannot be read again.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "mustChange": "The player will have to choose their own password when they first sign in.",
+      "done": "Done"
+    },
+    "errors": {
+      "invalidPseudo": "This pseudo is not valid: use 3 to 20 lower-case letters, digits, hyphens or underscores.",
+      "pseudoTaken": "This pseudo is already used.",
+      "campaignNotFound": "This campaign no longer exists.",
+      "accountArchived": "This account is archived.",
+      "accountNotFound": "This account no longer exists.",
+      "actionInProgress": "Another action is already running for this account.",
+      "notArchived": "This account is not archived.",
+      "resetFailed": "The password could not be reset. Check the list and try again.",
+      "forbiddenTarget": "This account cannot be modified here.",
+      "actionFailed": "The action failed. Check the list and try again.",
+      "rateLimited": "Too many attempts. Wait a minute and try again.",
+      "generic": "The account could not be created. Try again in a moment."
+    }
+  },
   "export": {
     "title": "Export Data",
     "description": "Download campaign data as a SQL seed file for backup or migration.",
@@ -892,5 +975,15 @@
     "nameRequired": "Name is required",
     "titleRequired": "Title is required",
     "itemNameRequired": "Item name is required"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInButton": "Sign in",
+    "signingIn": "Signing in...",
+    "pseudo": "Username",
+    "password": "Password",
+    "invalidCredentials": "Incorrect credentials",
+    "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
+    "signOut": "Sign out"
   }
 }

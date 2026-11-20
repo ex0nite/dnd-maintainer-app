@@ -113,8 +113,14 @@ export function useCampaignMutations() {
 
   const archive = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('campaigns').update({ archived_at: new Date().toISOString() }).eq('id', id);
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('id');
       if (error) throw error;
+      // A write refused by row-level security affects 0 rows without an error.
+      if (data.length !== 1) throw new Error('Campaign was not archived (0 rows affected)');
     },
     onSuccess: invalidate,
   });

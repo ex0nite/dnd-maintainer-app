@@ -8,3 +8,10 @@ src/types/supabase.ts
 docs/coverage-matrix.md
 docs/uat-checklist.md
 docs/uat-checklist.csv
+
+# Third-party generated files (BMAD installer output)
+_bmad/
+.claude/skills/bmad-*/
+dist-e2e/
+test-results/
+playwright-report/

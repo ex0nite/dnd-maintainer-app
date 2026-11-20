@@ -1,7 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { deleteNoteById, fetchFullNotes, insertNote, updateNoteFields } from '@/hooks/dataAccess';
 import { Note } from '@/types/database';
-import type { TablesUpdate } from '@/types/supabase';
-import { NOTE_DETAIL_COLS } from '@/lib/query-columns';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -83,17 +81,7 @@ export default function NotesPage() {
     error,
   } = useQuery({
     queryKey: ['notes', campaignId, 'full'],
-    queryFn: async () => {
-      if (!campaignId) return [];
-      const { data, error } = await supabase
-        .from('notes')
-        .select(NOTE_DETAIL_COLS)
-        .eq('campaign_id', campaignId)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      return data as unknown as Note[];
-    },
+    queryFn: () => (campaignId ? fetchFullNotes(campaignId) : Promise.resolve([] as Note[])),
     enabled: !!campaignId,
   });
 
@@ -139,25 +127,7 @@ export default function NotesPage() {
     mutationFn: async (noteData: typeof formData) => {
       if (!campaignId) throw new Error('Campaign ID is required');
 
-      const { data, error } = await supabase
-        .from('notes')
-        .insert([
-          {
-            campaign_id: campaignId,
-            title: noteData.title,
-            content: noteData.content,
-            category: noteData.category,
-            tags: noteData.tags
-              .split(',')
-              .map((t) => t.trim())
-              .filter((t) => t),
-            is_pinned: noteData.pinned,
-          },
-        ])
-        .select();
-
-      if (error) throw error;
-      return data[0];
+      return insertNote(campaignId, noteData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', campaignId, 'full'] });
@@ -171,12 +141,7 @@ export default function NotesPage() {
     mutationFn: async (noteData: Partial<Note>) => {
       if (!editingNote) throw new Error('No note selected');
 
-      const { error } = await supabase
-        .from('notes')
-        .update(noteData as unknown as TablesUpdate<'notes'>)
-        .eq('id', editingNote.id);
-
-      if (error) throw error;
+      await updateNoteFields(editingNote.id, noteData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', campaignId, 'full'] });
@@ -190,9 +155,7 @@ export default function NotesPage() {
   // Delete note mutation
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const { error } = await supabase.from('notes').delete().eq('id', noteId);
-
-      if (error) throw error;
+      await deleteNoteById(noteId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', campaignId, 'full'] });

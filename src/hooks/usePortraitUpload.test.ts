@@ -27,7 +27,7 @@ describe('usePortraitUpload', () => {
   });
 
   describe('upload', () => {
-    it('calls storage.upload with the correct path and upsert, then persists publicUrl', async () => {
+    it('calls storage.upload with the correct path and upsert, then persists the storage path (private bucket)', async () => {
       mockStorageResult.error = null;
       mockStorageResult.publicUrl = publicUrl;
       // update mutation must succeed
@@ -46,9 +46,9 @@ describe('usePortraitUpload', () => {
         expect.any(Blob),
         expect.objectContaining({ contentType: 'image/jpeg', upsert: true })
       );
-      expect(bucketRef.getPublicUrl).toHaveBeenCalledWith(`${characterId}/portrait.jpg`);
+      expect(bucketRef.getPublicUrl).not.toHaveBeenCalled();
       // The update mutation destructures { id, ...updates } — id goes to .eq(), updates go to .update()
-      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: publicUrl });
+      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: `${characterId}/portrait.jpg` });
       expect(supabase.eq).toHaveBeenCalledWith('id', characterId);
       expect(result.current.error).toBeNull();
     });
@@ -90,7 +90,7 @@ describe('usePortraitUpload', () => {
       // Storage upload was called (storage succeeded)
       expect(bucketRef.upload).toHaveBeenCalled();
       // DB update was also called (distinguishes this from storage-failure case)
-      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: publicUrl });
+      expect(supabase.update).toHaveBeenCalledWith({ portrait_url: `${characterId}/portrait.jpg` });
       // Hook surfaces the error
       expect(result.current.error).toBeInstanceOf(Error);
       // Storage remove was NOT called — orphan file is a deliberate trade-off
@@ -108,7 +108,7 @@ describe('usePortraitUpload', () => {
       const { result } = renderHook(() => usePortraitUpload(), { wrapper: createWrapper() });
 
       await act(async () => {
-        await result.current.remove(characterId, 'https://example.com/old.jpg');
+        await result.current.remove(characterId, `${characterId}/portrait.jpg`);
       });
 
       await waitFor(() => expect(result.current.isRemoving).toBe(false));
@@ -117,6 +117,23 @@ describe('usePortraitUpload', () => {
       expect(bucketRef.remove).toHaveBeenCalledWith([`${characterId}/portrait.jpg`]);
       expect(supabase.update).toHaveBeenCalledWith({ portrait_url: null });
       expect(supabase.eq).toHaveBeenCalledWith('id', characterId);
+    });
+
+    it('removes the object of a legacy public URL by its storage path', async () => {
+      mockStorageResult.error = null;
+      mockQueryResult.data = { id: characterId, portrait_url: null };
+
+      const { result } = renderHook(() => usePortraitUpload(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.remove(
+          characterId,
+          'http://127.0.0.1:54321/storage/v1/object/public/character-portraits/char-1/portrait.jpg'
+        );
+      });
+
+      const bucketRef = supabase.storage.from('character-portraits');
+      expect(bucketRef.remove).toHaveBeenCalledWith(['char-1/portrait.jpg']);
     });
 
     it('returns early without calling anything when currentPortraitUrl is null', async () => {

@@ -2,8 +2,11 @@ export type ColumnType = 'text' | 'jsonb' | 'text[]' | 'boolean' | 'integer' | '
 
 export type ExportData = Readonly<{
   campaigns: readonly Record<string, unknown>[];
+  campaign_dm: readonly Record<string, unknown>[];
   characters: readonly Record<string, unknown>[];
+  character_private: readonly Record<string, unknown>[];
   sessions: readonly Record<string, unknown>[];
+  session_dm: readonly Record<string, unknown>[];
   encounters: readonly Record<string, unknown>[];
   notes: readonly Record<string, unknown>[];
   character_build_levels: readonly Record<string, unknown>[];
@@ -26,9 +29,19 @@ const TABLE_COLUMNS = {
     { name: 'setting', type: 'text' },
     { name: 'status', type: 'text' },
     { name: 'image_url', type: 'text' },
-    { name: 'dm_notes', type: 'text' },
     { name: 'allowed_source_books', type: 'text[]' },
     { name: 'created_at', type: 'timestamptz' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
+  campaign_dm: [
+    { name: 'campaign_id', type: 'uuid' },
+    { name: 'dm_notes', type: 'text' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
+  character_private: [
+    { name: 'character_id', type: 'uuid' },
+    { name: 'backstory', type: 'text' },
+    { name: 'notes', type: 'text' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
   characters: [
@@ -36,6 +49,8 @@ const TABLE_COLUMNS = {
     { name: 'slug', type: 'text' },
     { name: 'previous_slugs', type: 'text[]' },
     { name: 'campaign_id', type: 'uuid' },
+    { name: 'owner_user_id', type: 'uuid' },
+    { name: 'archived_with_owner', type: 'boolean' },
     { name: 'name', type: 'text' },
     { name: 'character_type', type: 'text' },
     { name: 'player_name', type: 'text' },
@@ -49,13 +64,11 @@ const TABLE_COLUMNS = {
     { name: 'armor_class', type: 'integer' },
     { name: 'speed', type: 'integer' },
     { name: 'proficiency_bonus', type: 'integer' },
-    { name: 'notes', type: 'text' },
     { name: 'personality_traits', type: 'text' },
     { name: 'ideals', type: 'text' },
     { name: 'bonds', type: 'text' },
     { name: 'flaws', type: 'text' },
     { name: 'appearance', type: 'text' },
-    { name: 'backstory', type: 'text' },
     { name: 'portrait_url', type: 'text' },
     { name: 'is_active', type: 'boolean' },
     { name: 'status', type: 'text' },
@@ -85,10 +98,14 @@ const TABLE_COLUMNS = {
     { name: 'name', type: 'text' },
     { name: 'date', type: 'date' },
     { name: 'summary', type: 'text' },
+    { name: 'created_at', type: 'timestamptz' },
+    { name: 'updated_at', type: 'timestamptz' },
+  ],
+  session_dm: [
+    { name: 'session_id', type: 'uuid' },
     { name: 'notes', type: 'text' },
     { name: 'experience_awarded', type: 'integer' },
     { name: 'loot', type: 'jsonb' },
-    { name: 'created_at', type: 'timestamptz' },
     { name: 'updated_at', type: 'timestamptz' },
   ],
   encounters: [
@@ -149,8 +166,11 @@ type TableName = keyof typeof TABLE_COLUMNS;
 // Order matters: parent tables before children for foreign key constraints
 const TABLE_ORDER: readonly TableName[] = [
   'campaigns',
+  'campaign_dm',
   'characters',
+  'character_private',
   'sessions',
+  'session_dm',
   'encounters',
   'notes',
   'character_build_levels',
@@ -159,7 +179,18 @@ const TABLE_ORDER: readonly TableName[] = [
 
 // Tables with non-standard unique constraints for ON CONFLICT
 const CONFLICT_TARGETS: Partial<Record<TableName, string>> = {
+  campaign_dm: '(campaign_id)',
+  character_private: '(character_id)',
+  session_dm: '(session_id)',
   character_build_levels: '(character_id, sequence)',
+};
+
+// Rows a trigger creates on its own (the empty `campaign_dm` row of a new campaign) must not hide the
+// exported content: on conflict these columns are overwritten instead of skipped.
+const UPDATE_ON_CONFLICT: Partial<Record<TableName, readonly string[]>> = {
+  campaign_dm: ['dm_notes'],
+  character_private: ['backstory', 'notes'],
+  session_dm: ['notes', 'experience_awarded', 'loot'],
 };
 
 export function escapeSqlString(value: string): string {
@@ -212,18 +243,23 @@ export function buildInsertStatement(
   table: string,
   row: Record<string, unknown>,
   columns: readonly ColumnDef[],
-  conflictTarget: string = '(id)'
+  conflictTarget: string = '(id)',
+  updateColumns: readonly string[] = []
 ): string {
   const colNames = columns.map((c) => c.name).join(', ');
+  const conflictAction =
+    updateColumns.length > 0
+      ? `DO UPDATE SET ${updateColumns.map((c) => `${c} = EXCLUDED.${c}`).join(', ')}`
+      : 'DO NOTHING';
   const values = columns.map((c) => escapeSqlValue(row[c.name], c.type)).join(', ');
-  return `INSERT INTO ${table} (${colNames}) VALUES (${values}) ON CONFLICT ${conflictTarget} DO NOTHING;`;
+  return `INSERT INTO ${table} (${colNames}) VALUES (${values}) ON CONFLICT ${conflictTarget} ${conflictAction};`;
 }
 
 export function generateSeedSql(data: ExportData): string {
   const lines: string[] = [
     '-- D&D Campaign Manager - Seed Data Export',
     `-- Generated at: ${new Date().toISOString()}`,
-    '-- WARNING: This file uses ON CONFLICT (id) DO NOTHING. It is designed for',
+    '-- WARNING: This file uses ON CONFLICT ... DO NOTHING (DM notes: DO UPDATE). It is designed for',
     '-- restoring into a clean database. Partial restores into an existing database',
     '-- may fail if parent records (campaigns) are missing.',
     '',
@@ -243,7 +279,9 @@ export function generateSeedSql(data: ExportData): string {
     const conflictTarget = CONFLICT_TARGETS[table] ?? '(id)';
     lines.push(`-- ${table}`);
     for (const row of rows) {
-      lines.push(buildInsertStatement(table, row as Record<string, unknown>, columns, conflictTarget));
+      lines.push(
+        buildInsertStatement(table, row as Record<string, unknown>, columns, conflictTarget, UPDATE_ON_CONFLICT[table])
+      );
     }
     lines.push('');
   }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, characters, sessions, encounters, and DM notes. The target ruleset is the 2024 D&D Player's Handbook. No auth is implemented yet (RLS is enabled but no policies are defined).
+D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, characters, sessions, encounters, and DM notes. The target ruleset is the 2024 D&D Player's Handbook. Authentication (GoTrue, closed: no self-signup) is enabled and the `profiles` table exists (story 1.2); the access rules (RLS) are being locked down story by story (see `_bmad-output/planning-artifacts/epics.md`, epic 1).
 
 ## Commands
 
@@ -22,6 +22,10 @@ D&D 5.5e (2024 PHB) Campaign Manager — a React SPA for managing campaigns, cha
 - `npm run test:watch` — run tests in watch mode
 - `npm run test:coverage` — run tests with v8 coverage report
 - `npm run test:bdd` — run the Cucumber BDD suite (default profile, stays green). See `docs/bdd.md`.
+- `npm run test:e2e` — Playwright checks at 360 px (no horizontal scroll) and WCAG AA contrast on the 3 themes in light and dark, against a stubbed backend (`e2e/`). Add each new screen to `PAGES` in `e2e/layout-a11y.e2e.ts`. First run: `npx playwright install chromium`.
+- `npm run account-admin` — start the account-admin service (creates player accounts, AD-2; env vars in `SETUP.md`). The Players screen calls it at `/admin-api/` (Vite proxies it to port 8787).
+- `npm run test:sql` — run the pgTAP SQL tests in `supabase/tests/database/` against the running local Supabase (see CONVENTION-CODE.md)
+- BDD on Windows: `npm run test:bdd` fails locally (esmock/paths). Run it on Linux in Docker instead: `docker run --rm -v <repo>:/src:ro -e VITE_SUPABASE_URL=http://127.0.0.1:54321 -e VITE_SUPABASE_PUBLISHABLE_KEY=x node:24 bash -c "mkdir /work && cd /src && tar --exclude=node_modules --exclude=.git --exclude=dist -cf - . | tar -xf - -C /work && cd /work && npm ci && npm run test:bdd"`
 - `npm run test:bdd:future` — run spec-ahead BDD scenarios (`@future` profile, expected to fail). See `docs/bdd.md`.
 - `npm run coverage:matrix` — regenerate `docs/coverage-matrix.md` from `src/lib/sources/coverage-matrix.ts`
 - `npm run uat:checklist` — generate a manual UAT checklist (one row per BDD scenario) from `features/` into `docs/uat-checklist.csv`. Add `-- --format md` (or `both`) for a printable Markdown checklist. See `scripts/gen-uat-checklist.ts`.
@@ -113,4 +117,8 @@ Spec-first acceptance tests live in `features/`, run via `npm run test:bdd` (and
 
 ## Environment Variables
 
-Requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`.
+Requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local` (the README and `SETUP.md` still say `VITE_SUPABASE_ANON_KEY`: see TO-DO). Optional `VITE_ACCOUNT_DOMAIN` (default `table`): label of the derived sign-in address `<pseudo>@<label>.invalid`, which must match `ACCOUNT_DOMAIN` used when the accounts were created.
+
+### Authentication
+
+Every route except `/login` sits behind `RequireAuth` (`src/components/RequireAuth.tsx`); `AuthProvider` / `useAuth()` (`src/hooks/useAuth.tsx`) hold the session and empty the query cache on sign-out. Only `src/hooks/` may import `@/lib/supabase` (ESLint `no-restricted-imports`): pages call hooks or the functions of `src/hooks/dataAccess.ts`.

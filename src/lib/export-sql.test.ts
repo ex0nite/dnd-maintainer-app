@@ -132,6 +132,23 @@ describe('buildInsertStatement', () => {
     );
   });
 
+  it('overwrites the listed columns on conflict (rows created by a trigger)', () => {
+    const columns: readonly { readonly name: string; readonly type: ColumnType }[] = [
+      { name: 'campaign_id', type: 'uuid' },
+      { name: 'dm_notes', type: 'text' },
+    ];
+    const sql = buildInsertStatement(
+      'campaign_dm',
+      { campaign_id: 'c1', dm_notes: 'secret' },
+      columns,
+      '(campaign_id)',
+      ['dm_notes']
+    );
+    expect(sql).toBe(
+      "INSERT INTO campaign_dm (campaign_id, dm_notes) VALUES ('c1', 'secret') ON CONFLICT (campaign_id) DO UPDATE SET dm_notes = EXCLUDED.dm_notes;"
+    );
+  });
+
   it('uses NULL for missing column values', () => {
     const columns: readonly { readonly name: string; readonly type: ColumnType }[] = [
       { name: 'id', type: 'uuid' },
@@ -161,6 +178,9 @@ describe('buildInsertStatement', () => {
 describe('generateSeedSql', () => {
   const emptyData: ExportData = {
     campaigns: [],
+    campaign_dm: [],
+    character_private: [],
+    session_dm: [],
     characters: [],
     sessions: [],
     encounters: [],
@@ -196,7 +216,6 @@ describe('generateSeedSql', () => {
           setting: null,
           status: 'active',
           image_url: null,
-          dm_notes: null,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
         },
@@ -205,6 +224,25 @@ describe('generateSeedSql', () => {
     const sql = generateSeedSql(data);
     expect(sql).toContain('INSERT INTO campaigns');
     expect(sql).toContain("'Lost Mines'");
+  });
+
+  it('exports character ownership so it survives a re-import', () => {
+    const data: ExportData = {
+      ...emptyData,
+      characters: [
+        {
+          id: 'ch1',
+          campaign_id: 'c1',
+          owner_user_id: '00000000-0000-4000-8000-000000000001',
+          archived_with_owner: true,
+          name: 'Hero',
+        },
+      ],
+    };
+    const sql = generateSeedSql(data);
+    expect(sql).toContain('owner_user_id');
+    expect(sql).toContain("'00000000-0000-4000-8000-000000000001'");
+    expect(sql).toContain('archived_with_owner');
   });
 
   it('respects table ordering — campaigns before characters in output', () => {
@@ -218,7 +256,6 @@ describe('generateSeedSql', () => {
           setting: null,
           status: 'active',
           image_url: null,
-          dm_notes: null,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
         },

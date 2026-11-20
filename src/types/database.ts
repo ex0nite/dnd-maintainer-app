@@ -37,7 +37,6 @@ export interface Campaign {
   setting?: string | null;
   status: 'active' | 'paused' | 'completed' | 'planning' | null;
   image_url?: string | null;
-  dm_notes?: string | null;
   /** null = inherit global preference; a ThemeId = explicit override for this campaign */
   theme: ThemeId | null;
   archived_at?: string | null;
