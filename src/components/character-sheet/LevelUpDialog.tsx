@@ -23,6 +23,12 @@ import { getLogger } from '@/lib/logger';
 
 const logger = getLogger('level-up-dialog');
 
+/** Readable fallback for a feature id with no name anywhere: "divine-domain-improvement-1" -> "Divine domain improvement 1". */
+function humanizeId(id: string): string {
+  const text = id.replace(/[-_]+/g, ' ').trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 interface LevelUpDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -118,6 +124,12 @@ export function LevelUpDialog({
   const { t } = useTranslation('common');
   const rules = useActiveRuleSet();
   const { t: tg } = useTranslation('gamedata');
+  // Name of a feature: the rule entry's own name (SRD / DM library), else the built-in translation, else the id made readable.
+  const featureName = useCallback(
+    (feature: FeatureGrant['feature']): string =>
+      feature.name ?? (tg(`features.${feature.id}.name`, { defaultValue: '' }) || humanizeId(feature.id)),
+    [tg]
+  );
   const hpAverageGrant = Math.floor(hitDie / 2) + 1;
 
   const [rolledValue, setRolledValue] = useState<number | null>(null);
@@ -317,11 +329,9 @@ export function LevelUpDialog({
           <div className="space-y-1">
             {featureGrants.map((grant) => (
               <div key={grant.feature.id} className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-sm font-medium text-foreground">
-                  {tg(`features.${grant.feature.id}.name`, { defaultValue: grant.feature.id })}
-                </p>
+                <p className="text-sm font-medium text-foreground">{featureName(grant.feature)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {tg(`features.${grant.feature.id}.description`, { defaultValue: '' })}
+                  {grant.feature.description ?? tg(`features.${grant.feature.id}.description`, { defaultValue: '' })}
                 </p>
               </div>
             ))}

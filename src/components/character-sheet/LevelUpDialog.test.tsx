@@ -137,6 +137,21 @@ describe('LevelUpDialog', () => {
     mockCollectChoiceGrants.mockReturnValue([]);
   });
 
+  it('shows the name of a feature granted by a rule entry, and a readable fallback without a name', () => {
+    mockGetGrantsForLevel.mockReturnValue({
+      classGrants: [
+        { type: 'feature', feature: { id: 'channel-divinity-turn-undead', name: 'Channel Divinity: Turn Undead' } },
+        { type: 'feature', feature: { id: 'divine-domain-improvement-1' } },
+      ],
+      subclassGrants: [],
+    });
+    render(<LevelUpDialog {...BASE_PROPS} />);
+    expect(screen.getByText('Channel Divinity: Turn Undead')).toBeInTheDocument();
+    expect(screen.getByText('Divine domain improvement 1')).toBeInTheDocument();
+    expect(screen.queryByText('channel-divinity-turn-undead')).not.toBeInTheDocument();
+    expect(screen.queryByText('divine-domain-improvement-1')).not.toBeInTheDocument();
+  });
+
   it('renders with no choices and Confirm enabled when HP defaults to average', () => {
     render(<LevelUpDialog {...BASE_PROPS} />);
     const confirmBtn = screen.getByText('confirmLevelUp');
