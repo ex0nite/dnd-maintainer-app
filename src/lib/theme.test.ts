@@ -266,12 +266,12 @@ describe('localStorage exception handling', () => {
 });
 
 // ---------------------------------------------------------------------------
-// index.html sync check — theme constants must match THEMES/COLOR_MODES
+// theme-init.js sync check — the pre-paint bootstrap (loaded by index.html) must match THEMES/COLOR_MODES
 // ---------------------------------------------------------------------------
-describe('index.html theme constants sync', () => {
-  const indexHtml = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf-8');
+describe('theme-init.js theme constants sync', () => {
+  const indexHtml = fs.readFileSync(path.resolve(__dirname, '../../public/theme-init.js'), 'utf-8');
 
-  it('validThemes in index.html matches THEME_IDS (excluding default)', () => {
+  it('validThemes in theme-init.js matches THEME_IDS (excluding default)', () => {
     const match = indexHtml.match(/var validThemes = \[([^\]]+)\]/);
     expect(match).not.toBeNull();
     const inlineThemes = match![1]
@@ -282,7 +282,7 @@ describe('index.html theme constants sync', () => {
     expect(inlineThemes).toEqual(expectedThemes);
   });
 
-  it('validModes in index.html matches COLOR_MODES', () => {
+  it('validModes in theme-init.js matches COLOR_MODES', () => {
     const match = indexHtml.match(/var validModes = \[([^\]]+)\]/);
     expect(match).not.toBeNull();
     const inlineModes = match![1]
@@ -292,7 +292,7 @@ describe('index.html theme constants sync', () => {
     expect(inlineModes).toEqual([...COLOR_MODES]);
   });
 
-  it('storage keys in index.html match STORAGE_KEYS', () => {
+  it('storage keys in theme-init.js match STORAGE_KEYS', () => {
     expect(indexHtml).toContain(`localStorage.getItem('${STORAGE_KEYS.colorMode}')`);
     expect(indexHtml).toContain(`localStorage.getItem('${STORAGE_KEYS.theme}')`);
   });

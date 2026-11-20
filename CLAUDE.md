@@ -124,3 +124,8 @@ Requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`
 ### Authentication
 
 Every route except `/login` sits behind `RequireAuth` (`src/components/RequireAuth.tsx`); `AuthProvider` / `useAuth()` (`src/hooks/useAuth.tsx`) hold the session and empty the query cache on sign-out. Only `src/hooks/` may import `@/lib/supabase` (ESLint `no-restricted-imports`): pages call hooks or the functions of `src/hooks/dataAccess.ts`.
+
+## Deployment and CSP (epic 7)
+
+- The QNAP stack, install procedure and network rules are in `docs/deploy-qnap.md` (`deploy/qnap/`); the load test in `docs/qnap-load-test.md`. No secret, host name or address in the repository.
+- The app runs under a strict Content-Security-Policy (no `unsafe-inline`, no `unsafe-eval`): no inline `<script>`, no `<style>` element injected by a new library, no `eval`/`new Function`. Every Playwright test runs under that policy (`e2e/fixtures.ts`) and fails on a violation. After a `sonner` upgrade, `deploy/qnap/csp.test.ts` tells you to refresh the hash (`node scripts/sonner-csp-hash.mjs`).

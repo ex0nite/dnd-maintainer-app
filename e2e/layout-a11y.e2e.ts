@@ -1,6 +1,7 @@
 // Story 1.3: no horizontal scroll at 360 px and WCAG AA contrast, on the 3 themes in
 // light and dark. Reused by later UI stories: add a page to PAGES.
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 import { MODES, THEMES, stubBackend, useTheme } from './support';
 

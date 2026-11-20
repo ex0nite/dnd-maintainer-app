@@ -1,5 +1,6 @@
 import '@/lib/logger';
 import '@/lib/i18n';
+import '@/lib/zod-config';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

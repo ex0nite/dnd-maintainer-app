@@ -123,3 +123,33 @@ jobs:
         run: npx supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Rebuild the pre-lock database, fail a cutover, run the real one, check the data
         run: bash scripts/cutover/test-cutover.sh
+
+  stack:
+    name: QNAP stack (compose, migrations, gateway, load)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start the lightweight stack in an isolated compose project, apply the migrations
+        run: bash deploy/qnap/localtest.sh up
+      - name: What a visitor can and cannot do through the gateway
+        run: |
+          ANON_KEY="$(grep '^ANON_KEY=' .localtest-stack/.env | cut -d= -f2)"
+          ADMIN_API=1 BASE_URL=http://127.0.0.1:8081 ANON_KEY="$ANON_KEY" node deploy/qnap/smoke.mjs
+      - name: Five players for 40 seconds (sign in, read, write, upload a portrait)
+        run: |
+          ANON_KEY="$(grep '^ANON_KEY=' .localtest-stack/.env | cut -d= -f2)"
+          SERVICE_ROLE_KEY="$(grep '^SERVICE_ROLE_KEY=' .localtest-stack/.env | cut -d= -f2)"
+          BASE_URL=http://127.0.0.1:8081 ANON_KEY="$ANON_KEY" SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+            DURATION_S=40 THINK_MIN_MS=300 THINK_MAX_MS=800 ADMIN_API=1 node deploy/qnap/loadtest.mjs > /dev/null
+      - name: Logs on failure
+        if: failure()
+        run: bash deploy/qnap/localtest.sh logs
+      - name: Clean up
+        if: always()
+        run: bash deploy/qnap/localtest.sh down

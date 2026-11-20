@@ -46,3 +46,5 @@ public/assets/*.pdf
 dist-e2e
 test-results
 playwright-report
+.localtest-stack/
+deploy/qnap/account-admin/server.mjs
